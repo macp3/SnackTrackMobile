@@ -3,6 +3,7 @@ package study.snacktrackmobile.ui.views
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -30,21 +31,29 @@ val montserratFont = FontFamily(
 
 @Composable
 fun StartView(navController: NavController) {
-    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Surface(color = Color.White) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // TopBar
+            SnackTrackTopBar()
+
+            Spacer(modifier = Modifier.height(300.dp))
+            // Środkowy tekst
             Text(
                 text = "WELCOME",
                 fontSize = 35.sp,
                 fontFamily = montserratFont
             )
-        }
 
-        Box(modifier = Modifier.fillMaxSize()) {
+            // Dolne przyciski
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 150.dp),
+                    .padding(bottom = 250.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 DisplayButton(text = "Login", onClick = {
