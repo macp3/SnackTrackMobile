@@ -1,87 +1,77 @@
 package study.snacktrackmobile.ui.views
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import study.snacktrackmobile.R
+import study.snacktrackmobile.ui.components.*
+import study.snacktrackmobile.ui.views.LoginView
+
+val montserratFont = FontFamily(
+    Font(R.font.montserrat, weight = FontWeight.Normal)
+)
 
 @Composable
-fun LoginScreen(
-    onLoginClick: () -> Unit,
-    onRegisterClick: () -> Unit,
-    onGoogleSignInClick: () -> Unit
-) {
-    val montserratFont = FontFamily(
-        Font(R.font.montserrat, weight = FontWeight.Normal)
-    )
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.White
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-
+fun StartView(navController: NavController) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = "WELCOME",
-                fontSize = 26.sp,
-                fontFamily = montserratFont,
-                modifier = Modifier.align(Alignment.Center)
+                fontSize = 35.sp,
+                fontFamily = montserratFont
             )
+        }
 
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 60.dp),
+                    .padding(bottom = 150.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                DisplayButton(text = "Login", onClick = {
+                    navController.navigate("LoginView")
+                })
+                Spacer(modifier = Modifier.height(16.dp))
+                DisplayButton(text = "Register", onClick = {
+                    navController.navigate("RegisterView")
+                })
+                Spacer(modifier = Modifier.height(20.dp))
 
-                Button(
-                    onClick = { },
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .padding(vertical = 6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xffB7F999)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(text = "Login", fontSize = 18.sp, fontFamily = montserratFont, color = Color.Black)
-                }
-
-                Button(
-                    onClick = { },
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .padding(vertical = 6.dp)
-                        .border(width = 1.dp, color = Color.Black, shape = RoundedCornerShape(11.dp)),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xffB7F999)),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text(text = "Register", fontSize = 18.sp, fontFamily = montserratFont, color = Color.Black)
-                }
-
-                Spacer(modifier = Modifier.height(25.dp))
-
-                Button(
-                    onClick = { },
+                OutlinedButton(
+                    onClick = { /* TODO: Google Sign-In */ },
                     shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    modifier = Modifier.size(55.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    modifier = Modifier.size(50.dp),
+                    border = BorderStroke(1.dp, Color.Black),
+                    contentPadding = PaddingValues(6.dp)
                 ) {
-                    Text(text = "G", fontSize = 20.sp, fontFamily = montserratFont,)
+                    Image(
+                        painter = painterResource(R.drawable.google_icon),
+                        contentDescription = "Google icon",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
                 }
             }
         }
     }
 }
-
-
