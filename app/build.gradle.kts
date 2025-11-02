@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -40,7 +41,7 @@ android {
 }
 
 dependencies {
-
+    // AndroidX i Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -49,6 +50,18 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    // Firebase BOM – zarządza wersjami wszystkich modułów Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
+
+    // Firebase Messaging
+    implementation("com.google.firebase:firebase-messaging")
+
+    // InApp Messaging (jeśli potrzebujesz)
+    implementation("com.google.firebase:firebase-inappmessaging-display")
+
+    // Testy
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
