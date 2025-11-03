@@ -18,5 +18,8 @@ fun SnackTrackApp() {
         composable("LoginView") {
             LoginView(navController)
         }
+        composable("InitialSurvey") {
+            InitialSurveyView {  }
+        }
     })
 }
