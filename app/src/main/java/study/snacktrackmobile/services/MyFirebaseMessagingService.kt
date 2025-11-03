@@ -26,10 +26,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val title = remoteMessage.notification?.title ?: "SnackTrack"
         val body = remoteMessage.notification?.body ?: ""
 
-        // Wyświetlenie lokalnej notyfikacji
         showNotification(title, body)
 
-        // Dodanie do dynamicznej listy (np. przez singleton)
         NotificationsRepository.addNotification(
             NotificationItem(
                 id = System.currentTimeMillis().toString(),
@@ -41,12 +39,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d("FCM", "New token: $token")
         // Wyślij token do backendu
         sendTokenToServer(token)
     }
 
     private fun sendTokenToServer(token: String) {
+        Log.d("FCM", "sending token to server: $token")
         // Używamy CoroutineScope, aby wysyłać request w tle
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -56,7 +54,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 val body = json.toString().toRequestBody(mediaType)
 
                 val request = Request.Builder()
-                    .url("https://YOUR_BACKEND_URL/device-token") // <-- zmień na swój endpoint
+                    .url("${R.string.server_base_url}/users/device-token") // <-- zmień na swój endpoint
                     .post(body)
                     .addHeader("Authorization", "Bearer YOUR_JWT_TOKEN") // <-- token JWT użytkownika
                     .build()

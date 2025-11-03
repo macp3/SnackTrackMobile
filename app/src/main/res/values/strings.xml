@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SnackTrackMobile</string>
+    <string name="server_base_url">http://localhost:8080</string>
 </resources>
