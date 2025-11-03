@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.R
+import study.snacktrackmobile.repository.NotificationsRepository
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,7 +128,6 @@ fun SnackTrackTopBarWithIcons() {
                     )
                 }
 
-                // Prawy drawer wysuwany z prawej
                 RightDrawer(drawerState = rightDrawerOpen, onClose = { rightDrawerOpen = false }) {
                     Text(
                         text = "Notifications",
@@ -138,17 +139,38 @@ fun SnackTrackTopBarWithIcons() {
                     HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Przykładowe powiadomienia
-                    repeat(10) { index ->
+                    val notifications = NotificationsRepository.notifications
+
+                    if (notifications.isEmpty()) {
                         Text(
-                            text = "Powiadomienie #${index + 1}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Black,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
+                            text = "No notifications",
+                            fontSize = 16.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
+                    } else {
+                        Column {
+                            notifications.forEach { notification ->
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = notification.title,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = notification.body,
+                                        fontSize = 14.sp,
+                                        color = Color.DarkGray
+                                    )
+                                    HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
+                                }
+                            }
+                        }
                     }
                 }
             }

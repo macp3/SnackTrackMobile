@@ -50,6 +50,14 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
+
+    implementation("io.ktor:ktor-client-core:2.3.4")
+    implementation("io.ktor:ktor-client-okhttp:2.3.4")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.4")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
 
     // Firebase BOM – zarządza wersjami wszystkich modułów Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
@@ -63,6 +71,7 @@ dependencies {
     // Testy
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.crashlytics.buildtools)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
