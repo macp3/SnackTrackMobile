@@ -47,8 +47,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SnackTrackMobileTheme {
-                //SnackTrackApp()
-                SnackTrackTopBarWithIcons()
+                SnackTrackApp()
             }
         }
     }
@@ -61,13 +60,6 @@ class MainActivity : ComponentActivity() {
                 MyFirebaseMessagingService().sendTokenToServer(token)
             } else {
                 Log.e("FCM", "Token fetch failed", task.exception)
-            }
-        }
-
-        setContent {
-            SnackTrackMobileTheme {
-                SnackTrackApp()
-                //InitialSurveyView {  }
             }
         }
     }
