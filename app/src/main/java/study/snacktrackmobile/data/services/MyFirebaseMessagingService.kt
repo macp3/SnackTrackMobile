@@ -27,7 +27,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         showNotification(title, body)
 
-        Log.d("FCM", "messageArrived");
+        Log.d("FCM", "messageArrived")
 
         NotificationsRepository.addNotification(
             Notification(
