@@ -22,10 +22,12 @@ import org.json.JSONObject
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        val title = remoteMessage.notification?.title ?: "SnackTrack"
-        val body = remoteMessage.notification?.body ?: ""
+        val title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "SnackTrack"
+        val body = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: ""
 
         showNotification(title, body)
+
+        Log.d("FCM", "messageArrived");
 
         NotificationsRepository.addNotification(
             Notification(
@@ -36,15 +38,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         )
     }
 
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // Wyślij token do backendu
         sendTokenToServer(token)
     }
 
-    private fun sendTokenToServer(token: String) {
+    fun sendTokenToServer(token: String) {
         Log.d("FCM", "sending token to server: $token")
-        // Używamy CoroutineScope, aby wysyłać request w tle
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val json = JSONObject()
@@ -53,23 +55,29 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 val body = json.toString().toRequestBody(mediaType)
 
                 val request = Request.Builder()
-                    .url("${R.string.server_base_url}/users/device-token") // <-- zmień na swój endpoint
+                    .url("http://10.0.2.2:8080/users/device-token")
                     .post(body)
-                    .addHeader("Authorization", "Bearer YOUR_JWT_TOKEN") // <-- token JWT użytkownika
+                    .addHeader(
+                        "Authorization",
+                        "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWNpZWoucGlldHJhczEyM0BnbWFpbC5jb20iLCJ0eXBlIjoiVVNFUiIsImlhdCI6MTc2MjI2MjQyNSwiZXhwIjoxNzYyNTIxNjI1fQ.JrHYl8VnUUKU9DsWjIJPbszC9Pc5tV4doOinXtlJ07M"
+                    )
                     .build()
 
                 val client = OkHttpClient()
                 val response = client.newCall(request).execute()
+
                 if (response.isSuccessful) {
-                    println("Device token sent successfully")
+                    Log.d("FCM", "Device token sent successfully")
                 } else {
-                    println("Failed to send device token: ${response.message}")
+                    Log.e("FCM", "Failed to send device token: ${response.message}")
                 }
+
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("FCM", "Error sending token", e)
             }
         }
     }
+
 
     private fun showNotification(title: String, body: String) {
         val channelId = "snacktrack_channel"
@@ -81,6 +89,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(body)
             .build()
