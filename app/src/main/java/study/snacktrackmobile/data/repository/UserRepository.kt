@@ -1,5 +1,6 @@
 package study.snacktrackmobile.data.repository
 
+import org.json.JSONObject
 import retrofit2.Response
 import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.model.LoginRequest
@@ -9,17 +10,20 @@ import study.snacktrackmobile.data.model.RegisterRequest
 class UserRepository {
 
     suspend fun login(email: String, password: String): LoginResponse {
-        // Retrofit automatically deserializes response
-        val response: Response<LoginResponse> =
-            Request.api.login(LoginRequest(email, password))
+        val response: Response<LoginResponse> = Request.api.login(LoginRequest(email, password))
 
-        if (response.isSuccessful) {
-            return response.body() ?: throw Exception("Empty response")
+        return if (response.isSuccessful) {
+            response.body() ?: throw Exception("Empty response")
+        } else {
+            val errorBody = response.errorBody()?.string()
+            // parsujemy JSON żeby wyciągnąć dokładny message
+            val message = try {
+                JSONObject(errorBody ?: "").optString("message", "Unknown error")
+            } catch (e: Exception) {
+                "Unknown error"
+            }
+            throw Exception(message)
         }
-
-        // Pobranie komunikatu z backendu (Account not activated, Invalid credentials, etc.)
-        val message = response.errorBody()?.string() ?: "Unknown error"
-        throw Exception(message)
     }
 
     suspend fun register(email: String, password: String, name: String, surname: String): Result<String> {

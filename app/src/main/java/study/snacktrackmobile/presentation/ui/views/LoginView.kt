@@ -15,12 +15,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.collectLatest
 import study.snacktrackmobile.presentation.ui.components.DisplayButton
 import study.snacktrackmobile.presentation.ui.components.PasswordInput
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
 import study.snacktrackmobile.presentation.ui.components.montserratFont
 import study.snacktrackmobile.presentation.ui.state.UiState
 import study.snacktrackmobile.viewmodel.UserViewModel
+import study.snacktrackmobile.data.model.LoginResponse
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun LoginView(
@@ -31,8 +35,10 @@ fun LoginView(
     var password by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
+    var validationMessage by remember { mutableStateOf<String?>(null) }
 
     val loginState by viewModel.loginState.collectAsState()
+    val context = LocalContext.current
 
     fun validateLogin(): Boolean {
         val emailTrimmed = email.trim()
@@ -44,16 +50,35 @@ fun LoginView(
         emailError = !isEmailValid
         passwordError = !isPasswordValid
 
+        validationMessage = when {
+            !isEmailValid -> "Invalid email format"
+            !isPasswordValid -> "Password must have at least 6 characters"
+            else -> null
+        }
+
         return isEmailValid && isPasswordValid
     }
 
-    when (loginState) {
-        is UiState.Success -> {
-            navController.navigate("main") {
-                popUpTo("login") { inclusive = true }
+    // Obsługa routingu po zalogowaniu na podstawie showSurvey
+    LaunchedEffect(loginState) {
+        if (loginState is UiState.Success) {
+            val response = (loginState as UiState.Success<LoginResponse>).data
+            if (response.showSurvey) {
+                navController.navigate("InitialSurveyView") {
+                    popUpTo("login") { inclusive = true }
+                }
+            } else {
+                navController.navigate("main") {
+                    popUpTo("login") { inclusive = true }
+                }
             }
         }
-        else -> Unit
+    }
+
+    // Pobranie komunikatu z backendu
+    val backendMessage = when (loginState) {
+        is UiState.Error -> (loginState as UiState.Error).message
+        else -> null
     }
 
     LoginFormContent(
@@ -63,15 +88,14 @@ fun LoginView(
         onPasswordChange = { password = it },
         emailError = emailError,
         passwordError = passwordError,
-        showErrorMessage = emailError || passwordError,
+        errorMessage = backendMessage ?: validationMessage,
         onLoginClick = {
             if (validateLogin()) {
-                viewModel.login(email.trim(), password.trim())
+                viewModel.login(email.trim(), password.trim(), context)
             }
         }
     )
 }
-
 
 @Composable
 fun LoginFormContent(
@@ -81,7 +105,7 @@ fun LoginFormContent(
     onPasswordChange: (String) -> Unit,
     emailError: Boolean,
     passwordError: Boolean,
-    showErrorMessage: Boolean,
+    errorMessage: String?,
     onLoginClick: () -> Unit
 ) {
     Column(
@@ -99,7 +123,6 @@ fun LoginFormContent(
             Text("Welcome back!", fontFamily = montserratFont, fontSize = 36.sp)
             Spacer(modifier = Modifier.height(35.dp))
 
-
             // EMAIL INPUT
             OutlinedTextField(
                 value = email,
@@ -108,7 +131,7 @@ fun LoginFormContent(
                     Text(
                         "Email",
                         fontFamily = montserratFont,
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         color = if (emailError) Color.Red else Color.Black
                     )
                 },
@@ -116,7 +139,7 @@ fun LoginFormContent(
                     Text(
                         "name@example.com",
                         fontFamily = montserratFont,
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         color = Color.Gray
                     )
                 },
@@ -125,11 +148,7 @@ fun LoginFormContent(
                     .width(300.dp)
                     .background(Color.Transparent, shape = RoundedCornerShape(12.dp)),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                textStyle = TextStyle(
-                    fontSize = 18.sp,          // <-- tu ustawiona taka sama wielkość jak w PasswordInput
-                    fontFamily = montserratFont,
-                    color = Color.Black
-                ),
+                textStyle = TextStyle(fontSize = 18.sp, fontFamily = montserratFont, color = Color.Black),
                 shape = RoundedCornerShape(12.dp),
                 isError = emailError,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -141,10 +160,9 @@ fun LoginFormContent(
                 )
             )
 
-
             Spacer(modifier = Modifier.height(15.dp))
 
-
+            // PASSWORD INPUT
             PasswordInput(
                 value = password,
                 label = "Password",
@@ -154,9 +172,10 @@ fun LoginFormContent(
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            if (showErrorMessage) {
+            // KOMUNIKAT BŁĘDU (walidacja frontend / backend)
+            if (!errorMessage.isNullOrEmpty()) {
                 Text(
-                    text = "Enter valid data",
+                    text = errorMessage,
                     color = Color.Red,
                     fontSize = 14.sp,
                     fontFamily = montserratFont
