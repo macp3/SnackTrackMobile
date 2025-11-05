@@ -14,10 +14,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import study.snacktrackmobile.R
 import study.snacktrackmobile.data.model.Notification
+import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
-import org.json.JSONObject
+import study.snacktrackmobile.data.storage.TokenStorage
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
@@ -38,7 +40,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         )
     }
 
-
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         sendTokenToServer(token)
@@ -49,18 +50,24 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val json = JSONObject()
-                json.put("token", token)
+                val jwtToken = TokenStorage.getToken(applicationContext)
+
+                if (jwtToken.isNullOrBlank()) {
+                    Log.w("FCM", "JWT token not found, skipping device token send")
+                    return@launch
+                }
+
+                val json = JSONObject().apply {
+                    put("token", token)
+                }
+
                 val mediaType = "application/json; charset=utf-8".toMediaType()
                 val body = json.toString().toRequestBody(mediaType)
 
                 val request = Request.Builder()
-                    .url("http://10.0.2.2:8080/users/device-token")
+                    .url(ApiConfig.DEVICE_TOKEN_URL)
                     .post(body)
-                    .addHeader(
-                        "Authorization",
-                        "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWNpZWoucGlldHJhczEyM0BnbWFpbC5jb20iLCJ0eXBlIjoiVVNFUiIsImlhdCI6MTc2MjI2MjQyNSwiZXhwIjoxNzYyNTIxNjI1fQ.JrHYl8VnUUKU9DsWjIJPbszC9Pc5tV4doOinXtlJ07M"
-                    )
+                    .addHeader("Authorization", "Bearer $jwtToken")
                     .build()
 
                 val client = OkHttpClient()
@@ -77,7 +84,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
         }
     }
-
 
     private fun showNotification(title: String, body: String) {
         val channelId = "snacktrack_channel"

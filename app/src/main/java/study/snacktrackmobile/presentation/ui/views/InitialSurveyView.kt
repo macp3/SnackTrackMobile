@@ -27,6 +27,7 @@ import study.snacktrackmobile.data.model.enums.Sex
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
 import study.snacktrackmobile.R
+import study.snacktrackmobile.data.network.ApiConfig
 
 @Composable
 fun InitialSurveyView(
@@ -221,7 +222,7 @@ suspend fun sendBodyParameters(
     }
 
     return try {
-        client.post("${R.string.server_base_url}/addParameters") {
+        client.post("${ApiConfig.BASE_URL}/addParameters") {
             headers {
                 append("Authorization", "Bearer $token")
             }
