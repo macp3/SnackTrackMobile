@@ -60,24 +60,19 @@ fun RegisterView(
 
         emailError = !emailValid
         passwordError = !passwordValid
-
-        // logika zgodnie z Twoim wymaganiem
         confirmPasswordError =
-            confirmPassword.trim().isEmpty() ||
-                    !passwordMatch ||
-                    password.trim().length < 6
-
+            confirmPassword.trim().isEmpty() || !passwordMatch || password.trim().length < 6
         nameError = !nameValid
         surnameError = !surnameValid
 
         validationMessage =
             when {
-                !emailValid -> "Enter valid email address"
+                !nameValid -> "Name cannot be empty"
+                !surnameValid -> "Surname cannot be empty"
+                !emailValid -> "Invalid email format"
                 !passwordValid -> "Password must have at least 6 characters"
                 confirmPassword.trim().isEmpty() -> "Confirm password is required"
                 !passwordMatch -> "Passwords do not match"
-                !nameValid -> "Name cannot be empty"
-                !surnameValid -> "Surname cannot be empty"
                 else -> null
             }
 
@@ -122,6 +117,7 @@ fun RegisterView(
         }
     )
 }
+
 
 @Composable
 fun RegisterFormContent(
