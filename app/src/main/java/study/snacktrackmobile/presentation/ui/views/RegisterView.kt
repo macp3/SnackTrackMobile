@@ -2,92 +2,126 @@ package study.snacktrackmobile.presentation.ui.views
 
 import android.util.Patterns
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.draw.clip
 import study.snacktrackmobile.presentation.ui.components.DisplayButton
 import study.snacktrackmobile.presentation.ui.components.PasswordInput
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
+import study.snacktrackmobile.presentation.ui.components.TextInput
 import study.snacktrackmobile.presentation.ui.components.montserratFont
+import study.snacktrackmobile.presentation.ui.state.UiState
+import study.snacktrackmobile.viewmodel.UserViewModel
 
 @Composable
-fun RegisterView(navController: NavController) {
+fun RegisterView(
+    navController: NavController,
+    viewModel: UserViewModel
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var repeatPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var surname by remember { mutableStateOf("") }
 
     var emailError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
-    var repeatPasswordError by remember { mutableStateOf(false) }
-    var showErrorMessage by remember { mutableStateOf(false) }
+    var confirmPasswordError by remember { mutableStateOf(false) }
+    var nameError by remember { mutableStateOf(false) }
+    var surnameError by remember { mutableStateOf(false) }
+
+    var validationMessage by remember { mutableStateOf<String?>(null) }
+
+    val registerState by viewModel.registerState.collectAsState()
+    val backendMessage = (registerState as? UiState.Error)?.message
 
     fun validateRegister(): Boolean {
-        val isEmailValid = Patterns.EMAIL_ADDRESS.matcher(email).matches()
-        val isPasswordValid = password.length >= 6
-        val doPasswordsMatch = password == repeatPassword
+        validationMessage = null
 
-        emailError = !isEmailValid
-        passwordError = !isPasswordValid
-        repeatPasswordError = !doPasswordsMatch
+        val emailValid = Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
+        val passwordValid = password.trim().length >= 6
+        val passwordMatch = confirmPassword.trim() == password.trim()
+        val confirmValid = confirmPassword.trim().isNotEmpty() && passwordMatch && passwordValid
+        val nameValid = name.trim().isNotEmpty()
+        val surnameValid = surname.trim().isNotEmpty()
 
-        return isEmailValid && isPasswordValid && doPasswordsMatch
+        emailError = !emailValid
+        passwordError = !passwordValid
+
+        // logika zgodnie z Twoim wymaganiem
+        confirmPasswordError =
+            confirmPassword.trim().isEmpty() ||
+                    !passwordMatch ||
+                    password.trim().length < 6
+
+        nameError = !nameValid
+        surnameError = !surnameValid
+
+        validationMessage =
+            when {
+                !emailValid -> "Enter valid email address"
+                !passwordValid -> "Password must have at least 6 characters"
+                confirmPassword.trim().isEmpty() -> "Confirm password is required"
+                !passwordMatch -> "Passwords do not match"
+                !nameValid -> "Name cannot be empty"
+                !surnameValid -> "Surname cannot be empty"
+                else -> null
+            }
+
+        return validationMessage == null
+    }
+
+    when (registerState) {
+        is UiState.Success -> {
+            navController.navigate("LoginView") {
+                popUpTo("RegisterView") { inclusive = true }
+            }
+        }
+        else -> Unit
     }
 
     RegisterFormContent(
         email = email,
-        onEmailChange = {
-            email = it
-            emailError = false
-            showErrorMessage = false
-        },
+        onEmailChange = { email = it },
         password = password,
-        onPasswordChange = {
-            password = it
-            passwordError = false
-            showErrorMessage = false
-        },
-        repeatPassword = repeatPassword,
-        onRepeatPasswordChange = {
-            repeatPassword = it
-            repeatPasswordError = false
-            showErrorMessage = false
-        },
+        onPasswordChange = { password = it },
+        confirmPassword = confirmPassword,
+        onConfirmPasswordChange = { confirmPassword = it },
+        name = name,
+        onNameChange = { name = it },
+        surname = surname,
+        onSurnameChange = { surname = it },
         emailError = emailError,
         passwordError = passwordError,
-        repeatPasswordError = repeatPasswordError,
-        showErrorMessage = showErrorMessage,
+        confirmPasswordError = confirmPasswordError,
+        nameError = nameError,
+        surnameError = surnameError,
+        errorMessage = backendMessage ?: validationMessage,
         onRegisterClick = {
             if (validateRegister()) {
-                navController.navigate("MainView")
-            } else {
-                showErrorMessage = true
+                viewModel.register(
+                    email.trim(),
+                    password.trim(),
+                    name.trim(),
+                    surname.trim()
+                )
             }
         }
     )
 }
-
 
 @Composable
 fun RegisterFormContent(
@@ -95,13 +129,19 @@ fun RegisterFormContent(
     onEmailChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
-    repeatPassword: String,
-    onRepeatPasswordChange: (String) -> Unit,
+    confirmPassword: String,
+    onConfirmPasswordChange: (String) -> Unit,
+    name: String,
+    onNameChange: (String) -> Unit,
+    surname: String,
+    onSurnameChange: (String) -> Unit,
     emailError: Boolean,
     passwordError: Boolean,
-    repeatPasswordError: Boolean,
-    showErrorMessage: Boolean,
-    onRegisterClick: () -> Unit
+    confirmPasswordError: Boolean,
+    nameError: Boolean,
+    surnameError: Boolean,
+    errorMessage: String?,
+    onRegisterClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -115,26 +155,33 @@ fun RegisterFormContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
-            Text("Start your fit journey now!", fontFamily = montserratFont, fontSize = 36.sp, textAlign = TextAlign.Center, lineHeight = 40.sp)
-            Spacer(modifier = Modifier.height(35.dp))
+            Text("Create account", fontFamily = montserratFont, fontSize = 36.sp)
+            Spacer(modifier = Modifier.height(25.dp))
 
-            OutlinedTextField(
+            TextInput(
+                value = name,
+                label = "Name",
+                isError = nameError,
+                onValueChange = onNameChange
+            )
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            TextInput(
+                value = surname,
+                label = "Surname",
+                isError = surnameError,
+                onValueChange = onSurnameChange
+            )
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            TextInput(
                 value = email,
-                onValueChange = onEmailChange,
-                label = { Text("Email", fontFamily = montserratFont, fontSize = 16.sp, color = Color.Black) },
-                placeholder = { Text("name@example.com", fontFamily = montserratFont, fontSize = 16.sp) },
-                singleLine = true,
-                modifier = Modifier
-                    .width(300.dp)
-                    .background(Color.White, shape = RoundedCornerShape(12.dp)),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                textStyle = TextStyle(fontSize = 18.sp, fontFamily = montserratFont, color = Color.Black),
-                shape = RoundedCornerShape(12.dp),
+                label = "Email",
                 isError = emailError,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (emailError) Color.Red else Color.Black,
-                    unfocusedBorderColor = if (emailError) Color.Red else Color.Gray,
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                onValueChange = onEmailChange
             )
 
             Spacer(modifier = Modifier.height(15.dp))
@@ -142,27 +189,27 @@ fun RegisterFormContent(
             PasswordInput(
                 value = password,
                 label = "Password",
-                onValueChange = onPasswordChange,
-                isError = passwordError
+                isError = passwordError,
+                onValueChange = onPasswordChange
             )
 
             Spacer(modifier = Modifier.height(15.dp))
 
             PasswordInput(
-                value = repeatPassword,
-                label = "Repeat password",
-                onValueChange = onRepeatPasswordChange,
-                isError = repeatPasswordError
+                value = confirmPassword,
+                label = "Confirm Password",
+                isError = confirmPasswordError,
+                onValueChange = onConfirmPasswordChange
             )
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            if (showErrorMessage) {
+            if (errorMessage != null) {
                 Text(
-                    text = "Enter valid data",
+                    text = errorMessage,
                     color = Color.Red,
-                    fontSize = 14.sp,
-                    fontFamily = montserratFont
+                    fontFamily = montserratFont,
+                    fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
@@ -171,5 +218,3 @@ fun RegisterFormContent(
         }
     }
 }
-
-

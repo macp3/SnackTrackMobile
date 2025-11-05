@@ -1,24 +1,12 @@
 package study.snacktrackmobile.presentation.ui.views
 
 import android.util.Patterns
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,22 +47,13 @@ fun LoginView(
         return isEmailValid && isPasswordValid
     }
 
-    // Obsługa stanu loginu
-    when(loginState) {
-        is UiState.Loading -> {
-            // pokaż np. ProgressBar
-        }
+    when (loginState) {
         is UiState.Success -> {
-            navController.navigate("MainView") {
-                popUpTo("LoginView") { inclusive = true }
+            navController.navigate("main") {
+                popUpTo("login") { inclusive = true }
             }
         }
-        is UiState.Error -> {
-            // pokaż error
-        }
-        is UiState.Idle -> {
-            // nic nie rób albo pokaż pusty ekran
-        }
+        else -> Unit
     }
 
     LoginFormContent(
@@ -84,13 +63,10 @@ fun LoginView(
         onPasswordChange = { password = it },
         emailError = emailError,
         passwordError = passwordError,
-        showErrorMessage = loginState is UiState.Error && emailError.not() && passwordError.not(),
+        showErrorMessage = emailError || passwordError,
         onLoginClick = {
             if (validateLogin()) {
                 viewModel.login(email.trim(), password.trim())
-
-            } else {
-                // tutaj błędy walidacji
             }
         }
     )
@@ -123,26 +99,51 @@ fun LoginFormContent(
             Text("Welcome back!", fontFamily = montserratFont, fontSize = 36.sp)
             Spacer(modifier = Modifier.height(35.dp))
 
+
+            // EMAIL INPUT
             OutlinedTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = { Text("Email", fontFamily = montserratFont, fontSize = 16.sp, color = Color.Black) },
-                placeholder = { Text("name@example.com", fontFamily = montserratFont, fontSize = 16.sp) },
+                label = {
+                    Text(
+                        "Email",
+                        fontFamily = montserratFont,
+                        fontSize = 16.sp,
+                        color = if (emailError) Color.Red else Color.Black
+                    )
+                },
+                placeholder = {
+                    Text(
+                        "name@example.com",
+                        fontFamily = montserratFont,
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier
                     .width(300.dp)
-                    .background(Color(0xffffffff), shape = RoundedCornerShape(12.dp)),
+                    .background(Color.Transparent, shape = RoundedCornerShape(12.dp)),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                textStyle = TextStyle(fontSize = 18.sp, fontFamily = montserratFont, color = Color.Black),
+                textStyle = TextStyle(
+                    fontSize = 18.sp,          // <-- tu ustawiona taka sama wielkość jak w PasswordInput
+                    fontFamily = montserratFont,
+                    color = Color.Black
+                ),
                 shape = RoundedCornerShape(12.dp),
                 isError = emailError,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = if (emailError) Color.Red else Color.Black,
                     unfocusedBorderColor = if (emailError) Color.Red else Color.Gray,
+                    errorBorderColor = Color.Red,
+                    focusedLabelColor = if (emailError) Color.Red else Color.Black,
+                    unfocusedLabelColor = if (emailError) Color.Red else Color.Black
                 )
             )
 
+
             Spacer(modifier = Modifier.height(15.dp))
+
 
             PasswordInput(
                 value = password,
