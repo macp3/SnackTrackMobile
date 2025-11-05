@@ -16,7 +16,7 @@ fun SnackTrackApp() {
             StartView(navController)
         }
         composable("RegisterView") {
-            RegisterView(navController)
+            RegisterView(navController, userViewModel)
         }
         composable("LoginView") {
             LoginView(navController, userViewModel)
