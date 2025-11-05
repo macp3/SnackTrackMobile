@@ -6,18 +6,11 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.google.firebase.messaging.FirebaseMessaging
-import study.snacktrackmobile.services.MyFirebaseMessagingService
-import study.snacktrackmobile.ui.components.BottomNavigationBar
-import study.snacktrackmobile.ui.components.SnackTrackTopBarCalendar
-import study.snacktrackmobile.ui.components.SnackTrackTopBarWithIcons
-import study.snacktrackmobile.ui.theme.SnackTrackMobileTheme
-import study.snacktrackmobile.ui.views.InitialSurveyView
-import study.snacktrackmobile.ui.views.SnackTrackApp
+import study.snacktrackmobile.data.services.MyFirebaseMessagingService
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import android.Manifest
 import study.snacktrackmobile.presentation.ui.theme.SnackTrackMobileTheme
-import study.snacktrackmobile.presentation.ui.views.InitialSurveyView
 import study.snacktrackmobile.presentation.ui.views.SnackTrackApp
 
 
@@ -52,8 +45,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SnackTrackMobileTheme {
-                //SnackTrackApp()
-                SnackTrackTopBarWithIcons()
+                SnackTrackApp()
             }
         }
     }
@@ -66,13 +58,6 @@ class MainActivity : ComponentActivity() {
                 MyFirebaseMessagingService().sendTokenToServer(token)
             } else {
                 Log.e("FCM", "Token fetch failed", task.exception)
-            }
-        }
-
-        setContent {
-            SnackTrackMobileTheme {
-                SnackTrackApp()
-                //InitialSurveyView {  }
             }
         }
     }
