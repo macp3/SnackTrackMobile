@@ -24,11 +24,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
-import study.snacktrackmobile.data.model.dto.BodyParametersRequest
-import study.snacktrackmobile.data.model.enums.Sex
-import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
-import study.snacktrackmobile.R
 import study.snacktrackmobile.data.network.ApiConfig
 
 @Composable
