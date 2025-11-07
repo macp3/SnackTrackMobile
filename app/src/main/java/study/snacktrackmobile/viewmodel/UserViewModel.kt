@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -29,20 +30,22 @@ class UserViewModel : ViewModel() {
 
                 response.token?.let { token ->
                     TokenStorage.saveToken(context, token)
+                }
 
-                // ✅ Login udany → konto aktywne
                 _loginState.value = UiState.Success(response)
+
+            } catch (e: retrofit2.HttpException) {
+                val backendError = try {
+                    val json = e.response()?.errorBody()?.string()
+                    val parsed = Gson().fromJson(json, LoginResponse::class.java)
+                    parsed.message ?: "Unknown error"
+                } catch (_: Exception) {
+                    "Unknown error"
                 }
-            } /*catch (e: retrofit2.HttpException) {
-                // ✅ Backend blokuje logowanie dla nieaktywnych kont → używamy kodu
-                if (e.code() == 401 || e.code() == 403) {
-                    _loginState.value = UiState.Error("Check your email to activate your account")
-                } else {
-                    _loginState.value = UiState.Error("Invalid email or password")
-                }
-*/
-            catch (e: Exception) {
-                _loginState.value = UiState.Error(e.message ?: "Unexpected error occurred")
+
+                _loginState.value = UiState.Error(backendError)
+            } catch (e: Exception) {
+                _loginState.value = UiState.Error(e.message ?: "Network error")
             }
         }
     }

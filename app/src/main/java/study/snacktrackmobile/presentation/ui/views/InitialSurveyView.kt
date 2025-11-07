@@ -1,5 +1,6 @@
 package study.snacktrackmobile.presentation.ui.views
 
+import DropdownField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -9,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -32,6 +34,7 @@ fun InitialSurveyView(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // POLA
     var sex by remember { mutableStateOf(Sex.male.name) }
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
@@ -41,7 +44,18 @@ fun InitialSurveyView(navController: NavController) {
     var weeklyWeightChangeTempo by remember { mutableStateOf("") }
     var goalWeight by remember { mutableStateOf("") }
 
-    var validationMessage by remember { mutableStateOf<String?>(null) }
+    // ERROR FLAGS (do obramowania pól na czerwono)
+    var sexError by remember { mutableStateOf(false) }
+    var heightError by remember { mutableStateOf(false) }
+    var weightError by remember { mutableStateOf(false) }
+    var ageError by remember { mutableStateOf(false) }
+    var activityError by remember { mutableStateOf(false) }
+    var trainingError by remember { mutableStateOf(false) }
+    var tempoError by remember { mutableStateOf(false) }
+    var goalError by remember { mutableStateOf(false) }
+
+    // WIADOMOŚCI O BŁĘDACH
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     var backendMessage by remember { mutableStateOf<String?>(null) }
 
     val sexOptions = listOf(Sex.male.name, Sex.female.name)
@@ -59,23 +73,52 @@ fun InitialSurveyView(navController: NavController) {
             Text(
                 "Please fill initial survey for us to calculate your progress",
                 style = MaterialTheme.typography.headlineMedium,
-                fontSize = 20.sp
+                fontFamily = montserratFont,
+                fontSize = 25.sp,
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            DropdownField("Sex", sex, sexOptions) { sex = it }
-            TextInput(height, "Height (cm)", KeyboardOptions(keyboardType = KeyboardType.Number), isError = false) { height = it }
-            TextInput(weight, "Weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), isError = false) { weight = it }
-            TextInput(age, "Age", KeyboardOptions(keyboardType = KeyboardType.Number), isError = false) { age = it }
-            DropdownField("Daily activity level", activityLevel, activityOptions) { activityLevel = it }
-            DropdownField("Training intensity", trainingIntensity, activityOptions) { trainingIntensity = it }
-            TextInput(weeklyWeightChangeTempo, "Weekly weight change (0-1 kg/week)", KeyboardOptions(keyboardType = KeyboardType.Number), isError = false) { weeklyWeightChangeTempo = it }
-            TextInput(goalWeight, "Goal weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), isError = false) { goalWeight = it }
+
+            DropdownField("Sex", sex, sexOptions, sexError) { sex = it; sexError = false }
+
+            TextInput(height, "Height (cm)", KeyboardOptions(keyboardType = KeyboardType.Number), heightError) {
+                height = it; heightError = false
+            }
+
+            TextInput(weight, "Weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), weightError) {
+                weight = it; weightError = false
+            }
+
+            TextInput(age, "Age", KeyboardOptions(keyboardType = KeyboardType.Number), ageError) {
+                age = it; ageError = false
+            }
+
+            DropdownField("Daily activity level", activityLevel, activityOptions, activityError) {
+                activityLevel = it; activityError = false
+            }
+
+            DropdownField("Training intensity", trainingIntensity, activityOptions, trainingError) {
+                trainingIntensity = it; trainingError = false
+            }
+
+            TextInput(
+                weeklyWeightChangeTempo,
+                "Weekly weight change (0-1 kg/week)",
+                KeyboardOptions(keyboardType = KeyboardType.Number),
+                tempoError
+            ) {
+                weeklyWeightChangeTempo = it; tempoError = false
+            }
+
+            TextInput(goalWeight, "Goal weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), goalError) {
+                goalWeight = it; goalError = false
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Komunikaty walidacyjne
-            validationMessage?.let {
+
+            (backendMessage ?: errorMessage)?.let {
                 Text(
                     text = it,
                     color = Color.Red,
@@ -84,38 +127,42 @@ fun InitialSurveyView(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            backendMessage?.let {
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    fontFamily = montserratFont,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-            }
+
 
             DisplayButton("Next", onClick = {
-                validationMessage = null
                 backendMessage = null
+                errorMessage = null
 
-                val missingFields = mutableListOf<String>()
-                if (height.isBlank()) missingFields.add("Height")
-                if (weight.isBlank()) missingFields.add("Weight")
-                if (age.isBlank()) missingFields.add("Age")
-                if (weeklyWeightChangeTempo.toFloatOrNull()?.let { it < 0f || it > 1f } != false) missingFields.add("Weekly weight change")
-                if (goalWeight.isBlank()) missingFields.add("Goal weight")
-                if (sex.isBlank()) missingFields.add("Sex")
-                if (activityLevel.isBlank()) missingFields.add("Daily activity")
-                if (trainingIntensity.isBlank()) missingFields.add("Training intensity")
+                // reset error flags
+                sexError = false
+                heightError = false
+                weightError = false
+                ageError = false
+                activityError = false
+                trainingError = false
+                tempoError = false
+                goalError = false
 
-                val heightValid = height.toFloatOrNull() != null
-                val weightValid = weight.toFloatOrNull() != null
-                val ageValid = age.toIntOrNull() != null
-                val tempoValid = weeklyWeightChangeTempo.toFloatOrNull() != null
-                val goalValid = goalWeight.toFloatOrNull() != null
+                // 🔥 sprawdzamy WSZYSTKIE pola i oznaczamy błędne/nieuzupełnione
+                fun fieldError(condition: Boolean, setError: () -> Unit) {
+                    if (condition) setError()
+                }
 
-                if (missingFields.isNotEmpty() || !heightValid || !weightValid || !ageValid || !tempoValid || !goalValid) {
-                    validationMessage = "Please fill all fields correctly: ${missingFields.joinToString(", ")}"
+                fieldError(sex.isBlank()) { sexError = true }
+                fieldError(height.isBlank() || height.toFloatOrNull() == null || height.toFloat() <= 0f) { heightError = true }
+                fieldError(weight.isBlank() || weight.toFloatOrNull() == null || weight.toFloat() <= 0f) { weightError = true }
+                fieldError(age.isBlank() || age.toIntOrNull() == null || age.toInt() <= 0) { ageError = true }
+                fieldError(weeklyWeightChangeTempo.isBlank() || weeklyWeightChangeTempo.toFloatOrNull() == null ||
+                        weeklyWeightChangeTempo.toFloat() !in 0f..1f) { tempoError = true }
+                fieldError(goalWeight.isBlank() || goalWeight.toFloatOrNull() == null || goalWeight.toFloat() <= 0f) { goalError = true }
+
+                // daily / training są dropdownami — zaznaczamy error tylko jeśli są puste
+                fieldError(activityLevel.isBlank()) { activityError = true }
+                fieldError(trainingIntensity.isBlank()) { trainingError = true }
+
+
+                if (sexError || heightError || weightError || ageError || tempoError || goalError || activityError || trainingError) {
+                    errorMessage = "Please fill all fields correctly"
                     return@DisplayButton
                 }
 
@@ -149,6 +196,8 @@ fun InitialSurveyView(navController: NavController) {
         }
     }
 }
+
+
 
 // Funkcje mapLevelToFloatDaily / Training
 fun mapLevelToFloatDaily(level: String): Float = when (level) {

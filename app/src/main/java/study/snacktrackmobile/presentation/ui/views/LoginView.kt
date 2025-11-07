@@ -33,69 +33,86 @@ fun LoginView(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
     var emailError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
+
     var validationMessage by remember { mutableStateOf<String?>(null) }
 
     val loginState by viewModel.loginState.collectAsState()
     val context = LocalContext.current
 
-    fun validateLogin(): Boolean {
-        val emailTrimmed = email.trim()
-        val passwordTrimmed = password.trim()
-
-        val isEmailValid = Patterns.EMAIL_ADDRESS.matcher(emailTrimmed).matches()
-        val isPasswordValid = passwordTrimmed.length >= 6
-
-        emailError = !isEmailValid
-        passwordError = !isPasswordValid
+    /** ✅ FRONTEND VALIDATION */
+    fun validateLoginFrontend(): Boolean {
+        emailError = email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        passwordError = password.isBlank() || password.length < 6
 
         validationMessage = when {
-            !isEmailValid -> "Invalid email format"
-            !isPasswordValid -> "Password must have at least 6 characters"
+            emailError && email.isBlank() -> "Email cannot be empty"
+            emailError -> "Invalid email format"
+            passwordError && password.isBlank() -> "Password cannot be empty"
+            passwordError -> "Password must have at least 6 characters"
             else -> null
         }
 
-        return isEmailValid && isPasswordValid
+        return validationMessage == null
     }
 
-    // Obsługa routingu po zalogowaniu na podstawie showSurvey
+    /** ✅ BACKEND MESSAGE (response.message) */
+    val backendMessage = when (loginState) {
+        is UiState.Error -> (loginState as UiState.Error).message
+        is UiState.Success -> {
+            val response = (loginState as UiState.Success<LoginResponse>).data
+            response.message   // <-- tu backend może przysłać np. "Invalid credentials"
+        }
+        else -> null
+    }
+
+    /** ✅ Priorytet: backend > frontend */
+    val displayedErrorMessage = backendMessage ?: validationMessage
+
+    /** ✅ Nawigacja po poprawnym loginie */
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
             val response = (loginState as UiState.Success<LoginResponse>).data
+
             if (response.showSurvey) {
                 navController.navigate("InitialSurveyView") {
                     popUpTo("login") { inclusive = true }
                 }
             } else {
-                navController.navigate("main") {
+                navController.navigate("MainView") {
                     popUpTo("login") { inclusive = true }
                 }
             }
         }
     }
 
-    // Pobranie komunikatu z backendu
-    val backendMessage = when (loginState) {
-        is UiState.Error -> (loginState as UiState.Error).message
-        else -> null
-    }
-
     LoginFormContent(
         email = email,
-        onEmailChange = { email = it },
+        onEmailChange = {
+            email = it
+            emailError = false
+            validationMessage = null
+        },
         password = password,
-        onPasswordChange = { password = it },
+        onPasswordChange = {
+            password = it
+            passwordError = false
+            validationMessage = null
+        },
         emailError = emailError,
         passwordError = passwordError,
-        errorMessage = backendMessage ?: validationMessage,
+        errorMessage = displayedErrorMessage,
         onLoginClick = {
-            if (validateLogin()) {
+            if (validateLoginFrontend()) {
                 viewModel.login(email.trim(), password.trim(), context)
             }
         }
     )
 }
+
+
 
 @Composable
 fun LoginFormContent(
