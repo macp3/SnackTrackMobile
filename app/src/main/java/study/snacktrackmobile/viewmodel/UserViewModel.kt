@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -26,26 +25,12 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             _loginState.value = UiState.Loading
             try {
-                val response: LoginResponse = repository.login(email, password)
-
-                response.token?.let { token ->
-                    TokenStorage.saveToken(context, token)
-                }
-
+                val response = repository.login(email, password, context)
                 _loginState.value = UiState.Success(response)
 
-            } catch (e: retrofit2.HttpException) {
-                val backendError = try {
-                    val json = e.response()?.errorBody()?.string()
-                    val parsed = Gson().fromJson(json, LoginResponse::class.java)
-                    parsed.message ?: "Unknown error"
-                } catch (_: Exception) {
-                    "Unknown error"
-                }
-
-                _loginState.value = UiState.Error(backendError)
             } catch (e: Exception) {
-                _loginState.value = UiState.Error(e.message ?: "Network error")
+                Log.e("Login", "Error: ${e.message}", e)
+                _loginState.value = UiState.Error(e.message ?: "Unexpected error occurred")
             }
         }
     }
