@@ -8,12 +8,13 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import study.snacktrackmobile.data.network.ApiConfig
 import java.net.CookieManager
 import java.net.CookiePolicy
 
 object Request {
 
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    private const val BASE_URL = ApiConfig.BASE_URL
 
     private val jsonSerializer = Json {
         ignoreUnknownKeys = true

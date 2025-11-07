@@ -3,7 +3,12 @@ package study.snacktrackmobile.presentation.ui.views
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,21 +18,27 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
+import study.snacktrackmobile.presentation.ui.components.NotificationItem
+import study.snacktrackmobile.presentation.ui.components.ShoppingListScreen
+import study.snacktrackmobile.presentation.ui.components.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainView(navController: NavController) {
-    var selectedDate by remember { mutableStateOf("") }
+fun MainView(navController: NavController,
+             shoppingListViewModel: ShoppingListViewModel
+) {
+    var selectedDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var selectedTab by remember { mutableStateOf("Meals") }
 
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var rightDrawerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // 🔹 główny kontener z lewym menu
     ModalNavigationDrawer(
         drawerState = leftDrawerState,
+        gesturesEnabled = !rightDrawerOpen,
         drawerContent = {
             Column(
                 modifier = Modifier
@@ -46,29 +57,30 @@ fun MainView(navController: NavController) {
                     text = "Home",
                     modifier = Modifier
                         .padding(vertical = 8.dp)
-                        .clickable {
-                            scope.launch { leftDrawerState.close() }
-                        }
+                        .clickable { scope.launch { leftDrawerState.close() } }
                 )
                 Text(
                     text = "Settings",
                     modifier = Modifier
                         .padding(vertical = 8.dp)
-                        .clickable {
-                            scope.launch { leftDrawerState.close() }
-                        }
+                        .clickable { scope.launch { leftDrawerState.close() } }
                 )
             }
         }
     ) {
-        Box {
-            Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
 
-                // 🔝 Górny pasek z kalendarzem
+            // 🔝 TopBar z kalendarzem
+            Column(modifier = Modifier.fillMaxSize()) {
                 SnackTrackTopBarCalendar(
                     onDateSelected = { date -> selectedDate = date },
-                    onOpenMenu = { scope.launch { leftDrawerState.open() } },
-                    onOpenNotifications = { rightDrawerOpen = true }
+                    onOpenMenu = {
+                        if (!rightDrawerOpen) scope.launch { leftDrawerState.open() }
+                    },
+                    onOpenNotifications = {
+                        scope.launch { leftDrawerState.close() }
+                        rightDrawerOpen = true
+                    }
                 )
 
                 // 📦 Główna zawartość
@@ -83,7 +95,9 @@ fun MainView(navController: NavController) {
                         "Meals" -> Text("Zawartość posiłków na dzień $selectedDate")
                         "Training" -> Text("Treningi dla daty $selectedDate")
                         "Recipes" -> Text("Przepisy dnia $selectedDate")
-                        "Shopping" -> Text("Lista zakupów na $selectedDate")
+                        "Shopping" -> {
+                            ShoppingListScreen(viewModel = shoppingListViewModel)
+                        }
                         "Profile" -> Text("Twój profil (data: $selectedDate)")
                         else -> Text("Wybierz sekcję i datę")
                     }
@@ -96,63 +110,72 @@ fun MainView(navController: NavController) {
                 )
             }
 
-            // 🔔 Panel powiadomień z repozytorium
+            // 🟢 Overlay zamykający panel po kliknięciu poza nim
             if (rightDrawerOpen) {
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .width(300.dp)
-                        .align(Alignment.CenterEnd)
-                        .background(Color.White)
-                        .padding(16.dp)
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable { rightDrawerOpen = false },
+                    contentAlignment = Alignment.CenterEnd
                 ) {
-                    Column {
-                        // Górny pasek panelu powiadomień
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "Powiadomienia",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = Color(0xFF4CAF50)
-                            )
-                            Text(
-                                "Zamknij",
-                                color = Color.Gray,
-                                modifier = Modifier.clickable { rightDrawerOpen = false }
-                            )
-                        }
+                    // Panel powiadomień (kliknięcia w niego NIE zamykają panelu)
+                    // Panel powiadomień (kliknięcia w niego NIE zamykają panelu)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(320.dp)
+                            .background(Color.White)
+                            .padding(16.dp)
+                            .clickable(enabled = false) {} // blokuje "przepuszczanie" kliknięcia
+                    ) {
+                        Column {
+                            // Nagłówek
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Notifications",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color(0xFF4CAF50)
+                                )
+                                IconButton(
+                                    onClick = { rightDrawerOpen = false }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close notification",
+                                        tint = Color.Gray
+                                    )
+                                }
+                            }
 
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                        val notifications = NotificationsRepository.notifications
+                            val notifications = NotificationsRepository.notifications
 
-                        if (notifications.isEmpty()) {
-                            Text(
-                                text = "Brak nowych powiadomień",
-                                color = Color.Gray
-                            )
-                        } else {
-                            Column {
-                                notifications.forEach { notification ->
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 8.dp)
-                                    ) {
-                                        Text(
-                                            text = notification.title,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = Color.Black
+                            if (notifications.isEmpty()) {
+                                Text(
+                                    text = "No new notification",
+                                    color = Color.Gray
+                                )
+                            } else {
+                                // LazyColumn dla scrollowania dużych list
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxHeight(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(notifications.size) { index ->
+                                        val notification = notifications[index]
+                                        NotificationItem(
+                                            title = notification.title,
+                                            body = notification.body,
+                                            onDelete = {
+                                                NotificationsRepository.removeNotification(notification)
+                                            }
                                         )
-                                        Text(
-                                            text = notification.body,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.DarkGray
-                                        )
-                                        Divider(modifier = Modifier.padding(top = 6.dp))
                                     }
                                 }
                             }

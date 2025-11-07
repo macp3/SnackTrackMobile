@@ -14,4 +14,9 @@ object NotificationsRepository {
     fun clearNotifications() {
         _notifications.clear()
     }
+
+    fun removeNotification(notification: Notification) {
+        _notifications.remove(notification)
+    }
+
 }
