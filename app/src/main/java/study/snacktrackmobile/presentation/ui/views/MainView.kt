@@ -9,15 +9,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
+import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
+import study.snacktrackmobile.presentation.ui.components.SummaryBar
+import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainView(navController: NavController) {
+fun MainView(navController: NavController, registeredAlimentationViewModel: RegisteredAlimentationViewModel) {
     var selectedDate by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf("Meals") }
 
@@ -62,34 +66,37 @@ fun MainView(navController: NavController) {
         }
     ) {
         Box {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
 
-                // 🔝 Górny pasek z kalendarzem
                 SnackTrackTopBarCalendar(
                     onDateSelected = { date -> selectedDate = date },
                     onOpenMenu = { scope.launch { leftDrawerState.open() } },
                     onOpenNotifications = { rightDrawerOpen = true }
                 )
 
-                // 📦 Główna zawartość
+                // Cała główna scrollowana zawartość
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 10.dp, top = 10.dp)
                 ) {
                     when (selectedTab) {
-                        "Meals" -> Text("Zawartość posiłków na dzień $selectedDate")
+                        "Meals" -> MealsDailyView(
+                            selectedDate = selectedDate,
+                            viewModel = registeredAlimentationViewModel
+                        )
                         "Training" -> Text("Treningi dla daty $selectedDate")
                         "Recipes" -> Text("Przepisy dnia $selectedDate")
                         "Shopping" -> Text("Lista zakupów na $selectedDate")
                         "Profile" -> Text("Twój profil (data: $selectedDate)")
-                        else -> Text("Wybierz sekcję i datę")
                     }
                 }
 
-                // 🔻 Dolny pasek nawigacji
+                // ✅ SummaryBar zawsze widoczny nad bottom nav
+                SummaryBar()
+
                 BottomNavigationBar(
                     selectedItem = selectedTab,
                     onItemSelected = { tab -> selectedTab = tab }

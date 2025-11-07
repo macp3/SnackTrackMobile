@@ -87,7 +87,6 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp-urlconnection:4.11.0")
 
 
-
     // Testy
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
