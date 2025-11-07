@@ -105,10 +105,11 @@ fun SnackTrackTopBarCalendar(
             }
         },
         content = {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(min = 200.dp, max = 300.dp)
                         .background(Color(0xFFBFFF99))
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {

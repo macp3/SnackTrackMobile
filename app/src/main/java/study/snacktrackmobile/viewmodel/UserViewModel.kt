@@ -25,23 +25,11 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             _loginState.value = UiState.Loading
             try {
-                val response: LoginResponse = repository.login(email, password)
-
-                response.token?.let { token ->
-                    TokenStorage.saveToken(context, token)
-
-                // ✅ Login udany → konto aktywne
+                val response = repository.login(email, password, context)
                 _loginState.value = UiState.Success(response)
-                }
-            } /*catch (e: retrofit2.HttpException) {
-                // ✅ Backend blokuje logowanie dla nieaktywnych kont → używamy kodu
-                if (e.code() == 401 || e.code() == 403) {
-                    _loginState.value = UiState.Error("Check your email to activate your account")
-                } else {
-                    _loginState.value = UiState.Error("Invalid email or password")
-                }
-*/
-            catch (e: Exception) {
+
+            } catch (e: Exception) {
+                Log.e("Login", "Error: ${e.message}", e)
                 _loginState.value = UiState.Error(e.message ?: "Unexpected error occurred")
             }
         }

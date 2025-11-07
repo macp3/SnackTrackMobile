@@ -68,7 +68,7 @@ fun LoginView(
                     popUpTo("login") { inclusive = true }
                 }
             } else {
-                navController.navigate("main") {
+                navController.navigate("MainView") {
                     popUpTo("login") { inclusive = true }
                 }
             }
