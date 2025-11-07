@@ -46,67 +46,89 @@ fun RegisterView(
     var validationMessage by remember { mutableStateOf<String?>(null) }
 
     val registerState by viewModel.registerState.collectAsState()
-    val backendMessage = (registerState as? UiState.Error)?.message
 
-    fun validateRegister(): Boolean {
-        validationMessage = null
+    /** ✅ FRONTEND VALIDATION */
+    fun validateRegisterFrontend(): Boolean {
+        nameError = name.isBlank()
+        surnameError = surname.isBlank()
+        emailError = email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        passwordError = password.isBlank() || password.length < 6
+        confirmPasswordError = confirmPassword.isBlank() || confirmPassword != password
 
-        val emailValid = Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
-        val passwordValid = password.trim().length >= 6
-        val passwordMatch = confirmPassword.trim() == password.trim()
-        val confirmValid = confirmPassword.trim().isNotEmpty() && passwordMatch && passwordValid
-        val nameValid = name.trim().isNotEmpty()
-        val surnameValid = surname.trim().isNotEmpty()
-
-        emailError = !emailValid
-        passwordError = !passwordValid
-        confirmPasswordError =
-            confirmPassword.trim().isEmpty() || !passwordMatch || password.trim().length < 6
-        nameError = !nameValid
-        surnameError = !surnameValid
-
-        validationMessage =
-            when {
-                !nameValid -> "Name cannot be empty"
-                !surnameValid -> "Surname cannot be empty"
-                !emailValid -> "Invalid email format"
-                !passwordValid -> "Password must have at least 6 characters"
-                confirmPassword.trim().isEmpty() -> "Confirm password is required"
-                !passwordMatch -> "Passwords do not match"
-                else -> null
-            }
+        validationMessage = when {
+            nameError -> "Name cannot be empty"
+            surnameError -> "Surname cannot be empty"
+            email.isBlank() -> "Email cannot be empty"
+            emailError -> "Invalid email format"
+            password.isBlank() -> "Password cannot be empty"
+            passwordError -> "Password must have at least 6 characters"
+            confirmPassword.isBlank() -> "Confirm password is required"
+            confirmPasswordError -> "Passwords do not match"
+            else -> null
+        }
 
         return validationMessage == null
     }
 
-    when (registerState) {
-        is UiState.Success -> {
+    /** ✅ BACKEND MESSAGE */
+    val backendMessage = when (registerState) {
+        is UiState.Error -> (registerState as UiState.Error).message   // np. "Email already taken"
+        else -> null
+    }
+
+    /** ✅ PRIORYTET: backend > frontend */
+    val displayedErrorMessage = backendMessage ?: validationMessage
+
+    /** ✅ Nawigacja po success */
+    LaunchedEffect(registerState) {
+        if (registerState is UiState.Success) {
             navController.navigate("LoginView") {
                 popUpTo("RegisterView") { inclusive = true }
             }
         }
-        else -> Unit
     }
 
     RegisterFormContent(
         email = email,
-        onEmailChange = { email = it },
+        onEmailChange = {
+            email = it
+            emailError = false
+            validationMessage = null
+        },
         password = password,
-        onPasswordChange = { password = it },
+        onPasswordChange = {
+            password = it
+            passwordError = false
+            validationMessage = null
+        },
         confirmPassword = confirmPassword,
-        onConfirmPasswordChange = { confirmPassword = it },
+        onConfirmPasswordChange = {
+            confirmPassword = it
+            confirmPasswordError = false
+            validationMessage = null
+        },
         name = name,
-        onNameChange = { name = it },
+        onNameChange = {
+            name = it
+            nameError = false
+            validationMessage = null
+        },
         surname = surname,
-        onSurnameChange = { surname = it },
+        onSurnameChange = {
+            surname = it
+            surnameError = false
+            validationMessage = null
+        },
+
         emailError = emailError,
         passwordError = passwordError,
         confirmPasswordError = confirmPasswordError,
         nameError = nameError,
         surnameError = surnameError,
-        errorMessage = backendMessage ?: validationMessage,
+        errorMessage = displayedErrorMessage,
+
         onRegisterClick = {
-            if (validateRegister()) {
+            if (validateRegisterFrontend()) {
                 viewModel.register(
                     email.trim(),
                     password.trim(),
@@ -117,6 +139,8 @@ fun RegisterView(
         }
     )
 }
+
+
 
 
 @Composable
