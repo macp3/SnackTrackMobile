@@ -1,61 +1,165 @@
 package study.snacktrackmobile.presentation.ui.views
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
+import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainView(navController: NavController) {
     var selectedDate by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf("Meals") }
 
-    // Cały układ aplikacji
-    Column(
-        modifier = Modifier.fillMaxSize()
+    val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    var rightDrawerOpen by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // 🔹 główny kontener z lewym menu
+    ModalNavigationDrawer(
+        drawerState = leftDrawerState,
+        drawerContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(280.dp)
+                    .background(Color.White)
+                    .padding(vertical = 24.dp, horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "Menu",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color(0xFF4CAF50),
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+                Text(
+                    text = "Home",
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .clickable {
+                            scope.launch { leftDrawerState.close() }
+                        }
+                )
+                Text(
+                    text = "Settings",
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .clickable {
+                            scope.launch { leftDrawerState.close() }
+                        }
+                )
+            }
+        }
     ) {
-        // 🔝 Top bar z kalendarzem (nie fillMaxSize)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-        ) {
-            SnackTrackTopBarCalendar(
-                onDateSelected = { date ->
-                    selectedDate = date
+        Box {
+            Column(modifier = Modifier.fillMaxSize()) {
+
+                // 🔝 Górny pasek z kalendarzem
+                SnackTrackTopBarCalendar(
+                    onDateSelected = { date -> selectedDate = date },
+                    onOpenMenu = { scope.launch { leftDrawerState.open() } },
+                    onOpenNotifications = { rightDrawerOpen = true }
+                )
+
+                // 📦 Główna zawartość
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (selectedTab) {
+                        "Meals" -> Text("Zawartość posiłków na dzień $selectedDate")
+                        "Training" -> Text("Treningi dla daty $selectedDate")
+                        "Recipes" -> Text("Przepisy dnia $selectedDate")
+                        "Shopping" -> Text("Lista zakupów na $selectedDate")
+                        "Profile" -> Text("Twój profil (data: $selectedDate)")
+                        else -> Text("Wybierz sekcję i datę")
+                    }
                 }
-            )
-        }
 
-        // 📦 Zawartość środka
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            when (selectedTab) {
-                "Meals" -> Text("Zawartość posiłków na dzień $selectedDate")
-                "Training" -> Text("Treningi dla daty $selectedDate")
-                "Recipes" -> Text("Przepisy dnia $selectedDate")
-                "Shopping" -> Text("Lista zakupów na $selectedDate")
-                "Profile" -> Text("Twój profil (data: $selectedDate)")
-                else -> Text("Wybierz sekcję i datę")
+                // 🔻 Dolny pasek nawigacji
+                BottomNavigationBar(
+                    selectedItem = selectedTab,
+                    onItemSelected = { tab -> selectedTab = tab }
+                )
+            }
+
+            // 🔔 Panel powiadomień z repozytorium
+            if (rightDrawerOpen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(300.dp)
+                        .align(Alignment.CenterEnd)
+                        .background(Color.White)
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        // Górny pasek panelu powiadomień
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Powiadomienia",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color(0xFF4CAF50)
+                            )
+                            Text(
+                                "Zamknij",
+                                color = Color.Gray,
+                                modifier = Modifier.clickable { rightDrawerOpen = false }
+                            )
+                        }
+
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        val notifications = NotificationsRepository.notifications
+
+                        if (notifications.isEmpty()) {
+                            Text(
+                                text = "Brak nowych powiadomień",
+                                color = Color.Gray
+                            )
+                        } else {
+                            Column {
+                                notifications.forEach { notification ->
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = notification.title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = Color.Black
+                                        )
+                                        Text(
+                                            text = notification.body,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.DarkGray
+                                        )
+                                        Divider(modifier = Modifier.padding(top = 6.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
-
-        // 🔻 Bottom navigation bar
-        BottomNavigationBar(
-            selectedItem = selectedTab,
-            onItemSelected = { tab ->
-                selectedTab = tab
-            }
-        )
     }
 }
