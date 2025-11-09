@@ -16,6 +16,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
 fun BottomNavigationBar(
@@ -37,7 +38,7 @@ fun BottomNavigationBar(
         items.forEach { item ->
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
-                label = { Text(item.label) },
+                label = { Text(item.label, fontFamily = montserratFont,)},
                 selected = selectedItem == item.label,
                 onClick = { onItemSelected(item.label) },
                 colors = NavigationBarItemDefaults.colors(

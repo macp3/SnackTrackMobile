@@ -1,6 +1,7 @@
 package study.snacktrackmobile.data.model
 
 data class Product(
+    val id: Int,
     val name: String,
     val amount: String,
     val kcal: Int,

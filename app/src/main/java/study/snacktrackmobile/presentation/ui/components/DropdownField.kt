@@ -60,7 +60,7 @@ fun DropdownField(
                 errorLabelColor = Color.Red,
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent
+                errorContainerColor = Color.Transparent,
             ),
             isError = isError
         )

@@ -1,5 +1,8 @@
 package study.snacktrackmobile.data.model.dto
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class EssentialFoodResponse(
     val id: Int,
     val name: String?,

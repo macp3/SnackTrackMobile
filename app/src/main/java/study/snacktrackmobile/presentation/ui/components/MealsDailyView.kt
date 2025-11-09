@@ -20,10 +20,9 @@ import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 @Composable
 fun MealsDailyView(
     selectedDate: String,
-    viewModel: RegisteredAlimentationViewModel
+    viewModel: RegisteredAlimentationViewModel,
 ) {
     val context = LocalContext.current
-
     val mealsState by viewModel.meals.collectAsState()
 
     LaunchedEffect(selectedDate) {
@@ -53,7 +52,7 @@ fun MealsDailyView(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(mealsToDisplay) { meal ->
-            MealCard(meal)
+            MealCard(meal, viewModel)
         }
     }
 }

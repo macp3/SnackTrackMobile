@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.ShoppingList
 import study.snacktrackmobile.data.model.ShoppingListItem
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
 fun ShoppingListScreen(
@@ -76,7 +77,7 @@ fun ShoppingListScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add list")
                 Spacer(Modifier.width(8.dp))
-                Text("Add new list")
+                Text("Add new list", fontFamily = montserratFont)
             }
         }
     }
@@ -154,7 +155,8 @@ fun ShoppingListItemCard(
                     list.name,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    fontFamily = montserratFont
                 )
                 IconButton(onClick = onDeleteList) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete list")
