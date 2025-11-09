@@ -1,7 +1,9 @@
 package study.snacktrackmobile.data.model.dto
 
 import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class ApiFoodResponseDetailed(
     val id: Int,
     val name: String?,

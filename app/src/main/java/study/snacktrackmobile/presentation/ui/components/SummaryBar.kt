@@ -35,9 +35,9 @@ fun SummaryBar() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             SummaryInfo("kcal", SummaryBarState.totalKcal.toString())
-            SummaryInfo("P", "${SummaryBarState.totalProtein.toInt()}g")
-            SummaryInfo("F", "${SummaryBarState.totalFat.toInt()}g")
-            SummaryInfo("C", "${SummaryBarState.totalCarbs.toInt()}g")
+            SummaryInfo("Protein", "${SummaryBarState.totalProtein.toFloat()}g")
+            SummaryInfo("Fat", "${SummaryBarState.totalFat.toFloat()}g")
+            SummaryInfo("Carbohydrates", "${SummaryBarState.totalCarbs.toFloat()}g")
         }
     }
 }
