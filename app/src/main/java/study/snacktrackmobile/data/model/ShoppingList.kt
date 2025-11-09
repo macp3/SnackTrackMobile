@@ -11,12 +11,15 @@ data class ShoppingList(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     @TypeConverters(ShoppingListItemConverter::class)
-    val items: List<ShoppingListItem> = emptyList()
+    val items: List<ShoppingListItem> = emptyList(),
+    val date: String,
+    val userEmail: String
 )
 
 @Serializable
 data class ShoppingListItem(
     val name: String,
     val quantity: String,
+    val description: String = "",
     val bought: Boolean = false
 )

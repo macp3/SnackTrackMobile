@@ -1,6 +1,8 @@
 package study.snacktrackmobile.presentation.ui.views
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -11,7 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.database.AppDatabase
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
-import study.snacktrackmobile.presentation.ui.components.ShoppingListViewModel
+import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
@@ -56,11 +58,12 @@ fun SnackTrackApp() {
         }
 
         composable("MainView") {
-            // Przekazujemy oba ViewModel do MainView
+            val loggedUserEmail by userViewModel.currentUserEmail.collectAsState()
             MainView(
                 navController = navController,
                 shoppingListViewModel = shoppingListViewModel,
-                registeredAlimentationViewModel = registeredAlimentationViewModel
+                registeredAlimentationViewModel = registeredAlimentationViewModel,
+                loggedUserEmail = loggedUserEmail ?: ""
             )
         }
 

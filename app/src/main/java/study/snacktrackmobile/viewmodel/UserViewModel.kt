@@ -20,6 +20,9 @@ class UserViewModel : ViewModel() {
     private val _loginState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
     val loginState: StateFlow<UiState<LoginResponse>> = _loginState
 
+    private val _currentUserEmail = MutableStateFlow<String?>(null)
+    val currentUserEmail: StateFlow<String?> = _currentUserEmail
+
     // Funkcja logowania
     fun login(email: String, password: String, context: Context) {
         viewModelScope.launch {
@@ -27,6 +30,8 @@ class UserViewModel : ViewModel() {
             try {
                 val response = repository.login(email, password, context)
                 _loginState.value = UiState.Success(response)
+
+                _currentUserEmail.value = email
 
             } catch (e: Exception) {
                 Log.e("Login", "Error: ${e.message}", e)

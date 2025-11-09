@@ -32,7 +32,7 @@ fun MealsDailyView(
     }
 
     // remember the meals so recomposition isn't heavy
-    val mealsUi = remember(mealsState) { mealsState }
+    remember(mealsState) { mealsState }
     val defaultMeals = listOf(
         Meal(name = "Breakfast", products = emptyList(), kcal = 0),
         Meal(name = "Lunch", products = emptyList(), kcal = 0),

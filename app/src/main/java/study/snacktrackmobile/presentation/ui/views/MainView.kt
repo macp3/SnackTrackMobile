@@ -22,7 +22,7 @@ import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.NotificationItem
 import study.snacktrackmobile.presentation.ui.components.ShoppingListScreen
-import study.snacktrackmobile.presentation.ui.components.ShoppingListViewModel
+import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
 import study.snacktrackmobile.presentation.ui.components.SummaryBar
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
@@ -32,7 +32,8 @@ import java.time.LocalDate
 @Composable
 fun MainView(navController: NavController,
              shoppingListViewModel: ShoppingListViewModel,
-             registeredAlimentationViewModel: RegisteredAlimentationViewModel
+             registeredAlimentationViewModel: RegisteredAlimentationViewModel,
+             loggedUserEmail: String
 ) {
     var selectedDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var selectedTab by remember { mutableStateOf("Meals") }
@@ -40,6 +41,13 @@ fun MainView(navController: NavController,
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var rightDrawerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(loggedUserEmail) {
+        shoppingListViewModel.setUser(loggedUserEmail)
+        if (selectedTab == "Shopping") {
+            shoppingListViewModel.setDate(selectedDate)
+        }
+    }
 
     // 🔹 główny kontener z lewym menu
     ModalNavigationDrawer(
@@ -78,7 +86,11 @@ fun MainView(navController: NavController,
             Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
 
                 SnackTrackTopBarCalendar(
-                    onDateSelected = { date -> selectedDate = date },
+                    onDateSelected = { date -> selectedDate = date
+                        if (selectedTab == "Shopping") {
+                            shoppingListViewModel.setDate(date)
+                        }
+                                     },
                     onOpenMenu = {
                         if (!rightDrawerOpen) scope.launch { leftDrawerState.open() }
                     },
@@ -104,7 +116,10 @@ fun MainView(navController: NavController,
                         "Training" -> Text("Treningi dla daty $selectedDate")
                         "Recipes" -> Text("Przepisy dnia $selectedDate")
                         "Shopping" -> {
-                            ShoppingListScreen(viewModel = shoppingListViewModel)
+                            ShoppingListScreen(
+                                viewModel = shoppingListViewModel,
+                                selectedDate = selectedDate
+                            )
                         }
                         "Profile" -> Text("Twój profil (data: $selectedDate)")
                     }
@@ -115,7 +130,12 @@ fun MainView(navController: NavController,
 
                 BottomNavigationBar(
                     selectedItem = selectedTab,
-                    onItemSelected = { tab -> selectedTab = tab }
+                    onItemSelected = { tab ->
+                        selectedTab = tab
+                        if (tab == "Shopping") {
+                            shoppingListViewModel.setDate(selectedDate)
+                        }
+                    }
                 )
             }
 
