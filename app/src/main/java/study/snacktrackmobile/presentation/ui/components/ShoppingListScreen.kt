@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import study.snacktrackmobile.data.model.ShoppingList
+import study.snacktrackmobile.presentation.ui.views.montserratFont
+import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 
 @Composable
 fun ShoppingListScreen(viewModel: ShoppingListViewModel) {
@@ -34,7 +36,7 @@ fun ShoppingListScreen(viewModel: ShoppingListViewModel) {
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add list")
             Spacer(Modifier.width(8.dp))
-            Text("Add new list")
+            Text("Add new list", fontFamily = montserratFont,)
         }
     }
 }
@@ -50,7 +52,7 @@ fun ShoppingListItemCard(list: ShoppingList, onDeleteList: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(list.name, style = MaterialTheme.typography.titleMedium)
+                Text(list.name, style = MaterialTheme.typography.titleMedium, fontFamily = montserratFont,)
                 IconButton(onClick = onDeleteList) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete list")
                 }
@@ -62,8 +64,8 @@ fun ShoppingListItemCard(list: ShoppingList, onDeleteList: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(item.name)
-                        Text(item.quantity)
+                        Text(item.name, fontFamily = montserratFont,)
+                        Text(item.quantity, fontFamily = montserratFont,)
                         Checkbox(
                             checked = item.bought,
                             onCheckedChange = { /* obsługa zmiany stanu kupione */ }

@@ -22,7 +22,7 @@ import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.NotificationItem
 import study.snacktrackmobile.presentation.ui.components.ShoppingListScreen
-import study.snacktrackmobile.presentation.ui.components.ShoppingListViewModel
+import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
 import study.snacktrackmobile.presentation.ui.components.SummaryBar
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
@@ -57,16 +57,19 @@ fun MainView(navController: NavController,
                     text = "Menu",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color(0xFF4CAF50),
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    modifier = Modifier.padding(bottom = 24.dp),
+                    fontFamily = montserratFont
                 )
                 Text(
                     text = "Home",
+                    fontFamily = montserratFont,
                     modifier = Modifier
                         .padding(vertical = 8.dp)
                         .clickable { scope.launch { leftDrawerState.close() } }
                 )
                 Text(
                     text = "Settings",
+                    fontFamily = montserratFont,
                     modifier = Modifier
                         .padding(vertical = 8.dp)
                         .clickable { scope.launch { leftDrawerState.close() } }

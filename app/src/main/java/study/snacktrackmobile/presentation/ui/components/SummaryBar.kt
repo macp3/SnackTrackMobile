@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import study.snacktrackmobile.presentation.ui.state.SummaryBarState
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
 fun SummaryBar() {
@@ -43,7 +45,7 @@ fun SummaryBar() {
 @Composable
 fun SummaryInfo(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall)
-        Text(value, style = MaterialTheme.typography.titleMedium)
+        Text(label, style = MaterialTheme.typography.labelSmall, fontFamily = montserratFont,)
+        Text(value, style = MaterialTheme.typography.titleMedium, fontFamily = montserratFont,)
     }
 }

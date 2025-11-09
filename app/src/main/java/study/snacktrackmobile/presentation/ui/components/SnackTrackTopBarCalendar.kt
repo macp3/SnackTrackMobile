@@ -82,7 +82,7 @@ fun SnackTrackTopBarCalendar(
                     fontFamily = montserratFont,
                     fontSize = 31.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.Black,
                 )
                 Text(
                     text = "Track your progress",

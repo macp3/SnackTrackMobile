@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
 fun ProductRow(product: Product) {
@@ -32,13 +33,13 @@ fun ProductRow(product: Product) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(product.name, style = MaterialTheme.typography.bodyLarge)
-                Text(product.amount, style = MaterialTheme.typography.bodySmall)
+                Text(product.name, style = MaterialTheme.typography.bodyLarge, fontFamily = montserratFont,)
+                Text(product.amount, style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont,)
             }
 
             Column(horizontalAlignment = Alignment.End) {
-                Text("${product.kcal} kcal", style = MaterialTheme.typography.bodySmall)
-                Text("${product.protein}  ${product.fat}  ${product.carbohydrates}", style = MaterialTheme.typography.bodySmall)
+                Text("${product.kcal} kcal", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont,)
+                Text("${product.protein}  ${product.fat}  ${product.carbohydrates}", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont,)
             }
         }
     }

@@ -48,7 +48,8 @@ fun SnackTrackTopBarWithIcons() {
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF4CAF50),
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    modifier = Modifier.padding(bottom = 24.dp),
+                    fontFamily = montserratFont,
                 )
 
                 @Composable
@@ -57,6 +58,7 @@ fun SnackTrackTopBarWithIcons() {
                         text = title,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
+                        fontFamily = montserratFont,
                         color = Color(0xFF333333),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -105,7 +107,7 @@ fun SnackTrackTopBarWithIcons() {
                             fontFamily = montserratFont,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = Color.Black,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -132,6 +134,7 @@ fun SnackTrackTopBarWithIcons() {
                         text = "Notifications",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
+                        fontFamily = montserratFont,
                         color = Color(0xFF4CAF50),
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
@@ -145,7 +148,8 @@ fun SnackTrackTopBarWithIcons() {
                             text = "No notifications",
                             fontSize = 16.sp,
                             color = Color.Gray,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            fontFamily = montserratFont
                         )
                     } else {
                         Column {
@@ -159,12 +163,14 @@ fun SnackTrackTopBarWithIcons() {
                                         text = notification.title,
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Black
+                                        color = Color.Black,
+                                        fontFamily = montserratFont
                                     )
                                     Text(
                                         text = notification.body,
                                         fontSize = 14.sp,
-                                        color = Color.DarkGray
+                                        color = Color.DarkGray,
+                                        fontFamily = montserratFont
                                     )
                                     HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
                                 }

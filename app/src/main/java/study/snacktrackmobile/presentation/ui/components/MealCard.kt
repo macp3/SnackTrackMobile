@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.Meal
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
 fun MealCard(meal: Meal) {
@@ -35,17 +36,17 @@ fun MealCard(meal: Meal) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(meal.name, style = MaterialTheme.typography.titleMedium)
+                Text(meal.name, style = MaterialTheme.typography.titleMedium, fontFamily = montserratFont,)
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null)
                 }
             }
 
-            Text("${meal.kcal} kcal", style = MaterialTheme.typography.bodyMedium)
+            Text("${meal.kcal} kcal", style = MaterialTheme.typography.bodyMedium, fontFamily = montserratFont,)
 
             if (expanded) {
                 if (meal.products.isEmpty()) {
-                    Text("Brak dodanych produktów", style = MaterialTheme.typography.bodySmall)
+                    Text("Brak dodanych produktów", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont,)
                 } else {
                     Column {
                         meal.products.forEach { product ->

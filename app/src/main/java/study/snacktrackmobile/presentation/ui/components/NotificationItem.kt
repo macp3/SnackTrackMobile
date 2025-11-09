@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
 fun NotificationItem(title: String, body: String, onDelete: () -> Unit) {
@@ -35,12 +36,14 @@ fun NotificationItem(title: String, body: String, onDelete: () -> Unit) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black
+                    color = Color.Black,
+                    fontFamily = montserratFont,
                 )
                 Text(
                     text = body,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.DarkGray
+                    color = Color.DarkGray,
+                    fontFamily = montserratFont,
                 )
             }
 

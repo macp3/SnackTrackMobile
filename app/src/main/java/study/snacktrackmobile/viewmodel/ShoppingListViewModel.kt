@@ -1,4 +1,4 @@
-package study.snacktrackmobile.presentation.ui.components
+package study.snacktrackmobile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -1,4 +1,4 @@
-package study.snacktrackmobile.presentation.ui.components
+package study.snacktrackmobile.presentation.ui.state
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

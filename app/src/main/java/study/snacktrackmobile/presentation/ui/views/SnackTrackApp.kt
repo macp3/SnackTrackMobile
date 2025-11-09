@@ -11,7 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.database.AppDatabase
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
-import study.snacktrackmobile.presentation.ui.components.ShoppingListViewModel
+import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository

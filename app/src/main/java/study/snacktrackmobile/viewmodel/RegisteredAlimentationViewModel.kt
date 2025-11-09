@@ -11,7 +11,7 @@ import study.snacktrackmobile.data.model.Meal
 import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
-import study.snacktrackmobile.presentation.ui.components.SummaryBarState
+import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 
 class RegisteredAlimentationViewModel(
     private val repository: RegisteredAlimentationRepository
