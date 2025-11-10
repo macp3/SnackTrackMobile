@@ -13,11 +13,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import study.snacktrackmobile.data.api.TrainingApi
+import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
+import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.NotificationItem
@@ -26,6 +32,7 @@ import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
 import study.snacktrackmobile.presentation.ui.components.SummaryBar
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
+import study.snacktrackmobile.viewmodel.TrainingViewModel
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +48,25 @@ fun MainView(navController: NavController,
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var rightDrawerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    val context = LocalContext.current
+    var authToken by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        authToken = TokenStorage.getToken(context)
+    }
+
+    val trainingApi = remember {
+        Retrofit.Builder()
+            .baseUrl(ApiConfig.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TrainingApi::class.java)
+    }
+
+    val trainingViewModel = remember {
+        TrainingViewModel(api = trainingApi)
+    }
 
     LaunchedEffect(loggedUserEmail) {
         shoppingListViewModel.setUser(loggedUserEmail)
@@ -89,6 +115,7 @@ fun MainView(navController: NavController,
             Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
 
                 SnackTrackTopBarCalendar(
+                    selectedDate = selectedDate,
                     onDateSelected = { date -> selectedDate = date
                         if (selectedTab == "Shopping") {
                             shoppingListViewModel.setDate(date)
@@ -116,7 +143,12 @@ fun MainView(navController: NavController,
                             selectedDate = selectedDate,
                             viewModel = registeredAlimentationViewModel
                         )
-                        "Training" -> Text("Treningi dla daty $selectedDate")
+                        "Training" -> TrainingView(
+                            viewModel = trainingViewModel,
+                            selectedDate = selectedDate,
+                            authToken = authToken,
+                            onDateSelected = { date -> selectedDate = date }
+                        )
                         "Recipes" -> Text("Przepisy dnia $selectedDate")
                         "Shopping" -> {
                             ShoppingListScreen(

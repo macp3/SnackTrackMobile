@@ -44,7 +44,6 @@ fun SnackTrackApp() {
 
     // === NavHost ===
     NavHost(navController = navController, startDestination = "StartView") {
-
         composable("StartView") {
             StartView(navController)
         }

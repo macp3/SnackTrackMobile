@@ -30,23 +30,24 @@ import study.snacktrackmobile.R
 
 @Composable
 fun SnackTrackTopBarCalendar(
+    selectedDate: String,
     onDateSelected: (String) -> Unit,
     onOpenMenu: () -> Unit,
     onOpenNotifications: () -> Unit
 ) {
     val montserratFont = FontFamily(Font(R.font.montserrat, weight = FontWeight.Normal))
-
     val today = LocalDate.now()
-    var selectedDate by remember { mutableStateOf(today) }
 
     // Zakres 2001 dni (1000 wstecz i 1000 do przodu)
     val totalDays = 2001
     val days = remember { (0 until totalDays).map { today.minusDays(1000L - it) } }
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 1000)
+    val todayIndex = 1000
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = todayIndex)
 
     var visibleMonth by remember { mutableStateOf(today.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)) }
     var visibleYear by remember { mutableStateOf(today.year) }
 
+    // Aktualizacja widocznego miesiąca i roku przy scrollu
     LaunchedEffect(listState.firstVisibleItemIndex) {
         val visibleIndex = listState.firstVisibleItemIndex + listState.layoutInfo.visibleItemsInfo.size / 2
         val newVisibleDate = days.getOrNull(visibleIndex) ?: today
@@ -55,13 +56,26 @@ fun SnackTrackTopBarCalendar(
         visibleYear = newVisibleDate.year
     }
 
+    // Scroll do dzisiaj, jeśli selectedDate jest dzisiejszy
+    LaunchedEffect(selectedDate) {
+        val selectedLocalDate = try {
+            LocalDate.parse(selectedDate)
+        } catch (e: Exception) {
+            today
+        }
+
+        if (selectedLocalDate == today) {
+            listState.animateScrollToItem(todayIndex)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFBFFF99))
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // 🔝 Górny pasek
+        // 🔝 Top bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -104,7 +118,7 @@ fun SnackTrackTopBarCalendar(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 📅 Miesiąc i rok
+        // 📅 Widoczny miesiąc i rok
         Text(
             text = "${visibleMonth.replaceFirstChar { it.uppercase() }} $visibleYear",
             fontFamily = montserratFont,
@@ -123,7 +137,12 @@ fun SnackTrackTopBarCalendar(
             contentPadding = PaddingValues(horizontal = 12.dp)
         ) {
             itemsIndexed(days) { _, date ->
-                val isSelected = date == selectedDate
+                val isSelected = date == try {
+                    LocalDate.parse(selectedDate)
+                } catch (e: Exception) {
+                    today
+                }
+
                 val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
                 val dayNumber = date.dayOfMonth
 
@@ -133,7 +152,6 @@ fun SnackTrackTopBarCalendar(
                         .clip(CircleShape)
                         .background(if (isSelected) Color(0xFF2E7D32) else Color.White)
                         .clickable {
-                            selectedDate = date
                             onDateSelected(date.format(DateTimeFormatter.ISO_DATE))
                         },
                     contentAlignment = Alignment.Center

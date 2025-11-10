@@ -7,10 +7,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.ShoppingList
-import study.snacktrackmobile.data.model.ShoppingListItem
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 
@@ -143,7 +144,7 @@ fun ShoppingListItemCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+        colors = CardDefaults.cardColors(containerColor = Color(0xffF3F0F0))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             // Nagłówek listy
@@ -179,7 +180,12 @@ fun ShoppingListItemCard(
                     ) {
                         Checkbox(
                             checked = item.bought,
-                            onCheckedChange = { viewModel.toggleItemBought(list, item) }
+                            onCheckedChange = { viewModel.toggleItemBought(list, item) },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFF2E7D32), // Twój zielony kolor
+                                uncheckedColor = Color.Gray,       // opcjonalnie dla niezaznaczonego
+                                checkmarkColor = Color.White       // kolor „ptaszka”
+                            )
                         )
 
                         Text(
@@ -188,7 +194,7 @@ fun ShoppingListItemCard(
                                 .weight(1f)
                                 .padding(start = 8.dp),
                             maxLines = 2,
-                            overflow = TextOverflow.Visible // nie skracamy z "..."
+                            overflow = TextOverflow.Visible
                         )
 
                         Text(
@@ -201,9 +207,15 @@ fun ShoppingListItemCard(
                         )
 
                         IconButton(onClick = { viewModel.deleteItemFromList(list, item) }) {
-                            Text("X", color = Color.Red)
+                            Icon(
+                                imageVector = Icons.Default.Close, // ikona zamiast tekstu
+                                contentDescription = "Delete item",
+                                tint = Color.Black // kolor czarny
+                            )
                         }
+
                     }
+
 
                     // Description z ikoną rozwinięcia
                     Row(
@@ -228,7 +240,7 @@ fun ShoppingListItemCard(
                         }
                     }
 
-                    Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 }
             }
 

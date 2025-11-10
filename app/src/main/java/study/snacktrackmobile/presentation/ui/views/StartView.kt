@@ -1,5 +1,10 @@
 package study.snacktrackmobile.presentation.ui.views
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -20,6 +25,14 @@ import androidx.navigation.NavController
 import study.snacktrackmobile.R
 import study.snacktrackmobile.presentation.ui.components.DisplayButton
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
+
 
 val montserratFont = FontFamily(
     Font(R.font.montserrat, weight = FontWeight.Normal)
@@ -27,54 +40,97 @@ val montserratFont = FontFamily(
 
 @Composable
 fun StartView(navController: NavController) {
-    Surface(color = Color.White) {
+    var visible by remember { mutableStateOf(false) }
+
+    val offsetY by animateDpAsState(
+        targetValue = if (visible) 0.dp else 60.dp,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "offsetY"
+    )
+
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 900, easing = LinearOutSlowInEasing),
+        label = "alpha"
+    )
+
+    // Uruchom animację po wejściu na ekran
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // TopBar
+            // 🧭 TopBar pojawia się od razu (bez animacji)
             SnackTrackTopBar()
 
-            Spacer(modifier = Modifier.height(300.dp))
-            // Środkowy tekst
-            Text(
-                text = "WELCOME",
-                fontSize = 35.sp,
-                fontFamily = montserratFont
-            )
+            // 🔹 Odstęp między topbarem a logiem
+            Spacer(modifier = Modifier.height(120.dp))
 
-            // Dolne przyciski
+            // 🔹 Animowana część: logo + tekst + przyciski
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 250.dp),
+                    .fillMaxSize()
+                    .offset(y = offsetY)
+                    .alpha(alpha),
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                DisplayButton(text = "Login", onClick = {
-                    navController.navigate("LoginView")
-                })
-                Spacer(modifier = Modifier.height(16.dp))
-                DisplayButton(text = "Register", onClick = {
-                    navController.navigate("RegisterView")
-                })
-                Spacer(modifier = Modifier.height(20.dp))
+                // Logo
+                Image(
+                    painter = painterResource(id = R.drawable.logo_vector),
+                    contentDescription = "App logo",
+                    modifier = Modifier
+                        .fillMaxWidth(0.4f)
+                        .aspectRatio(1f)
+                        .padding(bottom = 16.dp),
+                    contentScale = ContentScale.Fit
+                )
 
-                OutlinedButton(
-                    onClick = { /* TODO: Google Sign-In */ },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    modifier = Modifier.size(50.dp),
-                    border = BorderStroke(1.dp, Color.Black),
-                    contentPadding = PaddingValues(6.dp)
+                // Tekst
+                Text(
+                    text = "WELCOME",
+                    fontSize = 35.sp,
+                    fontFamily = montserratFont
+                )
+
+                // Dolne przyciski
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 200.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.google_icon),
-                        contentDescription = "Google icon",
-                        modifier = Modifier.fillMaxSize().clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
+                    DisplayButton(text = "Login", onClick = {
+                        navController.navigate("LoginView")
+                    })
+                    Spacer(modifier = Modifier.height(16.dp))
+                    DisplayButton(text = "Register", onClick = {
+                        navController.navigate("RegisterView")
+                    })
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    OutlinedButton(
+                        onClick = { /* TODO: Google Sign-In */ },
+                        shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        modifier = Modifier.size(50.dp),
+                        border = BorderStroke(1.dp, Color.Black),
+                        contentPadding = PaddingValues(6.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.google_icon),
+                            contentDescription = "Google icon",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
             }
         }
