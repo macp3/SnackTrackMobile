@@ -13,39 +13,42 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import study.snacktrackmobile.R
 
 
-    val montserratFont = FontFamily(
-        Font(R.font.montserrat, weight = FontWeight.Normal)
-    )
+val montserratFont = FontFamily(
+    Font(R.font.montserrat, weight = FontWeight.Normal)
+)
 
-    @Composable
-    fun DisplayButton(text: String,
-                      onClick: () -> Unit,
-                      modifier: Modifier = Modifier,
-                      )
-    {
-        OutlinedButton(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    clip = false
-                ),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB7F999)),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Color.Black),
-        ) {
-            Text(
-                text = text,
-                fontSize = 18.sp,
-                fontFamily = montserratFont,
-                color = Color.Black
-            )
-        }
+@Composable
+fun DisplayButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    fontSize: Int = 18
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(16.dp),
+                clip = false
+            ),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB7F999)),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, Color.Black),
+    ) {
+        Text(
+            text = text,
+            fontSize = fontSize.sp,
+            fontFamily = montserratFont,
+            color = Color.Black,
+            textAlign = TextAlign.Center
+        )
     }
+}
+

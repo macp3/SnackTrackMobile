@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.data.model.Meal
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
@@ -21,6 +22,7 @@ import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 fun MealsDailyView(
     selectedDate: String,
     viewModel: RegisteredAlimentationViewModel,
+    navController: NavController
 ) {
     val context = LocalContext.current
     val mealsState by viewModel.meals.collectAsState()
@@ -52,7 +54,7 @@ fun MealsDailyView(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(mealsToDisplay) { meal ->
-            MealCard(meal, viewModel)
+            MealCard(meal, viewModel, navController ,selectedDate)
         }
     }
 }

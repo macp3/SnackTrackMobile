@@ -27,7 +27,7 @@ fun SummaryBar() {
             .fillMaxWidth()
             .height(70.dp),
         shadowElevation = 10.dp,
-        color = Color(0xFFE7FADA)
+        color = Color(0xFFDCFFCC)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),

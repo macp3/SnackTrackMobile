@@ -30,12 +30,19 @@ object Request {
     }
 
     private val headerInterceptor = Interceptor { chain ->
-        val request = chain.request().newBuilder()
-            .addHeader("Accept", "application/json")
-            .addHeader("Authorization", "")
+        val original = chain.request()
+
+        val newHeaders = original.headers.newBuilder()
+            .add("Accept", "application/json")
             .build()
-        chain.proceed(request)
+
+        val newRequest = original.newBuilder()
+            .headers(newHeaders)
+            .build()
+
+        chain.proceed(newRequest)
     }
+
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(headerInterceptor)

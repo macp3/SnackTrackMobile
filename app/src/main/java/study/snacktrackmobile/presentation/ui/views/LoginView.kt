@@ -25,6 +25,7 @@ import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.model.LoginResponse
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import study.snacktrackmobile.presentation.ui.components.TextInput
 
 @Composable
 fun LoginView(
@@ -141,40 +142,13 @@ fun LoginFormContent(
             Spacer(modifier = Modifier.height(35.dp))
 
             // EMAIL INPUT
-            OutlinedTextField(
+            TextInput(
                 value = email,
-                onValueChange = onEmailChange,
-                label = {
-                    Text(
-                        "Email",
-                        fontFamily = montserratFont,
-                        fontSize = 18.sp,
-                        color = if (emailError) Color.Red else Color.Black
-                    )
-                },
-                placeholder = {
-                    Text(
-                        "name@example.com",
-                        fontFamily = montserratFont,
-                        fontSize = 18.sp,
-                        color = Color.Gray
-                    )
-                },
-                singleLine = true,
-                modifier = Modifier
-                    .width(300.dp)
-                    .background(Color.Transparent, shape = RoundedCornerShape(12.dp)),
+                label = "Email",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                textStyle = TextStyle(fontSize = 18.sp, fontFamily = montserratFont, color = Color.Black),
-                shape = RoundedCornerShape(12.dp),
                 isError = emailError,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (emailError) Color.Red else Color.Black,
-                    unfocusedBorderColor = if (emailError) Color.Red else Color.Gray,
-                    errorBorderColor = Color.Red,
-                    focusedLabelColor = if (emailError) Color.Red else Color.Black,
-                    unfocusedLabelColor = if (emailError) Color.Red else Color.Black
-                )
+                width = 300.dp,
+                onValueChange = onEmailChange
             )
 
             Spacer(modifier = Modifier.height(15.dp))
@@ -200,7 +174,7 @@ fun LoginFormContent(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            DisplayButton("Login", onClick = onLoginClick)
+            DisplayButton("Login", onClick = onLoginClick, modifier = Modifier.fillMaxWidth(0.5f))
         }
     }
 }

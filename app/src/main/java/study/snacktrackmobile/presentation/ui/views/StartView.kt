@@ -98,21 +98,21 @@ fun StartView(navController: NavController) {
                     fontFamily = montserratFont
                 )
 
-                // Dolne przyciski
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 200.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    DisplayButton(text = "Login", onClick = {
-                        navController.navigate("LoginView")
-                    })
-                    Spacer(modifier = Modifier.height(16.dp))
-                    DisplayButton(text = "Register", onClick = {
-                        navController.navigate("RegisterView")
-                    })
-                    Spacer(modifier = Modifier.height(20.dp))
+            // Dolne przyciski
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 250.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                DisplayButton(text = "Login", onClick = {
+                    navController.navigate("LoginView")
+                }, modifier = Modifier.fillMaxWidth(0.5f))
+                Spacer(modifier = Modifier.height(16.dp))
+                DisplayButton(text = "Register", onClick = {
+                    navController.navigate("RegisterView")
+                }, modifier = Modifier.fillMaxWidth(0.5f))
+                Spacer(modifier = Modifier.height(20.dp))
 
                     OutlinedButton(
                         onClick = { /* TODO: Google Sign-In */ },
