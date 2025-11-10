@@ -82,19 +82,19 @@ fun InitialSurveyView(navController: NavController) {
 
             DropdownField("Sex", sex, sexOptions, sexError) { sex = it; sexError = false }
 
-            TextInput(height, "Height (cm)", KeyboardOptions(keyboardType = KeyboardType.Number), heightError) {
+            TextInput(height, "Height (cm)", KeyboardOptions(keyboardType = KeyboardType.Number), heightError, 300.dp) {
                 height = it; heightError = false
             }
 
-            TextInput(weight, "Weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), weightError) {
+            TextInput(weight, "Weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), weightError, 300.dp) {
                 weight = it; weightError = false
             }
 
-            TextInput(age, "Age", KeyboardOptions(keyboardType = KeyboardType.Number), ageError) {
+            TextInput(age, "Age", KeyboardOptions(keyboardType = KeyboardType.Number), ageError, 300.dp) {
                 age = it; ageError = false
             }
 
-            DropdownField("Daily activity level", activityLevel, activityOptions, activityError) {
+            DropdownField("Daily activity level", activityLevel, activityOptions, activityError,) {
                 activityLevel = it; activityError = false
             }
 
@@ -106,12 +106,13 @@ fun InitialSurveyView(navController: NavController) {
                 weeklyWeightChangeTempo,
                 "Weekly weight change (0-1 kg/week)",
                 KeyboardOptions(keyboardType = KeyboardType.Number),
-                tempoError
+                tempoError,
+                300.dp
             ) {
                 weeklyWeightChangeTempo = it; tempoError = false
             }
 
-            TextInput(goalWeight, "Goal weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), goalError) {
+            TextInput(goalWeight, "Goal weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), goalError, 300.dp) {
                 goalWeight = it; goalError = false
             }
 
@@ -129,7 +130,7 @@ fun InitialSurveyView(navController: NavController) {
             }
 
 
-            DisplayButton("Next", onClick = {
+            DisplayButton("Next", modifier = Modifier.fillMaxWidth(0.6f), onClick = {
                 backendMessage = null
                 errorMessage = null
 

@@ -1,6 +1,7 @@
 package study.snacktrackmobile.data.repository
 
 import study.snacktrackmobile.data.api.ApiService
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 
 class RegisteredAlimentationRepository(private val api: ApiService) {
@@ -14,6 +15,26 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         if (!response.isSuccessful) {
             throw Exception("Delete failed: ${response.code()} ${response.message()}")
         }
+    }
+
+    suspend fun addEntry(
+        token: String,
+        essentialId: Int,
+        mealName: String,
+        date: String,
+        amount: Float,
+        pieces: Int
+    ): Boolean {
+        val body = RegisteredAlimentationRequest(
+            essentialId = essentialId,
+            timestamp = date,
+            mealName = mealName,
+            amount = amount,
+            pieces = pieces
+        )
+
+        val res = api.addEntry("Bearer $token", body, date)
+        return res.isSuccessful
     }
 }
 

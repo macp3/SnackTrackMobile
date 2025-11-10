@@ -1,5 +1,6 @@
 package study.snacktrackmobile.presentation.ui.components
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -19,6 +21,7 @@ fun TextInput(
     label: String,
     keyboardOptions: KeyboardOptions? = null,
     isError: Boolean,
+    width: Dp? = null,
     onValueChange: (String) -> Unit
 ) {
     OutlinedTextField(
@@ -26,7 +29,7 @@ fun TextInput(
         onValueChange = onValueChange,
         label = { Text(label, fontFamily = montserratFont) },
         singleLine = true,
-        modifier = Modifier.width(300.dp),
+        modifier = if (width != null) Modifier.width(width) else Modifier.fillMaxWidth(),
         textStyle = TextStyle(fontFamily = montserratFont, fontSize = 18.sp),
 
         colors = OutlinedTextFieldDefaults.colors(

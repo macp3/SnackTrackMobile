@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -14,10 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.repository.NotificationsRepository
+import study.snacktrackmobile.presentation.ui.components.AddProductScreen
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.NotificationItem
@@ -33,23 +32,29 @@ import java.time.LocalDate
 fun MainView(navController: NavController,
              shoppingListViewModel: ShoppingListViewModel,
              registeredAlimentationViewModel: RegisteredAlimentationViewModel,
-             loggedUserEmail: String
+             loggedUserEmail: String,
+             initialTab: String,
+             initialMeal: String,
+             initialDate: String
 ) {
-    var selectedDate by remember { mutableStateOf(LocalDate.now().toString()) }
-    var selectedTab by remember { mutableStateOf("Meals") }
+    var selectedDate by remember { mutableStateOf(initialDate) }
+    var selectedTab by remember { mutableStateOf(initialTab) }
+    var selectedMeal by remember { mutableStateOf(initialMeal) }
+    var rightDrawerOpen by remember { mutableStateOf(false) }
 
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    var rightDrawerOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(loggedUserEmail) {
+    // Zakładamy, że montserratFont jest dostępny
+    val montserratFont = androidx.compose.ui.text.font.FontFamily.Default
+
+    LaunchedEffect(loggedUserEmail, selectedDate) {
         shoppingListViewModel.setUser(loggedUserEmail)
         if (selectedTab == "Shopping") {
             shoppingListViewModel.setDate(selectedDate)
         }
     }
 
-    // 🔹 główny kontener z lewym menu
     ModalNavigationDrawer(
         drawerState = leftDrawerState,
         gesturesEnabled = !rightDrawerOpen,
@@ -85,15 +90,15 @@ fun MainView(navController: NavController,
             }
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
-
+        Scaffold(
+            topBar = {
                 SnackTrackTopBarCalendar(
-                    onDateSelected = { date -> selectedDate = date
+                    onDateSelected = { date ->
+                        selectedDate = date
                         if (selectedTab == "Shopping") {
                             shoppingListViewModel.setDate(date)
                         }
-                                     },
+                    },
                     onOpenMenu = {
                         if (!rightDrawerOpen) scope.launch { leftDrawerState.open() }
                     },
@@ -102,113 +107,125 @@ fun MainView(navController: NavController,
                         rightDrawerOpen = true
                     }
                 )
-
-                // Cała główna scrollowana zawartość
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .align(Alignment.CenterHorizontally)
-                        .padding(bottom = 10.dp, top = 10.dp)
-                ) {
-                    when (selectedTab) {
-                        "Meals" -> MealsDailyView(
-                            selectedDate = selectedDate,
-                            viewModel = registeredAlimentationViewModel
-                        )
-                        "Training" -> Text("Treningi dla daty $selectedDate")
-                        "Recipes" -> Text("Przepisy dnia $selectedDate")
-                        "Shopping" -> {
-                            ShoppingListScreen(
-                                viewModel = shoppingListViewModel,
-                                selectedDate = selectedDate
-                            )
-                        }
-                        "Profile" -> Text("Twój profil (data: $selectedDate)")
+            },
+            bottomBar = {
+                Column {
+                    // ✅ Warunkowe renderowanie SUMMARYBAR
+                    if (selectedTab != "AddProduct") {
+                        SummaryBar()
                     }
-                }
-
-                // ✅ SummaryBar zawsze widoczny nad bottom nav
-                SummaryBar()
-
-                BottomNavigationBar(
-                    selectedItem = selectedTab,
-                    onItemSelected = { tab ->
-                        selectedTab = tab
-                        if (tab == "Shopping") {
-                            shoppingListViewModel.setDate(selectedDate)
-                        }
-                    }
-                )
-            }
-
-            // 🟢 Overlay zamykający panel po kliknięciu poza nim
-            if (rightDrawerOpen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .clickable { rightDrawerOpen = false },
-                    contentAlignment = Alignment.CenterEnd
-                ) {
-                    // Panel powiadomień (kliknięcia w niego NIE zamykają panelu)
-                    // Panel powiadomień (kliknięcia w niego NIE zamykają panelu)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .width(320.dp)
-                            .background(Color.White)
-                            .padding(16.dp)
-                            .clickable(enabled = false) {} // blokuje "przepuszczanie" kliknięcia
-                    ) {
-                        Column {
-                            // Nagłówek
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "Notifications",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = Color(0xFF4CAF50)
-                                )
-                                IconButton(
-                                    onClick = { rightDrawerOpen = false }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Close notification",
-                                        tint = Color.Gray
-                                    )
-                                }
+                    BottomNavigationBar(
+                        selectedItem = selectedTab,
+                        onItemSelected = { tab ->
+                            selectedTab = tab
+                            if (tab == "Shopping") {
+                                shoppingListViewModel.setDate(selectedDate)
                             }
+                        }
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxSize().background(Color.White)
+        ) { paddingValues ->
 
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues) // Padding od barów
+                    // ✅ KOREKTA: Zastosuj białe tło, zanim dodasz paddingi
+                    .background(Color.White)
+                    // ✅ KOREKTA: Dodaj dodatkowy 10.dp padding, teraz na białym tle
+                    .padding(top = 10.dp, bottom = 10.dp)
+            ) {
+                when (selectedTab) {
+                    "Meals" -> MealsDailyView(
+                        selectedDate = selectedDate,
+                        viewModel = registeredAlimentationViewModel,
+                        navController
+                    )
+                    "Training" -> Text("Treningi dla daty $selectedDate")
+                    "Recipes" -> Text("Przepisy dnia $selectedDate")
+                    "Shopping" -> {
+                        ShoppingListScreen(
+                            viewModel = shoppingListViewModel,
+                            selectedDate = selectedDate
+                        )
+                    }
+                    "Profile" -> Text("Twój profil (data: $selectedDate")
+                    "AddProduct" -> AddProductScreen(
+                        selectedDate = selectedDate,
+                        selectedMeal = selectedMeal,
+                        navController = navController
+                    )
+                }
+            }
+        }
 
-                            val notifications = NotificationsRepository.notifications
-
-                            if (notifications.isEmpty()) {
-                                Text(
-                                    text = "No new notification",
-                                    color = Color.Gray
+        // Panel powiadomień (Right Drawer)
+        if (rightDrawerOpen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { rightDrawerOpen = false },
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                // Panel powiadomień
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(320.dp)
+                        .background(Color.White)
+                        .padding(16.dp)
+                        .clickable(enabled = false) {}
+                ) {
+                    Column {
+                        // Nagłówek
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Notifications",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color(0xFF4CAF50)
+                            )
+                            IconButton(
+                                onClick = { rightDrawerOpen = false }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close notification",
+                                    tint = Color.Gray
                                 )
-                            } else {
-                                // LazyColumn dla scrollowania dużych list
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxHeight(),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(notifications.size) { index ->
-                                        val notification = notifications[index]
-                                        NotificationItem(
-                                            title = notification.title,
-                                            body = notification.body,
-                                            onDelete = {
-                                                NotificationsRepository.removeNotification(notification)
-                                            }
-                                        )
-                                    }
+                            }
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        val notifications = NotificationsRepository.notifications
+
+                        if (notifications.isEmpty()) {
+                            Text(
+                                text = "No new notification",
+                                color = Color.Gray
+                            )
+                        } else {
+                            // LazyColumn dla scrollowania dużych list
+                            LazyColumn(
+                                modifier = Modifier.fillMaxHeight(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(notifications.size) { index ->
+                                    val notification = notifications[index]
+                                    NotificationItem(
+                                        title = notification.title,
+                                        body = notification.body,
+                                        onDelete = {
+                                            NotificationsRepository.removeNotification(notification)
+                                        }
+                                    )
                                 }
                             }
                         }

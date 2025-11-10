@@ -1,7 +1,6 @@
 package study.snacktrackmobile.data.model.enums
 
-enum class MealNames
-{
+enum class MealNames {
     breakfast,
     lunch,
     dinner,

@@ -54,11 +54,11 @@ fun StartView(navController: NavController) {
             ) {
                 DisplayButton(text = "Login", onClick = {
                     navController.navigate("LoginView")
-                })
+                }, modifier = Modifier.fillMaxWidth(0.5f))
                 Spacer(modifier = Modifier.height(16.dp))
                 DisplayButton(text = "Register", onClick = {
                     navController.navigate("RegisterView")
-                })
+                }, modifier = Modifier.fillMaxWidth(0.5f))
                 Spacer(modifier = Modifier.height(20.dp))
 
                 OutlinedButton(

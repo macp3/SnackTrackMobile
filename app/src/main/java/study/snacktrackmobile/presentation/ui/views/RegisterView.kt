@@ -182,7 +182,8 @@ fun RegisterFormContent(
                 value = name,
                 label = "Name",
                 isError = nameError,
-                onValueChange = onNameChange
+                width = 300.dp,
+                onValueChange = onNameChange,
             )
 
             Spacer(modifier = Modifier.height(15.dp))
@@ -191,6 +192,7 @@ fun RegisterFormContent(
                 value = surname,
                 label = "Surname",
                 isError = surnameError,
+                width = 300.dp,
                 onValueChange = onSurnameChange
             )
 
@@ -200,6 +202,7 @@ fun RegisterFormContent(
                 value = email,
                 label = "Email",
                 isError = emailError,
+                width = 300.dp,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 onValueChange = onEmailChange
             )
@@ -234,7 +237,7 @@ fun RegisterFormContent(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            DisplayButton("Register", onClick = onRegisterClick)
+            DisplayButton("Register", onClick = onRegisterClick, modifier = Modifier.fillMaxWidth(0.5f))
         }
     }
 }

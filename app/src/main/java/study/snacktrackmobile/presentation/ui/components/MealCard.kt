@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
@@ -22,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.Meal
 import study.snacktrackmobile.data.storage.TokenStorage
@@ -30,8 +32,7 @@ import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 
 @Composable
-fun MealCard(meal: Meal, viewModel: RegisteredAlimentationViewModel)
-{
+fun MealCard(meal: Meal, viewModel: RegisteredAlimentationViewModel, navController: NavController, selectedDate: String) {
     var expanded by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -40,41 +41,57 @@ fun MealCard(meal: Meal, viewModel: RegisteredAlimentationViewModel)
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xffF3F0F0))
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(top = 2.dp, bottom = 12.dp, start = 12.dp, end = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     meal.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontFamily = montserratFont,
                 )
-                IconButton(onClick = { expanded = !expanded }) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null
-                    )
+
+                Row {
+                    // przycisk dodaj produkt
+                    IconButton(onClick = {
+                        navController.navigate("MainView?tab=AddProduct&meal=${meal.name}&date=$selectedDate") {
+                            popUpTo("MainView") { inclusive = true }
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add product"
+                        )
+                    }
+
+                    // przycisk rozwiń/zwiń
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null
+                        )
+                    }
                 }
             }
 
-            // Kalorie
-            Text(
-                "${meal.kcal} kcal",
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = montserratFont,
-            )
 
-            // ➡️ Podsumowanie makroskładników (wyrównane do prawej)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "${meal.products.sumOf { it.protein.toInt() }}P  " +
-                            "${meal.products.sumOf { it.fat.toInt() }}F  " +
-                            "${meal.products.sumOf { it.carbohydrates.toInt() }}C",
+                    "${meal.kcal} kcal",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = montserratFont,
+                    textAlign = TextAlign.Start
+                )
+
+                Text(
+                    "${String.format("%.1f", meal.products.sumOf { it.protein.toDouble() })}P  " +
+                            "${String.format("%.1f", meal.products.sumOf { it.fat.toDouble() })}F  " +
+                            "${String.format("%.1f", meal.products.sumOf { it.carbohydrates.toDouble() })}C",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = montserratFont,
                     textAlign = TextAlign.End

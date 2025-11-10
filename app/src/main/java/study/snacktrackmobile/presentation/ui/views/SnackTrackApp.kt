@@ -7,9 +7,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.database.AppDatabase
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
@@ -17,6 +19,7 @@ import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
+import java.time.LocalDate
 
 @Composable
 fun SnackTrackApp() {
@@ -57,13 +60,37 @@ fun SnackTrackApp() {
             LoginView(navController, userViewModel)
         }
 
-        composable("MainView") {
+        // ✅ Poprawiona trasa MainView: dodanie opcjonalnych argumentów dla głębokiej nawigacji
+        composable(
+            route = "MainView?tab={tab}&meal={meal}&date={date}",
+            arguments = listOf(
+                navArgument("tab") {
+                    type = NavType.StringType
+                    defaultValue = "Meals"
+                },
+                navArgument("meal") {
+                    type = NavType.StringType
+                    defaultValue = "Breakfast"
+                },
+                navArgument("date") {
+                    type = NavType.StringType
+                    defaultValue = LocalDate.now().toString()
+                }
+            )
+        ) { backStackEntry ->
             val loggedUserEmail by userViewModel.currentUserEmail.collectAsState()
+            val initialTab = backStackEntry.arguments?.getString("tab") ?: "Meals"
+            val initialMeal = backStackEntry.arguments?.getString("meal") ?: "Breakfast"
+            val initialDate = backStackEntry.arguments?.getString("date") ?: LocalDate.now().toString()
+
             MainView(
                 navController = navController,
                 shoppingListViewModel = shoppingListViewModel,
                 registeredAlimentationViewModel = registeredAlimentationViewModel,
-                loggedUserEmail = loggedUserEmail ?: ""
+                loggedUserEmail = loggedUserEmail ?: "",
+                initialTab = initialTab, // Przekazywanie initial states
+                initialMeal = initialMeal,
+                initialDate = initialDate
             )
         }
 
@@ -75,8 +102,11 @@ fun SnackTrackApp() {
             val selectedDate = backStackEntry.arguments?.getString("date") ?: ""
             MealsDailyView(
                 selectedDate = selectedDate,
-                viewModel = registeredAlimentationViewModel
+                viewModel = registeredAlimentationViewModel,
+                navController
             )
         }
+
+        // ❌ USUNIĘTO OSOBNĄ TRASĘ DLA AddProductScreen (obsługiwana w MainView)
     }
 }
