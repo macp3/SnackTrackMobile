@@ -8,7 +8,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
@@ -20,15 +22,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.ShoppingList
+import study.snacktrackmobile.data.model.ShoppingListItem
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.views.montserratFont
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListScreen(
     viewModel: ShoppingListViewModel,
     selectedDate: String
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    var showCopyDialog by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
     var newListName by remember { mutableStateOf("") }
     var newlyAddedListId by remember { mutableStateOf<Long?>(null) }
     var showDeleteListDialog by remember { mutableStateOf<ShoppingList?>(null) }
@@ -68,19 +77,38 @@ fun ShoppingListScreen(
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = { showDialog = true },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE0E0E0),
-                    contentColor = Color.Black
-                )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add list")
-                Spacer(Modifier.width(8.dp))
-                Text("Add new list", fontFamily = montserratFont)
+                Button(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE0E0E0),
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add list")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add new list", fontFamily = montserratFont)
+                }
+
+                Button(
+                    onClick = { showCopyDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE0E0E0),
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy lists")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Copy", fontFamily = montserratFont)
+                }
             }
         }
+
     }
 
     // Dialog tworzenia nowej listy
@@ -110,6 +138,31 @@ fun ShoppingListScreen(
             dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancel") } }
         )
     }
+    if (showCopyDialog) {
+        DatePickerDialog(
+            onDismissRequest = { showCopyDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        if (selectedMillis != null) {
+                            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            val formattedDate = formatter.format(Date(selectedMillis))
+                            viewModel.copyListsFromDate(formattedDate, selectedDate)
+                        }
+                        showCopyDialog = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCopyDialog = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+
 
     // Dialog potwierdzenia usunięcia listy
     if (showDeleteListDialog != null) {
@@ -141,28 +194,43 @@ fun ShoppingListItemCard(
     var newItemName by remember { mutableStateOf("") }
     var newItemQuantity by remember { mutableStateOf("") }
     var newItemDescription by remember { mutableStateOf("") }
+    var showEditItemDialog by remember { mutableStateOf(false) }
+    var itemToEdit by remember { mutableStateOf<ShoppingListItem?>(null) }
+    var editedItemName by remember { mutableStateOf("") }
+    var editedItemQuantity by remember { mutableStateOf("") }
+    var editedItemDescription by remember { mutableStateOf("") }
+    var showEditListDialog by remember { mutableStateOf(false) }
+    var editedListName by remember { mutableStateOf(list.name) }
+
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xffF3F0F0))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Nagłówek listy
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     list.name,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontFamily = montserratFont
+                    fontFamily = montserratFont,
+                    modifier = Modifier.weight(1f)
                 )
+
+                IconButton(onClick = { showEditListDialog = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit list name")
+                }
+
                 IconButton(onClick = onDeleteList) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete list")
                 }
             }
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -206,13 +274,30 @@ fun ShoppingListItemCard(
                             overflow = TextOverflow.Ellipsis
                         )
 
-                        IconButton(onClick = { viewModel.deleteItemFromList(list, item) }) {
-                            Icon(
-                                imageVector = Icons.Default.Close, // ikona zamiast tekstu
-                                contentDescription = "Delete item",
-                                tint = Color.Black // kolor czarny
-                            )
+                        Row {
+                            IconButton(onClick = {
+                                itemToEdit = item
+                                editedItemName = item.name
+                                editedItemQuantity = item.quantity
+                                editedItemDescription = item.description
+                                showEditItemDialog = true
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit item",
+                                    tint = Color.DarkGray
+                                )
+                            }
+
+                            IconButton(onClick = { viewModel.deleteItemFromList(list, item) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Delete item",
+                                    tint = Color.Black
+                                )
+                            }
                         }
+
 
                     }
 
@@ -298,4 +383,76 @@ fun ShoppingListItemCard(
             }
         )
     }
+    if (showEditItemDialog && itemToEdit != null) {
+        AlertDialog(
+            onDismissRequest = { showEditItemDialog = false },
+            title = { Text("Edit Item") },
+            text = {
+                Column {
+                    TextField(
+                        value = editedItemName,
+                        onValueChange = { if (it.length <= 35) editedItemName = it },
+                        label = { Text("Item name") },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = editedItemQuantity,
+                        onValueChange = { if (it.length <= 9) editedItemQuantity = it },
+                        label = { Text("Quantity") },
+                        singleLine = true
+                    )
+                    TextField(
+                        value = editedItemDescription,
+                        onValueChange = { editedItemDescription = it },
+                        label = { Text("Description") },
+                        maxLines = 5
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val oldItem = itemToEdit ?: return@TextButton
+                    viewModel.editItemInList(
+                        list,
+                        oldItem,
+                        editedItemName,
+                        editedItemQuantity,
+                        editedItemDescription
+                    )
+                    showEditItemDialog = false
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditItemDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+    if (showEditListDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditListDialog = false },
+            title = { Text("Edit List Name") },
+            text = {
+                TextField(
+                    value = editedListName,
+                    onValueChange = { if (it.length <= 40) editedListName = it },
+                    label = { Text("List name") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (editedListName.isNotBlank()) {
+                        viewModel.updateListName(list, editedListName)
+                        showEditListDialog = false
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditListDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+
+
 }
