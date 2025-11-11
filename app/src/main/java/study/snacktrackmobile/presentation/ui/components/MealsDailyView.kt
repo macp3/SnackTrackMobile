@@ -50,7 +50,8 @@ fun MealsDailyView(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .padding(top = 10.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(mealsToDisplay) { meal ->

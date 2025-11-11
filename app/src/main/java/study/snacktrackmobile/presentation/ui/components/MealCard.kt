@@ -32,7 +32,12 @@ import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 
 @Composable
-fun MealCard(meal: Meal, viewModel: RegisteredAlimentationViewModel, navController: NavController, selectedDate: String) {
+fun MealCard(
+    meal: Meal,
+    viewModel: RegisteredAlimentationViewModel,
+    navController: NavController,
+    selectedDate: String
+) {
     var expanded by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -76,7 +81,6 @@ fun MealCard(meal: Meal, viewModel: RegisteredAlimentationViewModel, navControll
                 }
             }
 
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -108,12 +112,20 @@ fun MealCard(meal: Meal, viewModel: RegisteredAlimentationViewModel, navControll
                 } else {
                     Column {
                         meal.products.forEach { product ->
-                            ProductRow(product) { id ->
-                                coroutineScope.launch {
-                                    val token = TokenStorage.getToken(context) ?: return@launch
-                                    viewModel.deleteEntry(token, id)
+                            ProductRow(
+                                product = product,
+                                onDelete = { id ->
+                                    coroutineScope.launch {
+                                        val token = TokenStorage.getToken(context) ?: return@launch
+                                        viewModel.deleteEntry(token, id)
+                                    }
+                                },
+                                onEdit = { selectedProduct ->
+                                    navController.currentBackStackEntry?.savedStateHandle?.set("product", selectedProduct)
+                                    navController.navigate("productEdit?date=$selectedDate")
                                 }
-                            }
+
+                            )
                         }
                     }
                 }
@@ -121,3 +133,4 @@ fun MealCard(meal: Meal, viewModel: RegisteredAlimentationViewModel, navControll
         }
     }
 }
+

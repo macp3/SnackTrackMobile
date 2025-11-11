@@ -18,27 +18,34 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import study.snacktrackmobile.data.api.FoodApi
 import study.snacktrackmobile.data.api.TrainingApi
+import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.AddProductScreen
+import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.NotificationItem
+import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
 import study.snacktrackmobile.presentation.ui.components.ShoppingListScreen
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
 import study.snacktrackmobile.presentation.ui.components.SummaryBar
+import study.snacktrackmobile.viewmodel.FoodViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.TrainingViewModel
 import java.time.LocalDate
+import kotlin.jvm.java
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainView(navController: NavController,
              shoppingListViewModel: ShoppingListViewModel,
              registeredAlimentationViewModel: RegisteredAlimentationViewModel,
+             foodViewModel: FoodViewModel,
              loggedUserEmail: String,
              initialTab: String,
              initialMeal: String,
@@ -48,6 +55,8 @@ fun MainView(navController: NavController,
     var selectedTab by remember { mutableStateOf(initialTab) }
     var selectedMeal by remember { mutableStateOf(initialMeal) }
     var rightDrawerOpen by remember { mutableStateOf(false) }
+    var selectedProduct by remember { mutableStateOf<EssentialFoodResponse?>(null) }
+
 
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -136,7 +145,7 @@ fun MainView(navController: NavController,
             bottomBar = {
                 Column {
                     // ✅ Warunkowe renderowanie SUMMARYBAR
-                    if (selectedTab != "AddProduct") {
+                    if (selectedTab != "AddProduct" && selectedTab != "AddProductToDatabase") {
                         SummaryBar()
                     }
                     BottomNavigationBar(
@@ -160,8 +169,7 @@ fun MainView(navController: NavController,
                     .padding(paddingValues) // Padding od barów
                     // ✅ KOREKTA: Zastosuj białe tło, zanim dodasz paddingi
                     .background(Color.White)
-                    // ✅ KOREKTA: Dodaj dodatkowy 10.dp padding, teraz na białym tle
-                    .padding(top = 10.dp, bottom = 10.dp)
+                    //.padding(top = 10.dp, bottom = 10.dp)
             ) {
                     when (selectedTab) {
                         "Meals" -> MealsDailyView(
@@ -183,12 +191,37 @@ fun MainView(navController: NavController,
                             )
                         }
                         "Profile" -> Text("Twój profil (data: $selectedDate)")
-                        "AddProduct" -> AddProductScreen(
-                            selectedDate = selectedDate,
-                            selectedMeal = selectedMeal,
-                            navController = navController
-                        )
-                }
+                        "AddProduct" -> {
+                            if (selectedProduct == null) {
+                                AddProductScreen(
+                                    selectedDate = selectedDate,
+                                    selectedMeal = selectedMeal,
+                                    navController = navController,
+                                    foodViewModel = foodViewModel,
+                                    onProductClick = { product -> selectedProduct = product }
+                                )
+                            } else {
+                                ProductDetailsScreen(
+                                    product = selectedProduct!!,
+                                    selectedDate = selectedDate,
+                                    selectedMeal = selectedMeal,
+                                    onBack = { selectedProduct = null },
+                                    registeredAlimentationViewModel = registeredAlimentationViewModel
+                                )
+                            }
+                        }
+
+
+                        "AddProductToDatabase" -> {
+                            AddProductToDatabaseScreen(
+                                navController = navController,
+                                foodViewModel = foodViewModel,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    //.padding(8.dp)
+                            )
+                        }
+                    }
             }
         }
 

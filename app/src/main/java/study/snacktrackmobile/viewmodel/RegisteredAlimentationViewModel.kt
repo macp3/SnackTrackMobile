@@ -1,6 +1,7 @@
 package study.snacktrackmobile.viewmodel
 
 import android.content.Context
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,10 +11,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.Meal
 import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
 import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import study.snacktrackmobile.data.storage.TokenStorage
+import androidx.compose.runtime.State
 
 class RegisteredAlimentationViewModel(private val repository: RegisteredAlimentationRepository) :
     ViewModel() {
@@ -26,6 +29,9 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
 
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     val products: StateFlow<List<Product>> = _products.asStateFlow()
+
+    private val _errorMessage = mutableStateOf<String?>(null)
+    val errorMessage: State<String?> = _errorMessage
 
     //tymczasowo
     private val allProducts = listOf(
@@ -70,14 +76,62 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
                 val ef = entry.essentialFood
                 val api = entry.mealApi
 
+                // jawne rzutowanie na Float
+                val baseWeight: Float = ef?.defaultWeight ?: 0f
+                val baseCalories: Float = ef?.calories ?: api?.calorie?.toFloat() ?: 0f
+                val baseProtein: Float = ef?.protein ?: api?.protein ?: 0f
+                val baseFat: Float = ef?.fat ?: api?.fat ?: 0f
+                val baseCarbs: Float = ef?.carbohydrates ?: api?.carbohydrates ?: 0f
+
+                val piecesCount: Float = (entry.pieces ?: 0).toFloat()
+                val amountInUnit: Float = entry.amount.toFloat() ?: 0f
+
+                // 🔽 Oblicz wagę i wartości odżywcze
+                val totalWeight: Float
+                val kcal: Float
+                val protein: Float
+                val fat: Float
+                val carbohydrates: Float
+
+                if (piecesCount > 0f) {
+                    // przypadek: sztuki
+                    totalWeight = baseWeight * piecesCount
+                    kcal = baseCalories * piecesCount
+                    protein = baseProtein * piecesCount
+                    fat = baseFat * piecesCount
+                    carbohydrates = baseCarbs * piecesCount
+                } else if (amountInUnit > 0f && baseWeight > 0f) {
+                    // przypadek: servingSizeUnit (np. gramy)
+                    totalWeight = amountInUnit
+                    val ratio = amountInUnit / baseWeight
+                    kcal = baseCalories * ratio
+                    protein = baseProtein * ratio
+                    fat = baseFat * ratio
+                    carbohydrates = baseCarbs * ratio
+                } else {
+                    // fallback
+                    totalWeight = baseWeight
+                    kcal = baseCalories
+                    protein = baseProtein
+                    fat = baseFat
+                    carbohydrates = baseCarbs
+                }
+
+                val amountText = if (piecesCount > 0f) {
+                    "${piecesCount.toInt()}x piece"
+                } else {
+                    "$totalWeight ${ef?.servingSizeUnit ?: ""}"
+                }
+
+
                 Product(
                     id = entry.id,
                     name = ef?.name ?: api?.name ?: "Unknown",
-                    amount = "${entry.amount} ${ef?.servingSizeUnit ?: ""}",
-                    kcal = ef?.calories?.toInt() ?: api?.calorie ?: 0,
-                    protein = ef?.protein ?: api?.protein ?: 0f,
-                    fat = ef?.fat ?: api?.fat ?: 0f,
-                    carbohydrates = ef?.carbohydrates ?: api?.carbohydrates ?: 0f
+                    amount = amountText,
+                    kcal = kcal.toInt(),
+                    protein = protein,
+                    fat = fat,
+                    carbohydrates = carbohydrates
                 )
             }
 
@@ -88,6 +142,29 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
             )
         }
     }
+
+    fun updateMealProduct(
+        context: Context,
+        productId: Int,
+        dto: RegisteredAlimentationRequest,
+        date: String
+    ) {
+        viewModelScope.launch {
+            val token = TokenStorage.getToken(context) // ✅ teraz OK
+            if (token != null) {
+                try {
+                    repository.updateEntry(token, productId, dto)
+                    loadMeals(token, date)
+                } catch (e: Exception) {
+                    _errorMessage.value = e.message
+                }
+            } else {
+                _errorMessage.value = "No auth token. Log in again"
+            }
+        }
+    }
+
+
 
     fun deleteEntry(token: String, id: Int) {
         viewModelScope.launch {

@@ -12,13 +12,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import study.snacktrackmobile.data.api.FoodApi
 import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.database.AppDatabase
+import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
+import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
+import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
+import study.snacktrackmobile.viewmodel.FoodViewModel
 import java.time.LocalDate
 
 @Composable
@@ -39,11 +45,20 @@ fun SnackTrackApp() {
         }
     )
 
+    val foodViewModel: FoodViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return FoodViewModel(Request.foodApi, context) as T   // ✅
+            }
+        }
+    )
+
     // RegisteredAlimentationRepository + ViewModel
     val api = Request.api
     val repo = RegisteredAlimentationRepository(api)
     val registeredAlimentationViewModel: RegisteredAlimentationViewModel =
         viewModel(factory = RegisteredAlimentationViewModel.provideFactory(repo))
+
 
     // === NavHost ===
     NavHost(navController = navController, startDestination = "StartView") {
@@ -89,7 +104,8 @@ fun SnackTrackApp() {
                 loggedUserEmail = loggedUserEmail ?: "",
                 initialTab = initialTab, // Przekazywanie initial states
                 initialMeal = initialMeal,
-                initialDate = initialDate
+                initialDate = initialDate,
+                foodViewModel = foodViewModel
             )
         }
 
@@ -106,6 +122,23 @@ fun SnackTrackApp() {
             )
         }
 
-        // ❌ USUNIĘTO OSOBNĄ TRASĘ DLA AddProductScreen (obsługiwana w MainView)
+        /*composable("productEdit?date={date}") { backStackEntry ->
+            val date = backStackEntry.arguments?.getString("date") ?: ""
+            val product = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<Product>("product")
+
+            if (product != null) {
+                ProductDetailsScreen(
+                    product = product,
+                    selectedDate = date,
+                    selectedMeal = product.name,
+                    onBack = { navController.popBackStack() },
+                    registeredAlimentationViewModel = registeredAlimentationViewModel,
+                    isEditMode = true,
+                    productId = product.id
+                )
+            }
+        }*/
     }
 }

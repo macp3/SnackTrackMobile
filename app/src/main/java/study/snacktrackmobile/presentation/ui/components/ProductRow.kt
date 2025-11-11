@@ -1,5 +1,6 @@
 package study.snacktrackmobile.presentation.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,10 +25,15 @@ import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
-fun ProductRow(product: Product, onDelete: (Int) -> Unit) {
+fun ProductRow(
+    product: Product,
+    onDelete: (Int) -> Unit,
+    onEdit: (Product) -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onEdit(product) }
             .padding(top = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {

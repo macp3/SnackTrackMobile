@@ -1,5 +1,6 @@
 package study.snacktrackmobile.data.repository
 
+import androidx.compose.ui.text.toLowerCase
 import study.snacktrackmobile.data.api.ApiService
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
@@ -28,7 +29,7 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         val body = RegisteredAlimentationRequest(
             essentialId = essentialId,
             timestamp = date,
-            mealName = mealName,
+            mealName = mealName.lowercase(),
             amount = amount,
             pieces = pieces
         )
@@ -36,5 +37,10 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         val res = api.addEntry("Bearer $token", body, date)
         return res.isSuccessful
     }
+
+    suspend fun updateEntry(token: String, id: Int, dto: RegisteredAlimentationRequest) {
+        api.updateEntry("Bearer $token", id, dto)
+    }
+
 }
 

@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -34,44 +35,54 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
+import study.snacktrackmobile.data.storage.TokenStorage
+import study.snacktrackmobile.viewmodel.FoodViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
 fun AddProductScreen(
     selectedDate: String,
     selectedMeal: String,
-    navController: NavController
+    navController: NavController,
+    foodViewModel: FoodViewModel,
+    onProductClick: (EssentialFoodResponse) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedMeal by remember { mutableStateOf(selectedMeal) }
+    val allFoods by foodViewModel.foods.collectAsState()
 
-    val meals = listOf("Breakfast", "Lunch", "Dinner", "Supper", "Snack")
+    val context = LocalContext.current
+    val filteredProducts = allFoods.filter { it.name.toString().contains(searchQuery, ignoreCase = true) }
 
-    val products = remember {
-        mutableStateListOf(
-            Product(1, "Apple", "100g", 52, 0.3f, 0.2f, 14f),
-            Product(2, "Banana", "100g", 89, 1.1f, 0.3f, 23f),
-            Product(3, "Orange", "100g", 62, 1f, 0.2f, 15f),
-            Product(4, "Bread", "100g", 265, 9f, 3.2f, 49f),
-            Product(5, "Milk", "100ml", 42, 3.4f, 1f, 5f),
-            Product(6, "Cheese", "100g", 402, 25f, 33f, 1.3f)
-        )
+    // pobranie danych przy pierwszym wejściu
+    LaunchedEffect(Unit) {
+        val token = TokenStorage.getToken(context)
+        if (token != null) {
+            foodViewModel.fetchAllFoods(token)
+        }
     }
 
-    val filteredProducts = products.filter { it.name.contains(searchQuery, ignoreCase = true) }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-
-        // Nagłówek z wybranym posiłkiem
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Nagłówek
         Text(
-            text = "Selected meal: $selectedMeal",
+            text = selectedMeal,
             modifier = Modifier.padding(start = 16.dp, top = 16.dp),
-            color = Color.Black
+            color = Color.Black,
+            fontFamily = montserratFont,
+            fontSize = 18.sp,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Bold
         )
 
         // SearchBar
@@ -84,51 +95,57 @@ fun AddProductScreen(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 label = "Search product",
-                isError = false
+                isError = false,
             )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Scrollowalna lista produktów zajmująca pozostałe miejsce
+        // Lista produktów z backendu
         LazyColumn(
             modifier = Modifier
-                .weight(1f) // kluczowe: wypełnia przestrzeń nad przyciskami i nie przykrywa BottomBar
-                .fillMaxWidth(),
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(start = 10.dp, end = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredProducts) { product ->
-                ProductItem(product)
+                ProductItem(product) { clicked ->
+                    onProductClick(clicked) // ✅ zamiast navController.navigate
+                }
             }
         }
 
-        // Przyciski nad BottomBar
+        // Przyciski
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            DisplayButton("Add new product", onClick = {}, modifier = Modifier.size(width = 120.dp, height = 60.dp), fontSize = 14)
-            Spacer(modifier = Modifier.width(16.dp)) // odstęp między przyciskami
+            DisplayButton(
+                "Add new product",
+                onClick = { navController.navigate("MainView?tab=AddProductToDatabase&meal=$selectedMeal&date=$selectedDate") },
+                modifier = Modifier.size(width = 120.dp, height = 60.dp),
+                fontSize = 14
+            )
+            Spacer(modifier = Modifier.width(16.dp))
             DisplayButton("Add meal", onClick = {}, modifier = Modifier.size(width = 120.dp, height = 60.dp), fontSize = 14)
         }
     }
 }
 
-
 @Composable
-fun ProductItem(product: Product) {
+fun ProductItem(product: EssentialFoodResponse, onClick: (EssentialFoodResponse) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFEDEDED), RoundedCornerShape(8.dp))
-            .clickable { /* TODO: handle click */ }
+            .clickable { onClick(product) }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = product.name)
+        Text(text = product.name ?: "", fontFamily = montserratFont, fontSize = 16.sp)
     }
 }
-
 
