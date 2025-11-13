@@ -20,6 +20,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import study.snacktrackmobile.data.api.FoodApi
 import study.snacktrackmobile.data.api.TrainingApi
+import study.snacktrackmobile.data.api.UserApi
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
@@ -27,14 +28,17 @@ import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.AddProductScreen
 import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
+import study.snacktrackmobile.presentation.ui.components.EditBodyParametersScreen
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.NotificationItem
 import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
+import study.snacktrackmobile.presentation.ui.components.ProfileScreen
 import study.snacktrackmobile.presentation.ui.components.ShoppingListScreen
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
 import study.snacktrackmobile.presentation.ui.components.SummaryBar
 import study.snacktrackmobile.viewmodel.FoodViewModel
+import study.snacktrackmobile.viewmodel.ProfileViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.TrainingViewModel
 import java.time.LocalDate
@@ -79,6 +83,16 @@ fun MainView(navController: NavController,
     val trainingViewModel = remember {
         TrainingViewModel(api = trainingApi)
     }
+
+    val userApi = remember {
+        Retrofit.Builder()
+            .baseUrl(ApiConfig.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(UserApi::class.java)
+    }
+
+    val profileViewModel = remember { ProfileViewModel(userApi) }
 
     val montserratFont = androidx.compose.ui.text.font.FontFamily.Default
 
@@ -190,7 +204,16 @@ fun MainView(navController: NavController,
                                 selectedDate = selectedDate
                             )
                         }
-                        "Profile" -> Text("Twój profil (data: $selectedDate)")
+                        "Profile" -> {
+                            ProfileScreen(
+                                viewModel = profileViewModel,
+                                onEditBodyParameters = { selectedTab = "EditProfile" }
+                            )
+                        }
+                        "EditProfile" -> EditBodyParametersScreen(
+                            viewModel = profileViewModel,
+                            onBack = { selectedTab = "Profile" }
+                        )
                         "AddProduct" -> {
                             if (selectedProduct == null) {
                                 AddProductScreen(

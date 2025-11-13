@@ -1,7 +1,9 @@
 package study.snacktrackmobile.data.model.enums
 
-enum class DietTypes
-{
+import kotlinx.serialization.Serializable
+
+@Serializable
+enum class DietType {
     balanced,
     keto,
     low_carb,
