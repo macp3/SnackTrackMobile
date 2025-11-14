@@ -18,6 +18,15 @@ import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import study.snacktrackmobile.data.storage.TokenStorage
 import androidx.compose.runtime.State
 
+
+private data class Quadruple<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
+
+
 class RegisteredAlimentationViewModel(private val repository: RegisteredAlimentationRepository) :
     ViewModel() {
 
@@ -70,78 +79,58 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
     }
 
     private fun mapToUi(input: List<RegisteredAlimentationResponse>): List<Meal> {
-        return input.groupBy { normalizeMealName(it.mealName ?: "Other") }.map { (mealName, entries) ->
+        return input
+            .groupBy { normalizeMealName(it.mealName ?: "Other") }
+            .map { (mealName, entries) ->
 
-            val products = entries.map { entry ->
-                val ef = entry.essentialFood
-                val api = entry.mealApi
+                var kcalSum = 0.0
 
-                // jawne rzutowanie na Float
-                val baseWeight: Float = ef?.defaultWeight ?: 0f
-                val baseCalories: Float = ef?.calories ?: api?.calorie?.toFloat() ?: 0f
-                val baseProtein: Float = ef?.protein ?: api?.protein ?: 0f
-                val baseFat: Float = ef?.fat ?: api?.fat ?: 0f
-                val baseCarbs: Float = ef?.carbohydrates ?: api?.carbohydrates ?: 0f
+                val recalculatedEntries = entries.map { entry ->
+                    val ef = entry.essentialFood
+                    val api = entry.mealApi
 
-                val piecesCount: Float = (entry.pieces ?: 0).toFloat()
-                val amountInUnit: Float = entry.amount.toFloat() ?: 0f
+                    val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
+                    val baseCalories = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
+                    val baseProtein = (ef?.protein ?: api?.protein ?: 0f).toDouble()
+                    val baseFat = (ef?.fat ?: api?.fat ?: 0f).toDouble()
+                    val baseCarbs = (ef?.carbohydrates ?: api?.carbohydrates ?: 0f).toDouble()
 
-                // 🔽 Oblicz wagę i wartości odżywcze
-                val totalWeight: Float
-                val kcal: Float
-                val protein: Float
-                val fat: Float
-                val carbohydrates: Float
+                    val piecesCount = (entry.pieces ?: 0).toDouble()
+                    val amount = entry.amount ?: 0f
 
-                if (piecesCount > 0f) {
-                    // przypadek: sztuki
-                    totalWeight = baseWeight * piecesCount
-                    kcal = baseCalories * piecesCount
-                    protein = baseProtein * piecesCount
-                    fat = baseFat * piecesCount
-                    carbohydrates = baseCarbs * piecesCount
-                } else if (amountInUnit > 0f && baseWeight > 0f) {
-                    // przypadek: servingSizeUnit (np. gramy)
-                    totalWeight = amountInUnit
-                    val ratio = amountInUnit / baseWeight
-                    kcal = baseCalories * ratio
-                    protein = baseProtein * ratio
-                    fat = baseFat * ratio
-                    carbohydrates = baseCarbs * ratio
-                } else {
-                    // fallback
-                    totalWeight = baseWeight
-                    kcal = baseCalories
-                    protein = baseProtein
-                    fat = baseFat
-                    carbohydrates = baseCarbs
+                    val ratio = when {
+                        piecesCount > 0 -> piecesCount
+                        amount > 0f -> amount.toDouble() / baseWeight
+                        else -> 1.0
+                    }
+
+                    val kcal = baseCalories * ratio
+                    val protein = baseProtein * ratio
+                    val fat = baseFat * ratio
+                    val carbs = baseCarbs * ratio
+
+                    kcalSum += kcal
+
+                    // 🔽 Tworzysz nowy obiekt z przeliczonymi wartościami
+                    entry.copy(
+                        essentialFood = ef?.copy(
+                            calories = kcal.toFloat(),
+                            protein = protein.toFloat(),
+                            fat = fat.toFloat(),
+                            carbohydrates = carbs.toFloat()
+                        )
+                    )
                 }
 
-                val amountText = if (piecesCount > 0f) {
-                    "${piecesCount.toInt()}x piece"
-                } else {
-                    "$totalWeight ${ef?.servingSizeUnit ?: ""}"
-                }
-
-
-                Product(
-                    id = entry.id,
-                    name = ef?.name ?: api?.name ?: "Unknown",
-                    amount = amountText,
-                    kcal = kcal.toInt(),
-                    protein = protein,
-                    fat = fat,
-                    carbohydrates = carbohydrates
+                Meal(
+                    name = mealName,
+                    kcal = kcalSum.toInt(),
+                    alimentations = recalculatedEntries
                 )
             }
-
-            Meal(
-                name = mealName,
-                kcal = products.sumOf { it.kcal },
-                products = products
-            )
-        }
     }
+
+
 
     fun updateMealProduct(
         context: Context,
@@ -150,19 +139,19 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         date: String
     ) {
         viewModelScope.launch {
-            val token = TokenStorage.getToken(context) // ✅ teraz OK
+            val token = TokenStorage.getToken(context)
             if (token != null) {
                 try {
                     repository.updateEntry(token, productId, dto)
-                    loadMeals(token, date)
+                    loadMeals(token, date) // odświeżenie UI
                 } catch (e: Exception) {
                     _errorMessage.value = e.message
                 }
-            } else {
-                _errorMessage.value = "No auth token. Log in again"
             }
         }
     }
+
+
 
 
 

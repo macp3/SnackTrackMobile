@@ -4,12 +4,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RegisteredAlimentationRequest(
-    val essentialId: Int? = null,
+    val essentialId: Int?,
     val mealApiId: Int? = null,
     val mealId: Int? = null,
-    val timestamp: String? = null, // LocalDate jako String "YYYY-MM-DD"
-    val mealName: String,          // np. "Breakfast", "Lunch"
+    val timestamp: String,        // wysyłamy jako ISO string "yyyy-MM-dd"
+    val mealName: String,         // enum name np. "BREAKFAST"
     val amount: Float? = null,
     val pieces: Int? = null
 )
+
 

@@ -38,8 +38,8 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         return res.isSuccessful
     }
 
-    suspend fun updateEntry(token: String, id: Int, dto: RegisteredAlimentationRequest) {
-        api.updateEntry("Bearer $token", id, dto)
+    suspend fun updateEntry(token: String, id: Int, dto: RegisteredAlimentationRequest): RegisteredAlimentationResponse {
+        return api.updateEntry("Bearer $token", id, dto)
     }
 
 }

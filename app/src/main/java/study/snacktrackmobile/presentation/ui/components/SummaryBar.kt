@@ -34,13 +34,14 @@ fun SummaryBar() {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SummaryInfo("kcal", SummaryBarState.totalKcal.toString())
-            SummaryInfo("Protein", "${SummaryBarState.totalProtein.toFloat()}g")
-            SummaryInfo("Fat", "${SummaryBarState.totalFat.toFloat()}g")
-            SummaryInfo("Carbohydrates", "${SummaryBarState.totalCarbs.toFloat()}g")
+            SummaryInfo("kcal", String.format("%.0f", SummaryBarState.totalKcal))
+            SummaryInfo("Protein", String.format("%.1fg", SummaryBarState.totalProtein))
+            SummaryInfo("Fat", String.format("%.1fg", SummaryBarState.totalFat))
+            SummaryInfo("Carbs", String.format("%.1fg", SummaryBarState.totalCarbs))
         }
     }
 }
+
 
 @Composable
 fun SummaryInfo(label: String, value: String) {

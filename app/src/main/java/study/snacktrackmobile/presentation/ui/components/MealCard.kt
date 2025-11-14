@@ -26,6 +26,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.Meal
+import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
@@ -35,6 +37,7 @@ import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 fun MealCard(
     meal: Meal,
     viewModel: RegisteredAlimentationViewModel,
+    onEditProduct: (RegisteredAlimentationResponse) -> Unit,
     navController: NavController,
     selectedDate: String
 ) {
@@ -42,36 +45,42 @@ fun MealCard(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    // Obliczenia makro dla całego posiłku
+    val protein = meal.alimentations.sumOf {
+        calcNutrient(it, (it.essentialFood?.protein ?: it.mealApi?.protein)?.toFloat())
+    }
+    val fat = meal.alimentations.sumOf {
+        calcNutrient(it, (it.essentialFood?.fat ?: it.mealApi?.fat)?.toFloat())
+    }
+    val carbs = meal.alimentations.sumOf {
+        calcNutrient(it, (it.essentialFood?.carbohydrates ?: it.mealApi?.carbohydrates)?.toFloat())
+    }
+    val kcal = meal.alimentations.sumOf {
+        calcNutrient(it, (it.essentialFood?.calories ?: it.mealApi?.calorie)?.toFloat())
+    }
+
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xffF3F0F0))
     ) {
-        Column(modifier = Modifier.padding(top = 2.dp, bottom = 12.dp, start = 12.dp, end = 12.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    meal.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontFamily = montserratFont,
-                )
+                Text(meal.name, style = MaterialTheme.typography.titleMedium, fontFamily = montserratFont)
 
                 Row {
-                    // przycisk dodaj produkt
                     IconButton(onClick = {
                         navController.navigate("MainView?tab=AddProduct&meal=${meal.name}&date=$selectedDate") {
                             popUpTo("MainView") { inclusive = true }
                         }
                     }) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add product"
-                        )
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Add product")
                     }
 
-                    // przycisk rozwiń/zwiń
                     IconButton(onClick = { expanded = !expanded }) {
                         Icon(
                             imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -86,51 +95,64 @@ fun MealCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "${meal.kcal} kcal",
+                    "${String.format("%.0f", kcal)} kcal",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = montserratFont,
-                    textAlign = TextAlign.Start
+                    fontFamily = montserratFont
                 )
-
                 Text(
-                    "${String.format("%.1f", meal.products.sumOf { it.protein.toDouble() })}P  " +
-                            "${String.format("%.1f", meal.products.sumOf { it.fat.toDouble() })}F  " +
-                            "${String.format("%.1f", meal.products.sumOf { it.carbohydrates.toDouble() })}C",
+                    "${String.format("%.1f", protein)}P ${String.format("%.1f", fat)}F ${String.format("%.1f", carbs)}C",
                     style = MaterialTheme.typography.bodySmall,
-                    fontFamily = montserratFont,
-                    textAlign = TextAlign.End
+                    fontFamily = montserratFont
                 )
             }
 
             if (expanded) {
-                if (meal.products.isEmpty()) {
-                    Text(
-                        "No products added yet",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = montserratFont,
-                    )
+                if (meal.alimentations.isEmpty()) {
+                    Text("No products added yet", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont)
                 } else {
                     Column {
-                        meal.products.forEach { product ->
+                        meal.alimentations.forEach { alimentation ->
                             ProductRow(
-                                product = product,
+                                alimentation = alimentation,
                                 onDelete = { id ->
                                     coroutineScope.launch {
                                         val token = TokenStorage.getToken(context) ?: return@launch
                                         viewModel.deleteEntry(token, id)
                                     }
                                 },
-                                onEdit = { selectedProduct ->
-                                    navController.currentBackStackEntry?.savedStateHandle?.set("product", selectedProduct)
-                                    navController.navigate("productEdit?date=$selectedDate")
+                                onEdit = { alimentation ->
+                                    navController.currentBackStackEntry
+                                        ?.savedStateHandle
+                                        ?.set("editAlimentationId", alimentation.id)
                                 }
-
                             )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+
+// 🔧 poprawione liczenie – wartości są dla defaultWeight, nie dla 100g
+private fun calcNutrient(
+    entry: RegisteredAlimentationResponse,
+    baseValue: Float?
+): Double {
+    val amount = entry.amount ?: 0f
+    val pieces = entry.pieces ?: 0f
+    val weight = entry.essentialFood?.defaultWeight ?: 100f
+    val valuePerDefaultWeight = baseValue ?: 0f
+
+    return when {
+        // jeśli podano sztuki → wartości * liczba sztuk
+        pieces > 0f -> valuePerDefaultWeight * pieces
+
+        // jeśli podano gramaturę → wartości * (amount / defaultWeight)
+        amount > 0f -> valuePerDefaultWeight * (amount / weight)
+
+        else -> 0.0
     }
 }
 

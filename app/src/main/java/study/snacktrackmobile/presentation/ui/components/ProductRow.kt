@@ -21,19 +21,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
 fun ProductRow(
-    product: Product,
+    alimentation: RegisteredAlimentationResponse,
     onDelete: (Int) -> Unit,
-    onEdit: (Product) -> Unit
+    onEdit: (RegisteredAlimentationResponse) -> Unit
 ) {
+    val food = alimentation.essentialFood ?: return
+
+    // 🔽 Tekst ilości – albo gram, albo sztuki
+    val amountText = when {
+        alimentation.pieces != null && alimentation.pieces > 0 ->
+            "${alimentation.pieces.toInt()} piece"
+        alimentation.amount != null && alimentation.amount > 0f ->
+            "${String.format("%.1f", alimentation.amount)} g"
+        else -> "-"
+    }
+
+    // 🔽 Formatowanie makro
+    val kcal = String.format("%.0f", food.calories ?: 0f)
+    val protein = String.format("%.1f", food.protein ?: 0f)
+    val fat = String.format("%.1f", food.fat ?: 0f)
+    val carbs = String.format("%.1f", food.carbohydrates ?: 0f)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEdit(product) }
+            .clickable { onEdit(alimentation) }
             .padding(top = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -45,15 +63,31 @@ fun ProductRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(product.name, style = MaterialTheme.typography.bodyLarge, fontFamily = montserratFont)
-                Text(product.amount, style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont)
+                Text(
+                    food.name ?: "-",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontFamily = montserratFont
+                )
+                Text(
+                    amountText,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = montserratFont
+                )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("${product.kcal} kcal", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont)
-                    Text("${product.protein}P ${product.fat}F ${product.carbohydrates}C", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont)
+                    Text(
+                        "$kcal kcal",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = montserratFont
+                    )
+                    Text(
+                        "${protein}P ${fat}F ${carbs}C",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = montserratFont
+                    )
                 }
-                IconButton(onClick = { onDelete(product.id) }) {
+                IconButton(onClick = { onDelete(alimentation.id) }) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Delete product",

@@ -11,7 +11,7 @@ data class RegisteredAlimentationResponse(
     val mealApi: ApiFoodResponseDetailed? = null,
     val meal: MealResponse? = null,
     val timestamp: String,
-    val amount: Double,
+    val amount: Float?,
     val pieces: Float? = null,
     val mealName: String? = null
 )

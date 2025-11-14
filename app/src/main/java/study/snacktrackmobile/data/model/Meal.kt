@@ -1,7 +1,9 @@
 package study.snacktrackmobile.data.model
 
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+
 data class Meal(
     val name: String,
     val kcal: Int,
-    val products: List<Product> = emptyList()
+    val alimentations: List<RegisteredAlimentationResponse> = emptyList()
 )

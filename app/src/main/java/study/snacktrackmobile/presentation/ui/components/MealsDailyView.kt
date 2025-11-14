@@ -35,11 +35,11 @@ fun MealsDailyView(
     // remember the meals so recomposition isn't heavy
     remember(mealsState) { mealsState }
     val defaultMeals = listOf(
-        Meal(name = "Breakfast", products = emptyList(), kcal = 0),
-        Meal(name = "Lunch", products = emptyList(), kcal = 0),
-        Meal(name = "Dinner", products = emptyList(), kcal = 0),
-        Meal(name = "Supper", products = emptyList(), kcal = 0),
-        Meal(name = "Snack", products = emptyList(), kcal = 0)
+        Meal(name = "Breakfast", alimentations = emptyList(), kcal = 0),
+        Meal(name = "Lunch", alimentations = emptyList(), kcal = 0),
+        Meal(name = "Dinner", alimentations = emptyList(), kcal = 0),
+        Meal(name = "Supper", alimentations = emptyList(), kcal = 0),
+        Meal(name = "Snack", alimentations = emptyList(), kcal = 0)
     )
     val mealsToDisplay = remember(mealsState) {
         defaultMeals.map { default ->
@@ -55,7 +55,17 @@ fun MealsDailyView(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(mealsToDisplay) { meal ->
-            MealCard(meal, viewModel, navController ,selectedDate)
+            MealCard(
+                meal = meal,
+                viewModel = viewModel,
+                navController = navController,
+                selectedDate = selectedDate,
+                onEditProduct = { alimentation ->
+                    navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("editAlimentation", alimentation) // przekazujesz cały RegisteredAlimentationResponse
+                }
+            )
         }
     }
 }

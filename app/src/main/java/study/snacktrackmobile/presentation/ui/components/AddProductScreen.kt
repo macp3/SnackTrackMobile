@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.viewmodel.FoodViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
@@ -53,15 +54,14 @@ fun AddProductScreen(
     selectedMeal: String,
     navController: NavController,
     foodViewModel: FoodViewModel,
-    onProductClick: (EssentialFoodResponse) -> Unit
+    onProductClick: (RegisteredAlimentationResponse) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val allFoods by foodViewModel.foods.collectAsState()
-
     val context = LocalContext.current
-    val filteredProducts = allFoods.filter { it.name.toString().contains(searchQuery, ignoreCase = true) }
 
-    // pobranie danych przy pierwszym wejściu
+    val filteredProducts = allFoods.filter { it.name?.contains(searchQuery, ignoreCase = true) == true }
+
     LaunchedEffect(Unit) {
         val token = TokenStorage.getToken(context)
         if (token != null) {
@@ -71,13 +71,12 @@ fun AddProductScreen(
 
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Nagłówek
         Text(
             text = selectedMeal,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp),
+            modifier = Modifier.padding(16.dp),
             color = Color.Black,
             fontFamily = montserratFont,
             fontSize = 18.sp,
@@ -85,7 +84,6 @@ fun AddProductScreen(
             fontWeight = FontWeight.Bold
         )
 
-        // SearchBar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -101,22 +99,32 @@ fun AddProductScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Lista produktów z backendu
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(start = 10.dp, end = 10.dp),
+                .padding(horizontal = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredProducts) { product ->
                 ProductItem(product) { clicked ->
-                    onProductClick(clicked) // ✅ zamiast navController.navigate
+                    // 🔽 budujemy tymczasowy RegisteredAlimentationResponse
+                    val alimentation = RegisteredAlimentationResponse(
+                        id = -1, // tymczasowe ID, bo jeszcze nie zapisane w bazie
+                        userId = 0,
+                        essentialFood = clicked,
+                        mealApi = null,
+                        meal = null,
+                        timestamp = selectedDate,
+                        amount = clicked.defaultWeight ?: 100f,
+                        pieces = 0f,
+                        mealName = selectedMeal
+                    )
+                    onProductClick(alimentation)
                 }
             }
         }
 
-        // Przyciski
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -125,12 +133,19 @@ fun AddProductScreen(
         ) {
             DisplayButton(
                 "Add new product",
-                onClick = { navController.navigate("MainView?tab=AddProductToDatabase&meal=$selectedMeal&date=$selectedDate") },
+                onClick = {
+                    navController.navigate("MainView?tab=AddProductToDatabase&meal=$selectedMeal&date=$selectedDate")
+                },
                 modifier = Modifier.size(width = 120.dp, height = 60.dp),
                 fontSize = 14
             )
             Spacer(modifier = Modifier.width(16.dp))
-            DisplayButton("Add meal", onClick = {}, modifier = Modifier.size(width = 120.dp, height = 60.dp), fontSize = 14)
+            DisplayButton(
+                "Add meal",
+                onClick = { /* TODO: obsługa dodania całego posiłku */ },
+                modifier = Modifier.size(width = 120.dp, height = 60.dp),
+                fontSize = 14
+            )
         }
     }
 }
@@ -148,4 +163,5 @@ fun ProductItem(product: EssentialFoodResponse, onClick: (EssentialFoodResponse)
         Text(text = product.name ?: "", fontFamily = montserratFont, fontSize = 16.sp)
     }
 }
+
 

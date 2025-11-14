@@ -20,7 +20,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import study.snacktrackmobile.data.api.FoodApi
 import study.snacktrackmobile.data.api.TrainingApi
+import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.data.storage.TokenStorage
@@ -42,25 +44,26 @@ import kotlin.jvm.java
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainView(navController: NavController,
-             shoppingListViewModel: ShoppingListViewModel,
-             registeredAlimentationViewModel: RegisteredAlimentationViewModel,
-             foodViewModel: FoodViewModel,
-             loggedUserEmail: String,
-             initialTab: String,
-             initialMeal: String,
-             initialDate: String
+fun MainView(
+    navController: NavController,
+    shoppingListViewModel: ShoppingListViewModel,
+    registeredAlimentationViewModel: RegisteredAlimentationViewModel,
+    foodViewModel: FoodViewModel,
+    loggedUserEmail: String,
+    initialTab: String,
+    initialMeal: String,
+    initialDate: String
 ) {
     var selectedDate by remember { mutableStateOf(initialDate) }
     var selectedTab by remember { mutableStateOf(initialTab) }
     var selectedMeal by remember { mutableStateOf(initialMeal) }
     var rightDrawerOpen by remember { mutableStateOf(false) }
-    var selectedProduct by remember { mutableStateOf<EssentialFoodResponse?>(null) }
+    var isEditMode by remember { mutableStateOf(false) }
+    var alimentationToEdit by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
 
 
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-
     val context = LocalContext.current
     var authToken by remember { mutableStateOf<String?>(null) }
 
@@ -75,11 +78,7 @@ fun MainView(navController: NavController,
             .build()
             .create(TrainingApi::class.java)
     }
-
-    val trainingViewModel = remember {
-        TrainingViewModel(api = trainingApi)
-    }
-
+    val trainingViewModel = remember { TrainingViewModel(api = trainingApi) }
     val montserratFont = androidx.compose.ui.text.font.FontFamily.Default
 
     LaunchedEffect(loggedUserEmail, selectedDate) {
@@ -88,6 +87,21 @@ fun MainView(navController: NavController,
             shoppingListViewModel.setDate(selectedDate)
         }
     }
+
+
+    val navBackStackEntry = navController.currentBackStackEntry
+    LaunchedEffect(navBackStackEntry) {
+        navBackStackEntry?.savedStateHandle
+            ?.getLiveData<Int>("editAlimentationId")
+            ?.observeForever { id ->
+                val product = registeredAlimentationViewModel.raw.value.find { it.id == id }
+                alimentationToEdit = product
+                isEditMode = true
+                selectedTab = "AddProduct"
+            }
+    }
+
+
 
     ModalNavigationDrawer(
         drawerState = leftDrawerState,
@@ -100,27 +114,9 @@ fun MainView(navController: NavController,
                     .background(Color.White)
                     .padding(vertical = 24.dp, horizontal = 16.dp)
             ) {
-                Text(
-                    text = "Menu",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.padding(bottom = 24.dp),
-                    fontFamily = montserratFont
-                )
-                Text(
-                    text = "Home",
-                    fontFamily = montserratFont,
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .clickable { scope.launch { leftDrawerState.close() } }
-                )
-                Text(
-                    text = "Settings",
-                    fontFamily = montserratFont,
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .clickable { scope.launch { leftDrawerState.close() } }
-                )
+                Text("Menu", style = MaterialTheme.typography.titleLarge, color = Color(0xFF4CAF50))
+                Text("Home", modifier = Modifier.clickable { scope.launch { leftDrawerState.close() } })
+                Text("Settings", modifier = Modifier.clickable { scope.launch { leftDrawerState.close() } })
             }
         }
     ) {
@@ -128,14 +124,11 @@ fun MainView(navController: NavController,
             topBar = {
                 SnackTrackTopBarCalendar(
                     selectedDate = selectedDate,
-                    onDateSelected = { date -> selectedDate = date
-                        if (selectedTab == "Shopping") {
-                            shoppingListViewModel.setDate(date)
-                        }
+                    onDateSelected = { date ->
+                        selectedDate = date
+                        if (selectedTab == "Shopping") shoppingListViewModel.setDate(date)
                     },
-                    onOpenMenu = {
-                        if (!rightDrawerOpen) scope.launch { leftDrawerState.open() }
-                    },
+                    onOpenMenu = { if (!rightDrawerOpen) scope.launch { leftDrawerState.open() } },
                     onOpenNotifications = {
                         scope.launch { leftDrawerState.close() }
                         rightDrawerOpen = true
@@ -144,7 +137,6 @@ fun MainView(navController: NavController,
             },
             bottomBar = {
                 Column {
-                    // ✅ Warunkowe renderowanie SUMMARYBAR
                     if (selectedTab != "AddProduct" && selectedTab != "AddProductToDatabase") {
                         SummaryBar()
                     }
@@ -152,80 +144,73 @@ fun MainView(navController: NavController,
                         selectedItem = selectedTab,
                         onItemSelected = { tab ->
                             selectedTab = tab
-                            if (tab == "Shopping") {
-                                shoppingListViewModel.setDate(selectedDate)
-                            }
+                            if (tab == "Shopping") shoppingListViewModel.setDate(selectedDate)
                         }
                     )
                 }
             },
             modifier = Modifier.fillMaxSize().background(Color.White)
         ) { paddingValues ->
-
-                // Cała główna scrollowana zawartość
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues) // Padding od barów
-                    // ✅ KOREKTA: Zastosuj białe tło, zanim dodasz paddingi
+                    .padding(paddingValues)
                     .background(Color.White)
-                    //.padding(top = 10.dp, bottom = 10.dp)
             ) {
-                    when (selectedTab) {
-                        "Meals" -> MealsDailyView(
-                            selectedDate = selectedDate,
-                            viewModel = registeredAlimentationViewModel,
-                            navController
-                        )
-                        "Training" -> TrainingView(
-                            viewModel = trainingViewModel,
-                            selectedDate = selectedDate,
-                            authToken = authToken,
-                            onDateSelected = { date -> selectedDate = date }
-                        )
-                        "Recipes" -> Text("Przepisy dnia $selectedDate")
-                        "Shopping" -> {
-                            ShoppingListScreen(
-                                viewModel = shoppingListViewModel,
-                                selectedDate = selectedDate
-                            )
-                        }
-                        "Profile" -> Text("Twój profil (data: $selectedDate)")
-                        "AddProduct" -> {
-                            if (selectedProduct == null) {
-                                AddProductScreen(
-                                    selectedDate = selectedDate,
-                                    selectedMeal = selectedMeal,
-                                    navController = navController,
-                                    foodViewModel = foodViewModel,
-                                    onProductClick = { product -> selectedProduct = product }
-                                )
-                            } else {
-                                ProductDetailsScreen(
-                                    product = selectedProduct!!,
-                                    selectedDate = selectedDate,
-                                    selectedMeal = selectedMeal,
-                                    onBack = { selectedProduct = null },
-                                    registeredAlimentationViewModel = registeredAlimentationViewModel
-                                )
-                            }
-                        }
-
-
-                        "AddProductToDatabase" -> {
-                            AddProductToDatabaseScreen(
+                when (selectedTab) {
+                    "Meals" -> MealsDailyView(
+                        selectedDate = selectedDate,
+                        viewModel = registeredAlimentationViewModel,
+                        navController = navController
+                    )
+                    "Training" -> TrainingView(
+                        viewModel = trainingViewModel,
+                        selectedDate = selectedDate,
+                        authToken = authToken,
+                        onDateSelected = { date -> selectedDate = date }
+                    )
+                    "Recipes" -> Text("Przepisy dnia $selectedDate")
+                    "Shopping" -> ShoppingListScreen(
+                        viewModel = shoppingListViewModel,
+                        selectedDate = selectedDate
+                    )
+                    "Profile" -> Text("Twój profil (data: $selectedDate)")
+                    "AddProduct" -> {
+                        if (alimentationToEdit == null) {
+                            AddProductScreen(
+                                selectedDate = selectedDate,
+                                selectedMeal = selectedMeal,
                                 navController = navController,
                                 foodViewModel = foodViewModel,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    //.padding(8.dp)
+                                onProductClick = { alimentation ->
+                                    alimentationToEdit = alimentation
+                                    isEditMode = false
+                                }
+                            )
+                        } else {
+                            ProductDetailsScreen(
+                                alimentation = alimentationToEdit!!,
+                                selectedDate = selectedDate,
+                                selectedMeal = selectedMeal,
+                                onBack = {
+                                    alimentationToEdit = null
+                                    isEditMode = false
+                                    selectedTab = "Meals"
+                                },
+                                registeredAlimentationViewModel = registeredAlimentationViewModel,
+                                isEditMode = isEditMode
                             )
                         }
                     }
+                    "AddProductToDatabase" -> AddProductToDatabaseScreen(
+                        navController = navController,
+                        foodViewModel = foodViewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
 
-        // Panel powiadomień (Right Drawer)
         if (rightDrawerOpen) {
             Box(
                 modifier = Modifier
@@ -234,7 +219,6 @@ fun MainView(navController: NavController,
                     .clickable { rightDrawerOpen = false },
                 contentAlignment = Alignment.CenterEnd
             ) {
-                // Panel powiadomień
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -244,39 +228,21 @@ fun MainView(navController: NavController,
                         .clickable(enabled = false) {}
                 ) {
                     Column {
-                        // Nagłówek
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                "Notifications",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = Color(0xFF4CAF50)
-                            )
-                            IconButton(
-                                onClick = { rightDrawerOpen = false }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Close notification",
-                                    tint = Color.Gray
-                                )
+                            Text("Notifications", style = MaterialTheme.typography.titleLarge, color = Color(0xFF4CAF50))
+                            IconButton(onClick = { rightDrawerOpen = false }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close notification", tint = Color.Gray)
                             }
                         }
-
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
                         val notifications = NotificationsRepository.notifications
-
                         if (notifications.isEmpty()) {
-                            Text(
-                                text = "No new notification",
-                                color = Color.Gray
-                            )
+                            Text("No new notification", color = Color.Gray)
                         } else {
-                            // LazyColumn dla scrollowania dużych list
                             LazyColumn(
                                 modifier = Modifier.fillMaxHeight(),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -286,9 +252,7 @@ fun MainView(navController: NavController,
                                     NotificationItem(
                                         title = notification.title,
                                         body = notification.body,
-                                        onDelete = {
-                                            NotificationsRepository.removeNotification(notification)
-                                        }
+                                        onDelete = { NotificationsRepository.removeNotification(notification) }
                                     )
                                 }
                             }

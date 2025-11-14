@@ -25,22 +25,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
 fun ProductDetailsScreen(
-    product: EssentialFoodResponse,
+    alimentation: RegisteredAlimentationResponse,
     selectedDate: String,
     selectedMeal: String,
     onBack: () -> Unit,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
-    isEditMode: Boolean = false, // 🔽 nowy parametr – tryb edycji
-    productId: Int? = null       // 🔽 id istniejącego wpisu do edycji
+    isEditMode: Boolean = false
 ) {
+    val food = alimentation.essentialFood ?: return
     val context = LocalContext.current
 
     // Opcje jednostek
-    val options = listOf(product.servingSizeUnit ?: "unit", "piece")
+    val options = listOf(food.servingSizeUnit ?: "unit", "piece")
     var selectedOption by remember { mutableStateOf(options.first()) }
 
     // Stan dla inputa
@@ -54,21 +55,21 @@ fun ProductDetailsScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Text("Name: ${product.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("Description: ${product.description}")
-        Text("Calories: ${product.calories}")
-        Text("Protein: ${product.protein}")
-        Text("Fat: ${product.fat}")
-        Text("Carbohydrates: ${product.carbohydrates}")
-        Text("Brand: ${product.brandName ?: "-"}")
-        Text("Default weight: ${product.defaultWeight}")
-        Text("Serving size unit: ${product.servingSizeUnit}")
+        Text("Name: ${food.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text("Description: ${food.description}")
+        Text("Calories: ${food.calories}")
+        Text("Protein: ${food.protein}")
+        Text("Fat: ${food.fat}")
+        Text("Carbohydrates: ${food.carbohydrates}")
+        Text("Brand: ${food.brandName ?: "-"}")
+        Text("Default weight: ${food.defaultWeight}")
+        Text("Serving size unit: ${food.servingSizeUnit}")
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // 🔽 DropdownField
         DropdownField(
-            label = "Jednostka",
+            label = "Serving unit",
             selected = selectedOption,
             options = options,
             onSelected = { selectedOption = it }
@@ -88,7 +89,7 @@ fun ProductDetailsScreen(
 
         // ✅ przycisk Dodaj / Update
         DisplayButton(
-            text = if (isEditMode) "Update" else "Add",
+            text = if (isEditMode) "Save" else "Add",   // 🔽 zmiana
             onClick = {
                 if (inputValue.isBlank()) {
                     isError = true
@@ -100,42 +101,46 @@ fun ProductDetailsScreen(
 
                 if (selectedOption == "piece") {
                     pieces = inputValue.toIntOrNull() ?: 1
-                    amount = (product.defaultWeight ?: 1f) * pieces
+                    amount = (food.defaultWeight ?: 1f) * pieces
                 } else {
-                    amount = inputValue.toFloatOrNull() ?: (product.defaultWeight ?: 100f)
+                    amount = inputValue.toFloatOrNull() ?: (food.defaultWeight ?: 100f)
                     pieces = 0
                 }
 
-                if (isEditMode && productId != null) {
-                    // 🔽 aktualizacja istniejącego wpisu
+                if (isEditMode) {
                     val dto = RegisteredAlimentationRequest(
-                        essentialId = product.id,
-                        mealName = selectedMeal,
-                        amount = amount,
-                        pieces = pieces
+                        essentialId = food.id,
+                        mealApiId = alimentation.mealApi?.id,   // jeśli wpis pochodzi z API
+                        mealId = alimentation.meal?.id,         // jeśli wpis pochodzi z lokalnego Meal
+                        timestamp = selectedDate,               // np. "2025-11-13"
+                        mealName = selectedMeal.lowercase(),    // np. "BREAKFAST"
+                        amount = if (pieces == 0) amount else null,
+                        pieces = if (pieces > 0) pieces else null
                     )
+
                     registeredAlimentationViewModel.updateMealProduct(
                         context = context,
-                        productId = productId,
+                        productId = alimentation.id, // ID wpisu w bazie
                         dto = dto,
                         date = selectedDate
                     )
                 } else {
-                    // 🔽 dodawanie nowego wpisu
                     registeredAlimentationViewModel.addMealProduct(
                         context = context,
-                        essentialId = product.id,
+                        essentialId = food.id,
                         mealName = selectedMeal,
                         date = selectedDate,
                         amount = amount,
                         pieces = pieces
                     )
                 }
+
                 onBack()
             },
             modifier = Modifier.size(width = 120.dp, height = 50.dp),
             fontSize = 14
         )
+
 
         Spacer(modifier = Modifier.height(8.dp))
 
