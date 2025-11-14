@@ -68,6 +68,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.google.code.gson:gson:2.10.1")
 
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
     // Ktor (HTTP client)
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-okhttp:2.3.4")

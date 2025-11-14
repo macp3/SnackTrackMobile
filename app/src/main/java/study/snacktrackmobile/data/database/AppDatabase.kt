@@ -11,7 +11,7 @@ import study.snacktrackmobile.data.converters.ShoppingListItemConverter
 import study.snacktrackmobile.data.dao.ShoppingListDao
 import study.snacktrackmobile.data.model.ShoppingList
 
-@Database(entities = [ShoppingList::class], version = 4, exportSchema = false)
+@Database(entities = [ShoppingList::class], version = 5, exportSchema = false)
 @TypeConverters(ShoppingListItemConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 

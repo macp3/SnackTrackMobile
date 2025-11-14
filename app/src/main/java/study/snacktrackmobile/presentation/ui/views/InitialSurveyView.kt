@@ -17,6 +17,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.enums.Sex
+import study.snacktrackmobile.data.model.enums.DietType
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.*
 import io.ktor.client.*
@@ -29,12 +30,13 @@ import kotlinx.serialization.json.Json
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
 import study.snacktrackmobile.data.network.ApiConfig
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InitialSurveyView(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // POLA
+    // 🔹 POLA
     var sex by remember { mutableStateOf(Sex.male.name) }
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
@@ -44,7 +46,11 @@ fun InitialSurveyView(navController: NavController) {
     var weeklyWeightChangeTempo by remember { mutableStateOf("") }
     var goalWeight by remember { mutableStateOf("") }
 
-    // ERROR FLAGS (do obramowania pól na czerwono)
+    // 🔹 Dieta
+    var selectedDiet by remember { mutableStateOf(DietType.balanced) }
+    var expandedDiet by remember { mutableStateOf(false) }
+
+    // 🔹 ERROR FLAGS
     var sexError by remember { mutableStateOf(false) }
     var heightError by remember { mutableStateOf(false) }
     var weightError by remember { mutableStateOf(false) }
@@ -54,7 +60,7 @@ fun InitialSurveyView(navController: NavController) {
     var tempoError by remember { mutableStateOf(false) }
     var goalError by remember { mutableStateOf(false) }
 
-    // WIADOMOŚCI O BŁĘDACH
+    // 🔹 WIADOMOŚCI O BŁĘDACH
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var backendMessage by remember { mutableStateOf<String?>(null) }
 
@@ -77,8 +83,8 @@ fun InitialSurveyView(navController: NavController) {
                 fontSize = 25.sp,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(24.dp))
 
+            Spacer(modifier = Modifier.height(24.dp))
 
             DropdownField("Sex", sex, sexOptions, sexError) { sex = it; sexError = false }
 
@@ -94,7 +100,7 @@ fun InitialSurveyView(navController: NavController) {
                 age = it; ageError = false
             }
 
-            DropdownField("Daily activity level", activityLevel, activityOptions, activityError,) {
+            DropdownField("Daily activity level", activityLevel, activityOptions, activityError) {
                 activityLevel = it; activityError = false
             }
 
@@ -104,7 +110,7 @@ fun InitialSurveyView(navController: NavController) {
 
             TextInput(
                 weeklyWeightChangeTempo,
-                "Weekly weight change (0-1 kg/week)",
+                "Weekly weight change (0–1 kg/week)",
                 KeyboardOptions(keyboardType = KeyboardType.Number),
                 tempoError,
                 300.dp
@@ -116,8 +122,40 @@ fun InitialSurveyView(navController: NavController) {
                 goalWeight = it; goalError = false
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
+            // 🔹 Dropdown dla DietType
+            ExposedDropdownMenuBox(
+                expanded = expandedDiet,
+                onExpandedChange = { expandedDiet = !expandedDiet }
+            ) {
+                OutlinedTextField(
+                    value = selectedDiet.name.replace("_", " ").replaceFirstChar { it.uppercase() },
+                    onValueChange = {},
+                    label = { Text("Preferred Diet") },
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDiet) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(0.85f)
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedDiet,
+                    onDismissRequest = { expandedDiet = false }
+                ) {
+                    DietType.entries.forEach { diet ->
+                        DropdownMenuItem(
+                            text = { Text(diet.name.replace("_", " ").replaceFirstChar { it.uppercase() }) },
+                            onClick = {
+                                selectedDiet = diet
+                                expandedDiet = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             (backendMessage ?: errorMessage)?.let {
                 Text(
@@ -128,7 +166,6 @@ fun InitialSurveyView(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-
 
             DisplayButton("Next", modifier = Modifier.fillMaxWidth(0.6f), onClick = {
                 backendMessage = null
@@ -144,7 +181,6 @@ fun InitialSurveyView(navController: NavController) {
                 tempoError = false
                 goalError = false
 
-                // 🔥 sprawdzamy WSZYSTKIE pola i oznaczamy błędne/nieuzupełnione
                 fun fieldError(condition: Boolean, setError: () -> Unit) {
                     if (condition) setError()
                 }
@@ -156,11 +192,8 @@ fun InitialSurveyView(navController: NavController) {
                 fieldError(weeklyWeightChangeTempo.isBlank() || weeklyWeightChangeTempo.toFloatOrNull() == null ||
                         weeklyWeightChangeTempo.toFloat() !in 0f..1f) { tempoError = true }
                 fieldError(goalWeight.isBlank() || goalWeight.toFloatOrNull() == null || goalWeight.toFloat() <= 0f) { goalError = true }
-
-                // daily / training są dropdownami — zaznaczamy error tylko jeśli są puste
                 fieldError(activityLevel.isBlank()) { activityError = true }
                 fieldError(trainingIntensity.isBlank()) { trainingError = true }
-
 
                 if (sexError || heightError || weightError || ageError || tempoError || goalError || activityError || trainingError) {
                     errorMessage = "Please fill all fields correctly"
@@ -175,7 +208,8 @@ fun InitialSurveyView(navController: NavController) {
                     dailyActivityFactor = mapLevelToFloatDaily(activityLevel),
                     dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
                     weeklyWeightChangeTempo = weeklyWeightChangeTempo.toFloat(),
-                    goalWeight = goalWeight.toFloat()
+                    goalWeight = goalWeight.toFloat(),
+                    preferredDiet = selectedDiet
                 )
 
                 scope.launch {
@@ -198,9 +232,7 @@ fun InitialSurveyView(navController: NavController) {
     }
 }
 
-
-
-// Funkcje mapLevelToFloatDaily / Training
+// 🔹 Mapowanie poziomów aktywności
 fun mapLevelToFloatDaily(level: String): Float = when (level) {
     "None" -> 0.7f
     "Little" -> 0.8f
@@ -219,7 +251,7 @@ fun mapLevelToFloatTraining(level: String): Float = when (level) {
     else -> 0.7f
 }
 
-// Funkcja wysyłająca dane do backendu
+// 🔹 Funkcja wysyłająca dane do backendu
 suspend fun sendBodyParameters(
     token: String,
     request: BodyParametersRequest

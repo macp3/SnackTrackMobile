@@ -21,6 +21,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import study.snacktrackmobile.data.api.FoodApi
 import study.snacktrackmobile.data.api.TrainingApi
 import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.data.api.UserApi
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.network.ApiConfig
@@ -29,14 +30,17 @@ import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.AddProductScreen
 import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
 import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
+import study.snacktrackmobile.presentation.ui.components.EditBodyParametersScreen
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.presentation.ui.components.NotificationItem
 import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
+import study.snacktrackmobile.presentation.ui.components.ProfileScreen
 import study.snacktrackmobile.presentation.ui.components.ShoppingListScreen
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
 import study.snacktrackmobile.presentation.ui.components.SummaryBar
 import study.snacktrackmobile.viewmodel.FoodViewModel
+import study.snacktrackmobile.viewmodel.ProfileViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.TrainingViewModel
 import java.time.LocalDate
@@ -79,6 +83,21 @@ fun MainView(
             .create(TrainingApi::class.java)
     }
     val trainingViewModel = remember { TrainingViewModel(api = trainingApi) }
+
+    val trainingViewModel = remember {
+        TrainingViewModel(api = trainingApi)
+    }
+
+    val userApi = remember {
+        Retrofit.Builder()
+            .baseUrl(ApiConfig.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(UserApi::class.java)
+    }
+
+    val profileViewModel = remember { ProfileViewModel(userApi) }
+
     val montserratFont = androidx.compose.ui.text.font.FontFamily.Default
 
     LaunchedEffect(loggedUserEmail, selectedDate) {
@@ -114,9 +133,27 @@ fun MainView(
                     .background(Color.White)
                     .padding(vertical = 24.dp, horizontal = 16.dp)
             ) {
-                Text("Menu", style = MaterialTheme.typography.titleLarge, color = Color(0xFF4CAF50))
-                Text("Home", modifier = Modifier.clickable { scope.launch { leftDrawerState.close() } })
-                Text("Settings", modifier = Modifier.clickable { scope.launch { leftDrawerState.close() } })
+                Text(
+                    text = "Menu",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color(0xFF4CAF50),
+                    modifier = Modifier.padding(bottom = 24.dp),
+                    fontFamily = montserratFont
+                )
+                Text(
+                    text = "Home",
+                    fontFamily = montserratFont,
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .clickable { scope.launch { leftDrawerState.close() } }
+                )
+                Text(
+                    text = "Settings",
+                    fontFamily = montserratFont,
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .clickable { scope.launch { leftDrawerState.close() } }
+                )
             }
         }
     ) {
@@ -124,11 +161,14 @@ fun MainView(
             topBar = {
                 SnackTrackTopBarCalendar(
                     selectedDate = selectedDate,
-                    onDateSelected = { date ->
-                        selectedDate = date
-                        if (selectedTab == "Shopping") shoppingListViewModel.setDate(date)
+                    onDateSelected = { date -> selectedDate = date
+                        if (selectedTab == "Shopping") {
+                            shoppingListViewModel.setDate(date)
+                        }
                     },
-                    onOpenMenu = { if (!rightDrawerOpen) scope.launch { leftDrawerState.open() } },
+                    onOpenMenu = {
+                        if (!rightDrawerOpen) scope.launch { leftDrawerState.open() }
+                    },
                     onOpenNotifications = {
                         scope.launch { leftDrawerState.close() }
                         rightDrawerOpen = true
@@ -144,7 +184,9 @@ fun MainView(
                         selectedItem = selectedTab,
                         onItemSelected = { tab ->
                             selectedTab = tab
-                            if (tab == "Shopping") shoppingListViewModel.setDate(selectedDate)
+                            if (tab == "Shopping") {
+                                shoppingListViewModel.setDate(selectedDate)
+                            }
                         }
                     )
                 }
@@ -157,57 +199,66 @@ fun MainView(
                     .padding(paddingValues)
                     .background(Color.White)
             ) {
-                when (selectedTab) {
-                    "Meals" -> MealsDailyView(
-                        selectedDate = selectedDate,
-                        viewModel = registeredAlimentationViewModel,
-                        navController = navController
-                    )
-                    "Training" -> TrainingView(
-                        viewModel = trainingViewModel,
-                        selectedDate = selectedDate,
-                        authToken = authToken,
-                        onDateSelected = { date -> selectedDate = date }
-                    )
-                    "Recipes" -> Text("Przepisy dnia $selectedDate")
-                    "Shopping" -> ShoppingListScreen(
-                        viewModel = shoppingListViewModel,
-                        selectedDate = selectedDate
-                    )
-                    "Profile" -> Text("Twój profil (data: $selectedDate)")
-                    "AddProduct" -> {
-                        if (alimentationToEdit == null) {
-                            AddProductScreen(
-                                selectedDate = selectedDate,
-                                selectedMeal = selectedMeal,
+                    when (selectedTab) {
+                        "Meals" -> MealsDailyView(
+                            selectedDate = selectedDate,
+                            viewModel = registeredAlimentationViewModel,
+                            navController
+                        )
+                        "Training" -> TrainingView(
+                            viewModel = trainingViewModel,
+                            selectedDate = selectedDate,
+                            authToken = authToken,
+                            onDateSelected = { date -> selectedDate = date }
+                        )
+                        "Recipes" -> Text("Przepisy dnia $selectedDate")
+                        "Shopping" -> {
+                            ShoppingListScreen(
+                                viewModel = shoppingListViewModel,
+                                selectedDate = selectedDate
+                            )
+                        }
+                        "Profile" -> {
+                            ProfileScreen(
+                                viewModel = profileViewModel,
+                                onEditBodyParameters = { selectedTab = "EditProfile" }
+                            )
+                        }
+                        "EditProfile" -> EditBodyParametersScreen(
+                            viewModel = profileViewModel,
+                            onBack = { selectedTab = "Profile" }
+                        )
+                        "AddProduct" -> {
+                            if (selectedProduct == null) {
+                                AddProductScreen(
+                                    selectedDate = selectedDate,
+                                    selectedMeal = selectedMeal,
+                                    navController = navController,
+                                    foodViewModel = foodViewModel,
+                                    onProductClick = { product -> selectedProduct = product }
+                                )
+                            } else {
+                                ProductDetailsScreen(
+                                    product = selectedProduct!!,
+                                    selectedDate = selectedDate,
+                                    selectedMeal = selectedMeal,
+                                    onBack = { selectedProduct = null },
+                                    registeredAlimentationViewModel = registeredAlimentationViewModel
+                                )
+                            }
+                        }
+
+
+                        "AddProductToDatabase" -> {
+                            AddProductToDatabaseScreen(
                                 navController = navController,
                                 foodViewModel = foodViewModel,
-                                onProductClick = { alimentation ->
-                                    alimentationToEdit = alimentation
-                                    isEditMode = false
-                                }
-                            )
-                        } else {
-                            ProductDetailsScreen(
-                                alimentation = alimentationToEdit!!,
-                                selectedDate = selectedDate,
-                                selectedMeal = selectedMeal,
-                                onBack = {
-                                    alimentationToEdit = null
-                                    isEditMode = false
-                                    selectedTab = "Meals"
-                                },
-                                registeredAlimentationViewModel = registeredAlimentationViewModel,
-                                isEditMode = isEditMode
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    //.padding(8.dp)
                             )
                         }
                     }
-                    "AddProductToDatabase" -> AddProductToDatabaseScreen(
-                        navController = navController,
-                        foodViewModel = foodViewModel,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
             }
         }
 
@@ -228,6 +279,7 @@ fun MainView(
                         .clickable(enabled = false) {}
                 ) {
                     Column {
+                        // Nagłówek
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,

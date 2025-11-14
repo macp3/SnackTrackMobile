@@ -19,4 +19,7 @@ interface ShoppingListDao {
 
     @Delete
     suspend fun delete(list: ShoppingList)
+
+    @Query("SELECT * FROM shopping_lists WHERE date = :date AND userEmail = :email")
+    suspend fun getByDateAndUserOnce(date: String, email: String): List<ShoppingList>
 }

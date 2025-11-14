@@ -1,7 +1,7 @@
 package study.snacktrackmobile.data.model
 
 import kotlinx.serialization.Serializable
-import study.snacktrackmobile.data.model.enums.DietTypes
+import study.snacktrackmobile.data.model.enums.DietType
 import study.snacktrackmobile.data.model.enums.Status
 
 @Serializable
@@ -14,7 +14,7 @@ data class User(
     val imageUrl: String? = null,
     val premiumExpiration: String? = null,
     val status: Status,
-    val prefferedDiet: DietTypes? = null,
+    val preferredDiet: DietType? = null,
     val streak: Int
 )
 
