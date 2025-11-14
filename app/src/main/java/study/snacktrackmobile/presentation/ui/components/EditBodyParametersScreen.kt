@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.R
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
-import study.snacktrackmobile.data.model.enums.DietType
 import study.snacktrackmobile.data.model.enums.Sex
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.viewmodel.ProfileViewModel
@@ -56,8 +55,6 @@ fun EditBodyParametersScreen(
     var trainingIntensity by remember { mutableStateOf("Average") }
     var weeklyWeightChangeTempo by remember { mutableStateOf("") }
     var goalWeight by remember { mutableStateOf("") }
-    var selectedDiet by remember { mutableStateOf(DietType.balanced) }
-    var expandedDiet by remember { mutableStateOf(false) }
 
     LaunchedEffect(bodyParameters) {
         bodyParameters?.let {
@@ -67,11 +64,8 @@ fun EditBodyParametersScreen(
             age = it.age.toString()
             weeklyWeightChangeTempo = it.weeklyWeightChangeTempo.toString()
             goalWeight = it.goalWeight.toString()
-            selectedDiet = it.preferredDiet
         }
     }
-
-    val dietOptions = DietType.entries
 
     Box(
         modifier = Modifier
@@ -112,28 +106,6 @@ fun EditBodyParametersScreen(
                 item { OutlinedTextField(value = goalWeight, onValueChange = { goalWeight = it }, label = { Text("Goal weight (kg)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()) }
 
                 item {
-                    ExposedDropdownMenuBox(
-                        expanded = expandedDiet,
-                        onExpandedChange = { expandedDiet = !expandedDiet }
-                    ) {
-                        OutlinedTextField(
-                            value = selectedDiet.name.replace("_", " ").replaceFirstChar { it.uppercase() },
-                            onValueChange = {},
-                            label = { Text("Preferred Diet") },
-                            readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedDiet) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(expanded = expandedDiet, onDismissRequest = { expandedDiet = false }) {
-                            dietOptions.forEach { diet ->
-                                DropdownMenuItem(text = { Text(diet.name.replace("_", " ").replaceFirstChar { it.uppercase() }) },
-                                    onClick = { selectedDiet = diet; expandedDiet = false })
-                            }
-                        }
-                    }
-                }
-
-                item {
                     Button(
                         onClick = {
                             scope.launch {
@@ -148,7 +120,6 @@ fun EditBodyParametersScreen(
                                         dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
                                         weeklyWeightChangeTempo = weeklyWeightChangeTempo.toFloatOrNull() ?: 0f,
                                         goalWeight = goalWeight.toFloatOrNull() ?: 0f,
-                                        preferredDiet = selectedDiet
                                     )
                                     viewModel.changeBodyParameters(token, req)
                                     onBack()
@@ -236,7 +207,6 @@ fun DropdownSelector(
 }
 
 
-// 🔹 mapowanie aktywności
 fun mapLevelToFloatDaily(level: String): Float = when (level) {
     "None" -> 0.7f
     "Little" -> 0.8f

@@ -1,7 +1,6 @@
 package study.snacktrackmobile.data.model.dto
 
 import kotlinx.serialization.Serializable
-import study.snacktrackmobile.data.model.enums.DietType
 
 @Serializable
 data class UserResponse(
