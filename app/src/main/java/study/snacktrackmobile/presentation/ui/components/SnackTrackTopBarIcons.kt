@@ -22,166 +22,66 @@ import kotlinx.coroutines.launch
 import study.snacktrackmobile.R
 import study.snacktrackmobile.data.repository.NotificationsRepository
 
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun SnackTrackTopBarWithIcons() {
+fun SnackTrackTopBarWithIcons(
+    onOpenMenu: () -> Unit,
+    onOpenNotifications: () -> Unit
+) {
     val montserratFont = FontFamily(Font(R.font.montserrat, weight = FontWeight.Normal))
 
-    // Stany drawerów
-    val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    var rightDrawerOpen by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFBFFF99))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Lewy hamburger
+        Icon(
+            imageVector = Icons.Filled.Menu,
+            contentDescription = "Menu",
+            modifier = Modifier
+                .size(28.dp)
+                .clickable { onOpenMenu() },
+            tint = Color.Black
+        )
 
-    ModalNavigationDrawer(
-        drawerState = leftDrawerState,
-        drawerContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(280.dp)
-                    .background(Color.White)
-                    .padding(vertical = 24.dp, horizontal = 16.dp)
-            ) {
-                Text(
-                    text = "Menu",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.padding(bottom = 24.dp),
-                    fontFamily = montserratFont,
-                )
-
-                @Composable
-                fun renderOption(title: String, action: () -> Unit) {
-                    Text(
-                        text = title,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = montserratFont,
-                        color = Color(0xFF333333),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp)
-                            .clickable {
-                                action()
-                                scope.launch { leftDrawerState.close() }
-                            }
-                    )
-                }
-
-                // Przykładowe opcje
-                renderOption("Home") { println("Nawigacja do Home") }
-                renderOption("Profile") { println("Nawigacja do Profile") }
-                renderOption("Progress") { println("Wyświetlanie progresu") }
-                renderOption("Settings") { println("Otwieranie ustawień") }
-            }
-        },
-        content = {
-            // Główny ekran z TopBar
-            Box(modifier = Modifier.fillMaxSize()) {
-
-                // TopBar
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFBFFF99))
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Lewy hamburger
-                    Icon(
-                        imageVector = Icons.Filled.Menu,
-                        contentDescription = "Menu",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clickable { scope.launch { leftDrawerState.open() } },
-                        tint = Color.Black
-                    )
-
-                    // Tytuł w centrum
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "SnackTrack",
-                            fontFamily = montserratFont,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black,
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Track your progress",
-                            fontFamily = montserratFont,
-                            fontSize = 14.sp,
-                            color = Color.Black
-                        )
-                    }
-
-                    // Prawy drawer (powiadomienia)
-                    Icon(
-                        imageVector = Icons.Filled.Notifications,
-                        contentDescription = "Notifications",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clickable { rightDrawerOpen = true },
-                        tint = Color.Black
-                    )
-                }
-
-                RightDrawer(drawerState = rightDrawerOpen, onClose = { rightDrawerOpen = false }) {
-                    Text(
-                        text = "Notifications",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = montserratFont,
-                        color = Color(0xFF4CAF50),
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val notifications = NotificationsRepository.notifications
-
-                    if (notifications.isEmpty()) {
-                        Text(
-                            text = "No notifications",
-                            fontSize = 16.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            fontFamily = montserratFont
-                        )
-                    } else {
-                        Column {
-                            notifications.forEach { notification ->
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = notification.title,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black,
-                                        fontFamily = montserratFont
-                                    )
-                                    Text(
-                                        text = notification.body,
-                                        fontSize = 14.sp,
-                                        color = Color.DarkGray,
-                                        fontFamily = montserratFont
-                                    )
-                                    HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        // Tytuł w centrum
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "SnackTrack",
+                fontFamily = montserratFont,
+                fontSize = 31.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+            )
+            Text(
+                text = "Track your progress",
+                fontFamily = montserratFont,
+                fontSize = 17.sp,
+                color = Color.Black
+            )
         }
-    )
+
+        // Prawy drawer (powiadomienia)
+        Icon(
+            imageVector = Icons.Filled.Notifications,
+            contentDescription = "Notifications",
+            modifier = Modifier
+                .size(28.dp)
+                .clickable { onOpenNotifications() },
+            tint = Color.Black
+        )
+    }
 }
+
+
 
 @Composable
 fun RightDrawer(
