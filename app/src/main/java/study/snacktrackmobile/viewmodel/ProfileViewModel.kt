@@ -1,74 +1,148 @@
 package study.snacktrackmobile.viewmodel
 
+import android.content.ContentResolver
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.ResponseBody
-import retrofit2.Response
+import okhttp3.RequestBody.Companion.asRequestBody
 import study.snacktrackmobile.data.api.UserApi
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.dto.BodyParametersResponse
 import study.snacktrackmobile.data.model.dto.UserResponse
+import study.snacktrackmobile.data.network.ApiConfig
+import java.io.File
+import java.io.FileOutputStream
 
 class ProfileViewModel(private val api: UserApi) : ViewModel() {
 
     private val _user = MutableStateFlow<UserResponse?>(null)
-    val user: StateFlow<UserResponse?> = _user
+    val user: StateFlow<UserResponse?> = _user.asStateFlow()
 
     private val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
+    val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _bodyParameters = MutableStateFlow<BodyParametersResponse?>(null)
+    val bodyParameters: StateFlow<BodyParametersResponse?> = _bodyParameters.asStateFlow()
+
+    // ---------------------------
+    // LOAD PROFILE
+    // ---------------------------
     fun loadProfile(token: String) {
         viewModelScope.launch {
             _loading.value = true
-            val response = api.getProfile("Bearer $token")
-            if (response.isSuccessful) {
-                _user.value = response.body()
-            } else {
-                _error.value = "Failed to load profile"
+            try {
+                val response = api.getProfile("Bearer $token")
+
+                if (response.isSuccessful) {
+                    val userData = response.body()
+
+                    userData?.imageUrl = buildImageUrl(userData?.imageUrl)
+
+                    _user.value = userData
+                } else {
+                    _error.value = "Failed to load profile"
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
             }
             _loading.value = false
         }
     }
 
-    suspend fun changePassword(token: String, newPassword: String): Response<ResponseBody> {
-        return api.changePassword("Bearer $token", newPassword)
+    // Convert backend path → full URL
+    private fun buildImageUrl(path: String?): String? {
+        if (path.isNullOrEmpty()) {
+            return ApiConfig.BASE_URL + "/images/profiles/default_profile_picture.png"
+        }
+        // If backend returns absolute URL, do nothing
+        return if (path.startsWith("http")) {
+            path
+        } else {
+            ApiConfig.BASE_URL + path
+        }
     }
 
+
+    // ---------------------------
+    // UPLOAD PROFILE IMAGE
+    // ---------------------------
+    fun uploadImage(token: String, uri: Uri, contentResolver: ContentResolver) {
+        viewModelScope.launch {
+            try {
+                val imagePart = createMultipart(uri, contentResolver)
+
+                val response = api.uploadImage("Bearer $token", imagePart)
+
+                if (response.isSuccessful) {
+                    val relativePath = response.body()?.string()
+                    val fullUrl = buildImageUrl(relativePath)
+
+                    _user.value = _user.value?.copy(imageUrl = fullUrl)
+                } else {
+                    _error.value = "Image upload failed"
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
+
+    // Convert Uri → MultipartBody.Part
+    private fun createMultipart(uri: Uri, contentResolver: ContentResolver): MultipartBody.Part {
+        val inputStream = contentResolver.openInputStream(uri)
+            ?: throw IllegalArgumentException("Could not open input stream")
+
+        val tempFile = File.createTempFile("upload_", ".jpg")
+        val outputStream = FileOutputStream(tempFile)
+
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        val requestBody = tempFile
+            .asRequestBody("image/*".toMediaTypeOrNull())
+
+        return MultipartBody.Part.createFormData("image", tempFile.name, requestBody)
+    }
+
+
+    // ---------------------------
+    // CHANGE PASSWORD
+    // ---------------------------
+    suspend fun changePassword(token: String, newPassword: String) =
+        api.changePassword("Bearer $token", newPassword)
+
+
+    // ---------------------------
+    // ERROR MANAGEMENT
+    // ---------------------------
     fun setError(msg: String) {
         _error.value = msg
     }
 
 
+    // ---------------------------
+    // BODY PARAMETERS
+    // ---------------------------
     fun changeBodyParameters(token: String, request: BodyParametersRequest) {
         viewModelScope.launch {
-            val response = api.changeParameters("Bearer $token", request)
-        }
-    }
-
-
-
-    fun uploadImage(token: String, image: MultipartBody.Part) {
-        viewModelScope.launch {
-            val response = api.uploadImage("Bearer $token", image)
-            if (response.isSuccessful) {
-                _user.value = _user.value?.copy(imageUrl = response.body())
-            } else {
-                _error.value = "Image upload failed"
+            try {
+                api.changeParameters("Bearer $token", request)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
-
-    private val _bodyParameters = MutableStateFlow<BodyParametersResponse?>(null)
-    val bodyParameters: StateFlow<BodyParametersResponse?> = _bodyParameters.asStateFlow()
 
     fun getBodyParameters(token: String) {
         viewModelScope.launch {
@@ -80,5 +154,4 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
             }
         }
     }
-
 }

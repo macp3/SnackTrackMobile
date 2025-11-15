@@ -1,6 +1,7 @@
 package study.snacktrackmobile.presentation.ui.views
 
 import android.util.Patterns
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +25,10 @@ import study.snacktrackmobile.presentation.ui.state.UiState
 import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.model.LoginResponse
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import study.snacktrackmobile.R
 import study.snacktrackmobile.presentation.ui.components.TextInput
 
 @Composable
@@ -138,6 +142,15 @@ fun LoginFormContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo_vector),
+                contentDescription = "App logo",
+                modifier = Modifier
+                    .fillMaxWidth(0.4f)
+                    .aspectRatio(1f)
+                    .padding(bottom = 30.dp),
+                contentScale = ContentScale.Fit
+            )
             Text("Welcome back!", fontFamily = montserratFont, fontSize = 36.sp)
             Spacer(modifier = Modifier.height(35.dp))
 
