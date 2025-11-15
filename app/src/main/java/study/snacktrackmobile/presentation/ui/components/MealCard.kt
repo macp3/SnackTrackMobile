@@ -135,24 +135,25 @@ fun MealCard(
 }
 
 
-// 🔧 poprawione liczenie – wartości są dla defaultWeight, nie dla 100g
 private fun calcNutrient(
     entry: RegisteredAlimentationResponse,
     baseValue: Float?
 ): Double {
     val amount = entry.amount ?: 0f
     val pieces = entry.pieces ?: 0f
-    val weight = entry.essentialFood?.defaultWeight ?: 100f
-    val valuePerDefaultWeight = baseValue ?: 0f
+    val value = baseValue ?: 0f
+
+    val defaultWeight = entry.essentialFood?.defaultWeight
+    val isEssential = entry.essentialFood != null
+    val isMealApi = entry.mealApi != null
 
     return when {
-        // jeśli podano sztuki → wartości * liczba sztuk
-        pieces > 0f -> valuePerDefaultWeight * pieces
-
-        // jeśli podano gramaturę → wartości * (amount / defaultWeight)
-        amount > 0f -> valuePerDefaultWeight * (amount / weight)
-
+        pieces > 0f -> (value * pieces).toDouble()
+        isEssential -> (value * (amount / (defaultWeight ?: 100f))).toDouble()
+        isMealApi -> (value * (amount / 100f)).toDouble()
         else -> 0.0
     }
 }
+
+
 

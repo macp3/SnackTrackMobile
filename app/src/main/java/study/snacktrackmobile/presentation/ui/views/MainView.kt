@@ -64,6 +64,8 @@ fun MainView(
     var rightDrawerOpen by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
     var alimentationToEdit by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
+    var selectedProduct by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
+
 
 
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -82,7 +84,6 @@ fun MainView(
             .build()
             .create(TrainingApi::class.java)
     }
-    val trainingViewModel = remember { TrainingViewModel(api = trainingApi) }
 
     val trainingViewModel = remember {
         TrainingViewModel(api = trainingApi)
@@ -239,7 +240,7 @@ fun MainView(
                                 )
                             } else {
                                 ProductDetailsScreen(
-                                    product = selectedProduct!!,
+                                    alimentation = selectedProduct!!,
                                     selectedDate = selectedDate,
                                     selectedMeal = selectedMeal,
                                     onBack = { selectedProduct = null },
