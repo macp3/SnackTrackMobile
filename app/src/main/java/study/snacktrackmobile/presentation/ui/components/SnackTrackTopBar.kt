@@ -29,15 +29,14 @@ fun SnackTrackTopBar() {
         Text(
             text = "SnackTrack",
             fontFamily = montserratFont,
-            fontSize = 24.sp,
+            fontSize = 31.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = Color.Black,
         )
-        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Track your progress",
             fontFamily = montserratFont,
-            fontSize = 14.sp,
+            fontSize = 17.sp,
             color = Color.Black
         )
     }

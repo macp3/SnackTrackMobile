@@ -17,7 +17,6 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.enums.Sex
-import study.snacktrackmobile.data.model.enums.DietType
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.*
 import io.ktor.client.*
@@ -45,10 +44,6 @@ fun InitialSurveyView(navController: NavController) {
     var trainingIntensity by remember { mutableStateOf("Average") }
     var weeklyWeightChangeTempo by remember { mutableStateOf("") }
     var goalWeight by remember { mutableStateOf("") }
-
-    // 🔹 Dieta
-    var selectedDiet by remember { mutableStateOf(DietType.balanced) }
-    var expandedDiet by remember { mutableStateOf(false) }
 
     // 🔹 ERROR FLAGS
     var sexError by remember { mutableStateOf(false) }
@@ -124,37 +119,6 @@ fun InitialSurveyView(navController: NavController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 🔹 Dropdown dla DietType
-            ExposedDropdownMenuBox(
-                expanded = expandedDiet,
-                onExpandedChange = { expandedDiet = !expandedDiet }
-            ) {
-                OutlinedTextField(
-                    value = selectedDiet.name.replace("_", " ").replaceFirstChar { it.uppercase() },
-                    onValueChange = {},
-                    label = { Text("Preferred Diet") },
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDiet) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(0.85f)
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedDiet,
-                    onDismissRequest = { expandedDiet = false }
-                ) {
-                    DietType.entries.forEach { diet ->
-                        DropdownMenuItem(
-                            text = { Text(diet.name.replace("_", " ").replaceFirstChar { it.uppercase() }) },
-                            onClick = {
-                                selectedDiet = diet
-                                expandedDiet = false
-                            }
-                        )
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(24.dp))
 
             (backendMessage ?: errorMessage)?.let {
@@ -209,7 +173,6 @@ fun InitialSurveyView(navController: NavController) {
                     dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
                     weeklyWeightChangeTempo = weeklyWeightChangeTempo.toFloat(),
                     goalWeight = goalWeight.toFloat(),
-                    preferredDiet = selectedDiet
                 )
 
                 scope.launch {
@@ -232,7 +195,6 @@ fun InitialSurveyView(navController: NavController) {
     }
 }
 
-// 🔹 Mapowanie poziomów aktywności
 fun mapLevelToFloatDaily(level: String): Float = when (level) {
     "None" -> 0.7f
     "Little" -> 0.8f
@@ -251,7 +213,6 @@ fun mapLevelToFloatTraining(level: String): Float = when (level) {
     else -> 0.7f
 }
 
-// 🔹 Funkcja wysyłająca dane do backendu
 suspend fun sendBodyParameters(
     token: String,
     request: BodyParametersRequest

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -32,6 +33,8 @@ import kotlinx.coroutines.launch
 import study.snacktrackmobile.viewmodel.ProfileViewModel
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.R
+import androidx.compose.ui.graphics.graphicsLayer
+
 
 @Composable
 fun ProfileScreen(
@@ -40,16 +43,35 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
     val user by viewModel.user.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
+
     var showSuccessDialog by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
 
     val montserratFont = FontFamily(Font(R.font.montserrat))
 
-    var showPasswordDialog by remember { mutableStateOf(false) }
+    // --------------------------
+    // LAUNCH FILE PICKER
+    // --------------------------
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { pickedUri ->
+            scope.launch {
+                val token = TokenStorage.getToken(context) // ✔️ teraz coroutine OK
+                if (token != null) {
+                    viewModel.uploadImage(token, pickedUri, context.contentResolver)
+                }
+            }
+        }
+    }
 
+
+    // Load profile on start
     LaunchedEffect(Unit) {
         val token = TokenStorage.getToken(context)
         if (token != null) {
@@ -57,6 +79,9 @@ fun ProfileScreen(
         }
     }
 
+    // --------------------------
+    // LOADING
+    // --------------------------
     if (loading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Color(0xFF2E7D32))
@@ -64,6 +89,9 @@ fun ProfileScreen(
         return
     }
 
+    // --------------------------
+    // ERROR
+    // --------------------------
     if (error != null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(error ?: "", color = Color.Red, fontFamily = montserratFont)
@@ -71,42 +99,43 @@ fun ProfileScreen(
         return
     }
 
+    // --------------------------
+    // MAIN UI
+    // --------------------------
     user?.let { profile ->
-        val painter = rememberAsyncImagePainter(profile.imageUrl ?: "")
-        val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let {
-                // TODO: convert Uri → MultipartBody.Part and call viewModel.uploadImage()
-            }
-        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(16.dp)
                 .background(Color(0xFFF5F5F5)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(6.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
             ) {
+
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    Image(
-                        painter = painter,
-                        contentDescription = "Profile image",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .clickable { imagePicker.launch("image/*") },
-                        contentScale = ContentScale.Crop
+
+                    // --------------------------
+                    // PROFILE AVATAR
+                    // --------------------------
+                    ProfileAvatar(
+                        imageUrl = profile.imageUrl,
+                        imagePicker = imagePicker
                     )
 
                     Spacer(Modifier.height(16.dp))
+
                     Text(
                         "${profile.name} ${profile.surname}",
                         fontWeight = FontWeight.Bold,
@@ -119,9 +148,14 @@ fun ProfileScreen(
                     Divider()
 
                     Spacer(Modifier.height(16.dp))
+
                     InfoRow(label = "Status", value = profile.status, fontFamily = montserratFont)
                     InfoRow(label = "Streak", value = "${profile.streak} 🔥", fontFamily = montserratFont)
-                    InfoRow(label = "Premium expires", value = profile.premiumExpiration ?: "—", fontFamily = montserratFont)
+                    InfoRow(
+                        label = "Premium expires",
+                        value = profile.premiumExpiration ?: "—",
+                        fontFamily = montserratFont
+                    )
 
                     Spacer(Modifier.height(24.dp))
 
@@ -148,6 +182,9 @@ fun ProfileScreen(
             }
         }
 
+        // --------------------------
+        // PASSWORD DIALOG
+        // --------------------------
         if (showPasswordDialog) {
             ChangePasswordDialog(
                 onDismiss = { showPasswordDialog = false },
@@ -159,8 +196,7 @@ fun ProfileScreen(
                             if (response.isSuccessful) {
                                 showSuccessDialog = true
                             } else {
-                                val error = response.errorBody()?.string()
-                                localError = error ?: "Unknown error"
+                                localError = response.errorBody()?.string() ?: "Unknown error"
                             }
                         }
                         showPasswordDialog = false
@@ -169,6 +205,9 @@ fun ProfileScreen(
             )
         }
 
+        // --------------------------
+        // SUCCESS DIALOG
+        // --------------------------
         if (showSuccessDialog) {
             SuccessDialog(
                 message = "Password changed successfully!",
@@ -176,6 +215,9 @@ fun ProfileScreen(
             )
         }
 
+        // --------------------------
+        // ERROR DIALOG
+        // --------------------------
         if (localError != null) {
             AlertDialog(
                 onDismissRequest = { localError = null },
@@ -188,8 +230,6 @@ fun ProfileScreen(
                 }
             )
         }
-
-
     }
 }
 
@@ -205,7 +245,6 @@ fun InfoRow(label: String, value: String, fontFamily: FontFamily) {
         Text(value, fontWeight = FontWeight.Normal, fontFamily = fontFamily)
     }
 }
-
 
 @Composable
 fun ChangePasswordDialog(
@@ -242,6 +281,7 @@ fun ChangePasswordDialog(
                     isError = newPasswordError != null,
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 if (newPasswordError != null) {
                     Text(
                         text = newPasswordError!!,
@@ -271,6 +311,7 @@ fun ChangePasswordDialog(
                     isError = confirmPasswordError != null,
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 if (confirmPasswordError != null) {
                     Text(
                         text = confirmPasswordError!!,
@@ -296,7 +337,6 @@ fun ChangePasswordDialog(
                     confirmPasswordError = "Passwords do not match"
                     valid = false
                 }
-
                 if (valid) onConfirm(newPassword)
             }) {
                 Text("Save")
@@ -326,5 +366,3 @@ fun SuccessDialog(
         }
     )
 }
-
-

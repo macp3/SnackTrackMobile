@@ -32,7 +32,7 @@ interface UserApi {
     suspend fun uploadImage(
         @Header("Authorization") token: String,
         @Part image: MultipartBody.Part
-    ): Response<String>
+    ): Response<ResponseBody>
 
     @GET("users/bodyParameters")
     suspend fun getBodyParameters(

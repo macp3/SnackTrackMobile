@@ -1,7 +1,6 @@
 package study.snacktrackmobile.data.model.dto
 
 import kotlinx.serialization.Serializable
-import study.snacktrackmobile.data.model.enums.DietType
 
 @Serializable
 data class UserResponse(
@@ -9,7 +8,7 @@ data class UserResponse(
     val name: String,
     val surname: String,
     val email: String,
-    val imageUrl: String?,
+    var imageUrl: String?,
     val premiumExpiration: String?,
     val status: String,
     val streak: Int,

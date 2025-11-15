@@ -27,24 +27,8 @@ import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.data.storage.TokenStorage
-import study.snacktrackmobile.presentation.ui.components.AddProductScreen
-import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
-import study.snacktrackmobile.presentation.ui.components.BottomNavigationBar
-import study.snacktrackmobile.presentation.ui.components.EditBodyParametersScreen
-import study.snacktrackmobile.presentation.ui.components.MealsDailyView
-import study.snacktrackmobile.presentation.ui.components.NotificationItem
-import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
-import study.snacktrackmobile.presentation.ui.components.ProfileScreen
-import study.snacktrackmobile.presentation.ui.components.ShoppingListScreen
-import study.snacktrackmobile.viewmodel.ShoppingListViewModel
-import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBarCalendar
-import study.snacktrackmobile.presentation.ui.components.SummaryBar
-import study.snacktrackmobile.viewmodel.FoodViewModel
-import study.snacktrackmobile.viewmodel.ProfileViewModel
-import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
-import study.snacktrackmobile.viewmodel.TrainingViewModel
-import java.time.LocalDate
-import kotlin.jvm.java
+import study.snacktrackmobile.presentation.ui.components.*
+import study.snacktrackmobile.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,17 +50,24 @@ fun MainView(
     var alimentationToEdit by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
     var selectedProduct by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
 
-
-
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    var authToken by remember { mutableStateOf<String?>(null) }
 
+    var authToken by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         authToken = TokenStorage.getToken(context)
     }
 
+    // Ustawienie użytkownika w ViewModel i inicjalizacja daty
+    LaunchedEffect(loggedUserEmail) {
+        shoppingListViewModel.setUser(loggedUserEmail)
+        if (selectedTab == "Shopping") {
+            shoppingListViewModel.setDate(selectedDate)
+        }
+    }
+
+    // Training API + ViewModel
     val trainingApi = remember {
         Retrofit.Builder()
             .baseUrl(ApiConfig.BASE_URL)
@@ -84,11 +75,9 @@ fun MainView(
             .build()
             .create(TrainingApi::class.java)
     }
+    val trainingViewModel = remember { TrainingViewModel(trainingApi) }
 
-    val trainingViewModel = remember {
-        TrainingViewModel(api = trainingApi)
-    }
-
+    // Profile API + ViewModel
     val userApi = remember {
         Retrofit.Builder()
             .baseUrl(ApiConfig.BASE_URL)
@@ -96,18 +85,18 @@ fun MainView(
             .build()
             .create(UserApi::class.java)
     }
-
     val profileViewModel = remember { ProfileViewModel(userApi) }
 
-    val montserratFont = androidx.compose.ui.text.font.FontFamily.Default
+    val userTraining by remember { derivedStateOf { trainingViewModel.userTraining } }
 
-    LaunchedEffect(loggedUserEmail, selectedDate) {
-        shoppingListViewModel.setUser(loggedUserEmail)
-        if (selectedTab == "Shopping") {
-            shoppingListViewModel.setDate(selectedDate)
-        }
+    val showCalendar = when (selectedTab) {
+        "Meals" -> true
+        "Training" -> userTraining != null
+        "Shopping" -> true
+        else -> false
     }
 
+    // Drawer lewy
 
     val navBackStackEntry = navController.currentBackStackEntry
     LaunchedEffect(navBackStackEntry) {
@@ -127,54 +116,30 @@ fun MainView(
         drawerState = leftDrawerState,
         gesturesEnabled = !rightDrawerOpen,
         drawerContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(280.dp)
-                    .background(Color.White)
-                    .padding(vertical = 24.dp, horizontal = 16.dp)
-            ) {
-                Text(
-                    text = "Menu",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.padding(bottom = 24.dp),
-                    fontFamily = montserratFont
-                )
-                Text(
-                    text = "Home",
-                    fontFamily = montserratFont,
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .clickable { scope.launch { leftDrawerState.close() } }
-                )
-                Text(
-                    text = "Settings",
-                    fontFamily = montserratFont,
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .clickable { scope.launch { leftDrawerState.close() } }
-                )
-            }
+            DrawerContent(
+                onClose = { scope.launch { leftDrawerState.close() } },
+                onNavigate = { selectedTab = it }
+            )
         }
     ) {
         Scaffold(
             topBar = {
-                SnackTrackTopBarCalendar(
-                    selectedDate = selectedDate,
-                    onDateSelected = { date -> selectedDate = date
-                        if (selectedTab == "Shopping") {
-                            shoppingListViewModel.setDate(date)
-                        }
-                    },
-                    onOpenMenu = {
-                        if (!rightDrawerOpen) scope.launch { leftDrawerState.open() }
-                    },
-                    onOpenNotifications = {
-                        scope.launch { leftDrawerState.close() }
-                        rightDrawerOpen = true
-                    }
-                )
+                if (showCalendar) {
+                    SnackTrackTopBarCalendar(
+                        selectedDate = selectedDate,
+                        onDateSelected = { date ->
+                            selectedDate = date
+                            if (selectedTab == "Shopping") shoppingListViewModel.setDate(selectedDate)
+                        },
+                        onOpenMenu = { scope.launch { leftDrawerState.open() } },
+                        onOpenNotifications = { rightDrawerOpen = true }
+                    )
+                } else {
+                    SnackTrackTopBarWithIcons(
+                        onOpenMenu = { scope.launch { leftDrawerState.open() } },
+                        onOpenNotifications = { rightDrawerOpen = true }
+                    )
+                }
             },
             bottomBar = {
                 Column {
@@ -185,84 +150,74 @@ fun MainView(
                         selectedItem = selectedTab,
                         onItemSelected = { tab ->
                             selectedTab = tab
-                            if (tab == "Shopping") {
-                                shoppingListViewModel.setDate(selectedDate)
-                            }
+                            if (tab == "Shopping") shoppingListViewModel.setDate(selectedDate)
                         }
                     )
                 }
             },
             modifier = Modifier.fillMaxSize().background(Color.White)
         ) { paddingValues ->
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .background(Color.White)
             ) {
-                    when (selectedTab) {
-                        "Meals" -> MealsDailyView(
-                            selectedDate = selectedDate,
-                            viewModel = registeredAlimentationViewModel,
-                            navController
-                        )
-                        "Training" -> TrainingView(
-                            viewModel = trainingViewModel,
-                            selectedDate = selectedDate,
-                            authToken = authToken,
-                            onDateSelected = { date -> selectedDate = date }
-                        )
-                        "Recipes" -> Text("Przepisy dnia $selectedDate")
-                        "Shopping" -> {
-                            ShoppingListScreen(
-                                viewModel = shoppingListViewModel,
-                                selectedDate = selectedDate
-                            )
-                        }
-                        "Profile" -> {
-                            ProfileScreen(
-                                viewModel = profileViewModel,
-                                onEditBodyParameters = { selectedTab = "EditProfile" }
-                            )
-                        }
-                        "EditProfile" -> EditBodyParametersScreen(
-                            viewModel = profileViewModel,
-                            onBack = { selectedTab = "Profile" }
-                        )
-                        "AddProduct" -> {
-                            if (selectedProduct == null) {
-                                AddProductScreen(
-                                    selectedDate = selectedDate,
-                                    selectedMeal = selectedMeal,
-                                    navController = navController,
-                                    foodViewModel = foodViewModel,
-                                    onProductClick = { product -> selectedProduct = product }
-                                )
-                            } else {
-                                ProductDetailsScreen(
-                                    alimentation = selectedProduct!!,
-                                    selectedDate = selectedDate,
-                                    selectedMeal = selectedMeal,
-                                    onBack = { selectedProduct = null },
-                                    registeredAlimentationViewModel = registeredAlimentationViewModel
-                                )
-                            }
-                        }
-
-
-                        "AddProductToDatabase" -> {
-                            AddProductToDatabaseScreen(
+                when (selectedTab) {
+                    "Meals" -> MealsDailyView(
+                        selectedDate = selectedDate,
+                        viewModel = registeredAlimentationViewModel,
+                        navController = navController
+                    )
+                    "Training" -> TrainingView(
+                        viewModel = trainingViewModel,
+                        selectedDate = selectedDate,
+                        authToken = authToken,
+                        onDateSelected = { date -> selectedDate = date }
+                    )
+                    "Recipes" -> Text("Przepisy dnia $selectedDate")
+                    "Shopping" -> ShoppingListScreen(
+                        viewModel = shoppingListViewModel,
+                        selectedDate = selectedDate
+                    )
+                    "Profile" -> ProfileScreen(
+                        viewModel = profileViewModel,
+                        onEditBodyParameters = { selectedTab = "EditProfile" }
+                    )
+                    "EditProfile" -> EditBodyParametersScreen(
+                        viewModel = profileViewModel,
+                        onBack = { selectedTab = "Profile" }
+                    )
+                    "AddProduct" -> {
+                        if (selectedProduct == null) {
+                            AddProductScreen(
+                                selectedDate = selectedDate,
+                                selectedMeal = selectedMeal,
                                 navController = navController,
                                 foodViewModel = foodViewModel,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    //.padding(8.dp)
+                                onProductClick = { product -> selectedProduct = product }
+                            )
+                        } else {
+                            ProductDetailsScreen(
+                                alimentation = selectedProduct!! as EssentialFoodResponse,
+                                selectedDate = selectedDate,
+                                selectedMeal = selectedMeal,
+                                onBack = { selectedProduct = null },
+                                registeredAlimentationViewModel = registeredAlimentationViewModel
                             )
                         }
                     }
+                    "AddProductToDatabase" -> AddProductToDatabaseScreen(
+                        navController = navController,
+                        foodViewModel = foodViewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
 
+        // Right drawer: Notifications
         if (rightDrawerOpen) {
             Box(
                 modifier = Modifier
@@ -280,7 +235,6 @@ fun MainView(
                         .clickable(enabled = false) {}
                 ) {
                     Column {
-                        // Nagłówek
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -288,11 +242,14 @@ fun MainView(
                         ) {
                             Text("Notifications", style = MaterialTheme.typography.titleLarge, color = Color(0xFF4CAF50))
                             IconButton(onClick = { rightDrawerOpen = false }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close notification", tint = Color.Gray)
+                                Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
                             }
                         }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+
                         val notifications = NotificationsRepository.notifications
+
                         if (notifications.isEmpty()) {
                             Text("No new notification", color = Color.Gray)
                         } else {
@@ -314,5 +271,24 @@ fun MainView(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun DrawerContent(onClose: () -> Unit, onNavigate: (String) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(280.dp)
+            .background(Color.White)
+            .padding(24.dp)
+    ) {
+        Text("Meals", modifier = Modifier.clickable { onNavigate("Meals"); onClose() })
+        Spacer(modifier = Modifier.height(12.dp))
+        Text("Training", modifier = Modifier.clickable { onNavigate("Training"); onClose() })
+        Spacer(modifier = Modifier.height(12.dp))
+        Text("Shopping", modifier = Modifier.clickable { onNavigate("Shopping"); onClose() })
+        Spacer(modifier = Modifier.height(12.dp))
+        Text("Profile", modifier = Modifier.clickable { onNavigate("Profile"); onClose() })
     }
 }

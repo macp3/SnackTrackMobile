@@ -1,7 +1,6 @@
 package study.snacktrackmobile.data.model.dto
 
 import kotlinx.serialization.Serializable
-import study.snacktrackmobile.data.model.enums.DietType
 import study.snacktrackmobile.data.model.enums.Sex
 
 @Serializable
@@ -17,6 +16,5 @@ data class BodyParametersResponse(
     val calorieLimit: Float,
     val proteinLimit: Float,
     val fatLimit: Float,
-    val carbohydratesLimit: Float,
-    val preferredDiet: DietType
+    val carbohydratesLimit: Float
 )

@@ -18,12 +18,11 @@ class ShoppingListViewModel(
 
     private var currentDate: String? = null
     private var currentUserEmail: String? = null
+    private var shoppingListJob: Job? = null
 
     fun setUser(email: String) {
         currentUserEmail = email
     }
-
-    private var shoppingListJob: Job? = null
 
     fun setDate(date: String) {
         val email = currentUserEmail ?: return
@@ -38,7 +37,6 @@ class ShoppingListViewModel(
         }
     }
 
-
     fun addNewList(date: String, name: String, onAdded: (Long) -> Unit) {
         val email = currentUserEmail ?: return
 
@@ -49,15 +47,22 @@ class ShoppingListViewModel(
                 userEmail = email
             )
             val newId = dao.insert(newList)
+
+            // Odświeżenie list po dodaniu
+            val updatedLists = dao.getByDateAndUserOnce(date, email)
+            _shoppingLists.value = updatedLists
+
             onAdded(newId)
         }
     }
 
-
-
     fun deleteList(list: ShoppingList) {
         viewModelScope.launch {
             dao.delete(list)
+            // Odświeżenie list
+            val email = currentUserEmail ?: return@launch
+            val date = currentDate ?: return@launch
+            _shoppingLists.value = dao.getByDateAndUserOnce(date, email)
         }
     }
 
@@ -71,6 +76,7 @@ class ShoppingListViewModel(
                 )
             )
             dao.update(updatedList)
+            refreshCurrentLists()
         }
     }
 
@@ -78,6 +84,7 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             val updatedList = list.copy(items = list.items - item)
             dao.update(updatedList)
+            refreshCurrentLists()
         }
     }
 
@@ -86,30 +93,11 @@ class ShoppingListViewModel(
             val updatedItems = list.items.map {
                 if (it == item) it.copy(bought = !it.bought) else it
             }
-            val updatedList = list.copy(items = updatedItems)
-            dao.update(updatedList)
+            dao.update(list.copy(items = updatedItems))
+            refreshCurrentLists()
         }
     }
 
-    fun copyListsFromDate(fromDate: String, toDate: String) {
-        val email = currentUserEmail ?: return
-
-        viewModelScope.launch {
-            val listsToCopy = dao.getByDateAndUserOnce(fromDate, email)
-
-            listsToCopy.forEach { list ->
-                val resetItems = list.items.map { it.copy(bought = false) }
-
-                val copiedList = list.copy(
-                    id = 0,
-                    date = toDate,
-                    items = resetItems
-                )
-
-                dao.insert(copiedList)
-            }
-        }
-    }
     fun editItemInList(
         list: ShoppingList,
         oldItem: ShoppingListItem,
@@ -126,16 +114,40 @@ class ShoppingListViewModel(
                 ) else it
             }
             dao.update(list.copy(items = updatedItems))
+            refreshCurrentLists()
         }
     }
 
     fun updateListName(list: ShoppingList, newName: String) {
         viewModelScope.launch {
-            val updatedList = list.copy(name = newName)
-            dao.update(updatedList)
+            dao.update(list.copy(name = newName))
+            refreshCurrentLists()
         }
     }
 
+    fun copyListsFromDate(fromDate: String, toDate: String) {
+        val email = currentUserEmail ?: return
 
+        viewModelScope.launch {
+            val listsToCopy = dao.getByDateAndUserOnce(fromDate, email)
+            listsToCopy.forEach { list ->
+                val resetItems = list.items.map { it.copy(bought = false) }
+                val copiedList = list.copy(
+                    id = 0,
+                    date = toDate,
+                    items = resetItems
+                )
+                dao.insert(copiedList)
+            }
+            refreshCurrentLists()
+        }
+    }
+
+    private fun refreshCurrentLists() {
+        val email = currentUserEmail ?: return
+        val date = currentDate ?: return
+        viewModelScope.launch {
+            _shoppingLists.value = dao.getByDateAndUserOnce(date, email)
+        }
+    }
 }
-
