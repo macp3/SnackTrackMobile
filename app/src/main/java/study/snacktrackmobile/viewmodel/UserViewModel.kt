@@ -59,4 +59,12 @@ class UserViewModel : ViewModel() {
 
         // Możesz dodać inne funkcje np. updateProfile, logout itd.
     }
+
+    fun logout(context: Context) {
+        viewModelScope.launch {
+            TokenStorage.clearToken(context)
+            _currentUserEmail.value = null
+            _loginState.value = UiState.Idle
+        }
+    }
 }

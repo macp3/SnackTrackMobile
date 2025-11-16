@@ -1,18 +1,34 @@
 package study.snacktrackmobile.presentation.ui.views
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
@@ -34,6 +50,7 @@ fun MainView(
     shoppingListViewModel: ShoppingListViewModel,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
     foodViewModel: FoodViewModel,
+    userViewModel: UserViewModel,
     loggedUserEmail: String,
     initialTab: String,
     initialMeal: String,
@@ -98,9 +115,15 @@ fun MainView(
         drawerContent = {
             DrawerContent(
                 onClose = { scope.launch { leftDrawerState.close() } },
-                onNavigate = { selectedTab = it }
+                onNavigate = { selectedTab = it },
+                onSettings = { navController.navigate("SettingsView") },
+                onAboutUs = { navController.navigate("AboutUsView") },
+                userViewModel = userViewModel,
+                context = context,
+                onLoggedOut = { navController.navigate("LoginView") { popUpTo("MainView") { inclusive = true } } }
             )
         }
+
     ) {
         Scaffold(
             topBar = {
@@ -226,7 +249,7 @@ fun MainView(
                             }
                         }
 
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                         val notifications = NotificationsRepository.notifications
 
@@ -255,20 +278,146 @@ fun MainView(
 }
 
 @Composable
-fun DrawerContent(onClose: () -> Unit, onNavigate: (String) -> Unit) {
+fun DrawerContent(
+    onClose: () -> Unit,
+    onNavigate: (String) -> Unit,
+    onSettings: () -> Unit,
+    onAboutUs: () -> Unit,
+    userViewModel: UserViewModel,
+    context: Context,
+    onLoggedOut: () -> Unit
+) {
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .width(280.dp)
             .background(Color.White)
-            .padding(24.dp)
+            .padding(vertical = 32.dp, horizontal = 16.dp)
     ) {
-        Text("Meals", modifier = Modifier.clickable { onNavigate("Meals"); onClose() })
-        Spacer(modifier = Modifier.height(12.dp))
-        Text("Training", modifier = Modifier.clickable { onNavigate("Training"); onClose() })
-        Spacer(modifier = Modifier.height(12.dp))
-        Text("Shopping", modifier = Modifier.clickable { onNavigate("Shopping"); onClose() })
-        Spacer(modifier = Modifier.height(12.dp))
-        Text("Profile", modifier = Modifier.clickable { onNavigate("Profile"); onClose() })
+        // Premium z gradientem i badge "Pro"
+        // Premium z ikoną i badge "Pro"
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onNavigate("Premium")
+                    onClose()
+                }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Ikona gwiazdki z gradientem
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            colors = listOf(Color(0xFFFFC107), Color(0xFFFFA000))
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Star, contentDescription = "Premium", tint = Color.White)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Tekst Premium z badge
+            Box(modifier = Modifier) {
+                Text(
+                    "Premium",
+                    fontSize = 18.sp,
+                    fontFamily = montserratFont,
+                    color = Color(0xFF2E7D32)
+                )
+
+                // Badge "Pro" mniejszy, bliżej tekstu i stonowany
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 30.dp, y = 0.dp) // bliżej tekstu
+                        .background(Color(0xFF81C784), shape = RoundedCornerShape(4.dp)) // bardziej stonowany zielony
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                ) {
+                    Text(
+                        "Pro",
+                        fontSize = 9.sp,
+                        color = Color.White,
+                        fontFamily = montserratFont
+                    )
+                }
+            }
+        }
+
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("Menu", fontSize = 24.sp, fontFamily = montserratFont, color = Color(0xFF2E7D32))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        @Composable
+        fun DrawerItem(icon: ImageVector, label: String, onClick: () -> Unit) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onClick(); onClose() }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color(0xFFE0F2F1), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = label, tint = Color(0xFF2E7D32))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(label, fontSize = 18.sp, fontFamily = montserratFont, color = Color.Black)
+            }
+        }
+
+        // Główne sekcje
+        DrawerItem(Icons.Default.Restaurant, "Meals") { onNavigate("Meals") }
+        DrawerItem(Icons.Default.FitnessCenter, "Training") { onNavigate("Training") }
+        DrawerItem(Icons.Default.Book, "Recipes") { onNavigate("Recipes") }
+        DrawerItem(Icons.Default.ShoppingCart, "Shopping") { onNavigate("Shopping") }
+        DrawerItem(Icons.Default.Person, "Profile") { onNavigate("Profile") }
+
+        Spacer(modifier = Modifier.height(32.dp))
+        HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Dodatkowe opcje
+        DrawerItem(Icons.Default.Settings, "Settings") { onSettings() }
+        DrawerItem(Icons.Default.Info, "About Us") { onAboutUs() }
+        DrawerItem(Icons.AutoMirrored.Filled.ExitToApp, "Log Out") { showLogoutDialog = true }
+    }
+
+    // Dialog wylogowania
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Log Out", fontFamily = montserratFont) },
+            text = { Text("Are you sure you want to log out?", fontFamily = montserratFont) },
+            confirmButton = {
+                TextButton(onClick = {
+                    userViewModel.logout(context)
+                    showLogoutDialog = false
+                    onLoggedOut()
+                }) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("No")
+                }
+            }
+        )
     }
 }
+
+
