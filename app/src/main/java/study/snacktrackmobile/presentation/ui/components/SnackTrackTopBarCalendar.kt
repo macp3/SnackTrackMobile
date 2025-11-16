@@ -38,7 +38,6 @@ fun SnackTrackTopBarCalendar(
     val montserratFont = FontFamily(Font(R.font.montserrat, weight = FontWeight.Normal))
     val today = LocalDate.now()
 
-    // Zakres 2001 dni (1000 wstecz i 1000 do przodu)
     val totalDays = 2001
     val days = remember { (0 until totalDays).map { today.minusDays(1000L - it) } }
     val todayIndex = 1000
@@ -47,7 +46,6 @@ fun SnackTrackTopBarCalendar(
     var visibleMonth by remember { mutableStateOf(today.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)) }
     var visibleYear by remember { mutableStateOf(today.year) }
 
-    // Aktualizacja widocznego miesiąca i roku przy scrollu
     LaunchedEffect(listState.firstVisibleItemIndex) {
         val visibleIndex = listState.firstVisibleItemIndex + listState.layoutInfo.visibleItemsInfo.size / 2
         val newVisibleDate = days.getOrNull(visibleIndex) ?: today
@@ -56,14 +54,12 @@ fun SnackTrackTopBarCalendar(
         visibleYear = newVisibleDate.year
     }
 
-    // Scroll do dzisiaj, jeśli selectedDate jest dzisiejszy
     LaunchedEffect(selectedDate) {
         val selectedLocalDate = try {
             LocalDate.parse(selectedDate)
         } catch (e: Exception) {
             today
         }
-
         if (selectedLocalDate == today) {
             listState.animateScrollToItem(todayIndex)
         }
@@ -73,9 +69,9 @@ fun SnackTrackTopBarCalendar(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFBFFF99))
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        // 🔝 Top bar
+        // Top bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -85,7 +81,7 @@ fun SnackTrackTopBarCalendar(
                 imageVector = Icons.Filled.Menu,
                 contentDescription = "Menu",
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(24.dp)
                     .clickable { onOpenMenu() },
                 tint = Color.Black
             )
@@ -94,14 +90,14 @@ fun SnackTrackTopBarCalendar(
                 Text(
                     text = "SnackTrack",
                     fontFamily = montserratFont,
-                    fontSize = 31.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
                 )
                 Text(
                     text = "Track your progress",
                     fontFamily = montserratFont,
-                    fontSize = 17.sp,
+                    fontSize = 14.sp,
                     color = Color.Black
                 )
             }
@@ -110,31 +106,30 @@ fun SnackTrackTopBarCalendar(
                 imageVector = Icons.Filled.Notifications,
                 contentDescription = "Notifications",
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(24.dp)
                     .clickable { onOpenNotifications() },
                 tint = Color.Black
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // 📅 Widoczny miesiąc i rok
+        // Widoczny miesiąc i rok
         Text(
             text = "${visibleMonth.replaceFirstChar { it.uppercase() }} $visibleYear",
             fontFamily = montserratFont,
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             color = Color.Black,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
-        // 🔢 Pasek dni
         LazyRow(
             state = listState,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
             itemsIndexed(days) { _, date ->
                 val isSelected = date == try {
@@ -148,31 +143,26 @@ fun SnackTrackTopBarCalendar(
 
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(43.dp)
                         .clip(CircleShape)
                         .background(if (isSelected) Color(0xFF2E7D32) else Color.White)
-                        .clickable {
-                            onDateSelected(date.format(DateTimeFormatter.ISO_DATE))
-                        },
+                        .clickable { onDateSelected(date.format(DateTimeFormatter.ISO_DATE)) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = dayName,
-                            fontFamily = montserratFont,
-                            fontSize = 13.sp,
-                            color = if (isSelected) Color.White else Color.Black
-                        )
-                        Text(
-                            text = dayNumber.toString(),
-                            fontFamily = montserratFont,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) Color.White else Color.Black
-                        )
-                    }
+                    Text(
+                        text = "$dayName\n$dayNumber",
+                        fontFamily = montserratFont,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) Color.White else Color.Black,
+                        lineHeight = 13.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
+
             }
         }
+
+
     }
 }

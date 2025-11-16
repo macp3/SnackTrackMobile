@@ -54,83 +54,81 @@ fun StartView(navController: NavController) {
         label = "alpha"
     )
 
-    // Uruchom animację po wejściu na ekran
-    LaunchedEffect(Unit) {
-        visible = true
-    }
+    LaunchedEffect(Unit) { visible = true }
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 🧭 TopBar pojawia się od razu (bez animacji)
+
             SnackTrackTopBar()
 
-            // 🔹 Odstęp między topbarem a logiem
-            Spacer(modifier = Modifier.height(120.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // 🔹 Animowana część: logo + tekst + przyciski
+            // GÓRNA CZĘŚĆ
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
                     .offset(y = offsetY)
                     .alpha(alpha),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // Logo
                 Image(
                     painter = painterResource(id = R.drawable.logo_vector),
                     contentDescription = "App logo",
                     modifier = Modifier
-                        .fillMaxWidth(0.4f)
+                        .fillMaxWidth(0.35f)
                         .aspectRatio(1f)
-                        .padding(bottom = 16.dp),
-                    contentScale = ContentScale.Fit
                 )
 
-                // Tekst
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
                     text = "WELCOME",
-                    fontSize = 35.sp,
+                    fontSize = 32.sp,
                     fontFamily = montserratFont
                 )
+            }
 
-            // Dolne przyciski
+            // DOLNE PRZYCISKI — ZAWSZE NA EKRANIE
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 250.dp),
+                    .padding(bottom = 40.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                DisplayButton(text = "Login", onClick = {
-                    navController.navigate("LoginView")
-                }, modifier = Modifier.fillMaxWidth(0.5f))
-                Spacer(modifier = Modifier.height(16.dp))
-                DisplayButton(text = "Register", onClick = {
-                    navController.navigate("RegisterView")
-                }, modifier = Modifier.fillMaxWidth(0.5f))
-                Spacer(modifier = Modifier.height(20.dp))
+                DisplayButton(
+                    text = "Login",
+                    onClick = { navController.navigate("LoginView") },
+                    modifier = Modifier.fillMaxWidth(0.5f)
+                )
 
-                    OutlinedButton(
-                        onClick = { /* TODO: Google Sign-In */ },
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        modifier = Modifier.size(50.dp),
-                        border = BorderStroke(1.dp, Color.Black),
-                        contentPadding = PaddingValues(6.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.google_icon),
-                            contentDescription = "Google icon",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                DisplayButton(
+                    text = "Register",
+                    onClick = { navController.navigate("RegisterView") },
+                    modifier = Modifier.fillMaxWidth(0.5f)
+                )
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                OutlinedButton(
+                    onClick = { /* Google */ },
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    modifier = Modifier.size(50.dp),
+                    border = BorderStroke(1.dp, Color.Black),
+                    contentPadding = PaddingValues(6.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.google_icon),
+                        contentDescription = "Google icon",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
                 }
             }
         }

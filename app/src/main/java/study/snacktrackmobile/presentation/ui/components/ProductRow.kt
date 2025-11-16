@@ -7,13 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.presentation.ui.views.montserratFont
-import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
 fun ProductRow(
@@ -45,13 +43,33 @@ fun ProductRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(product.name, style = MaterialTheme.typography.bodyLarge, fontFamily = montserratFont)
-                Text(product.amount, style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont)
+                Text(
+                    product.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontFamily = montserratFont,
+                    color = Color.Black
+                )
+                Text(
+                    product.amount,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = montserratFont,
+                    color = Color.Black
+                )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("${product.kcal} kcal", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont)
-                    Text("${product.protein}P ${product.fat}F ${product.carbohydrates}C", style = MaterialTheme.typography.bodySmall, fontFamily = montserratFont)
+                    Text(
+                        "${product.kcal} kcal",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = montserratFont,
+                        color = Color.Black
+                    )
+                    Text(
+                        "${product.protein}P ${product.fat}F ${product.carbohydrates}C",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = montserratFont,
+                        color = Color.Black
+                    )
                 }
                 IconButton(onClick = { onDelete(product.id) }) {
                     Icon(

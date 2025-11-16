@@ -89,9 +89,9 @@ fun ShoppingListScreen(
                         contentColor = Color.Black
                     )
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add list")
+                    Icon(Icons.Default.Add, contentDescription = "Add list", tint = Color.Black)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add new list", fontFamily = montserratFont)
+                    Text("Add new", fontFamily = montserratFont, color = Color.Black)
                 }
 
                 Button(
@@ -102,13 +102,12 @@ fun ShoppingListScreen(
                         contentColor = Color.Black
                     )
                 ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy lists")
+                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy lists", tint = Color.Black)
                     Spacer(Modifier.width(8.dp))
-                    Text("Copy", fontFamily = montserratFont)
+                    Text("Copy", fontFamily = montserratFont, color = Color.Black)
                 }
             }
         }
-
     }
 
     // Dialog tworzenia nowej listy
@@ -219,18 +218,18 @@ fun ShoppingListItemCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontFamily = montserratFont,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    color = Color.Black
                 )
 
                 IconButton(onClick = { showEditListDialog = true }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit list name")
+                    Icon(Icons.Default.Edit, contentDescription = "Edit list name", tint = Color.Black)
                 }
 
                 IconButton(onClick = onDeleteList) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete list")
+                    Icon(Icons.Default.Delete, contentDescription = "Delete list", tint = Color.Black)
                 }
             }
-
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -250,9 +249,9 @@ fun ShoppingListItemCard(
                             checked = item.bought,
                             onCheckedChange = { viewModel.toggleItemBought(list, item) },
                             colors = CheckboxDefaults.colors(
-                                checkedColor = Color(0xFF2E7D32), // Twój zielony kolor
-                                uncheckedColor = Color.Gray,       // opcjonalnie dla niezaznaczonego
-                                checkmarkColor = Color.White       // kolor „ptaszka”
+                                checkedColor = Color(0xFF2E7D32),
+                                uncheckedColor = Color.Gray,
+                                checkmarkColor = Color.White
                             )
                         )
 
@@ -262,7 +261,8 @@ fun ShoppingListItemCard(
                                 .weight(1f)
                                 .padding(start = 8.dp),
                             maxLines = 2,
-                            overflow = TextOverflow.Visible
+                            overflow = TextOverflow.Visible,
+                            color = Color.Black
                         )
 
                         Text(
@@ -271,7 +271,8 @@ fun ShoppingListItemCard(
                                 .padding(start = 8.dp)
                                 .widthIn(max = 80.dp),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            color = Color.Black
                         )
 
                         Row {
@@ -282,27 +283,15 @@ fun ShoppingListItemCard(
                                 editedItemDescription = item.description
                                 showEditItemDialog = true
                             }) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit item",
-                                    tint = Color.DarkGray
-                                )
+                                Icon(Icons.Default.Edit, contentDescription = "Edit item", tint = Color.Black)
                             }
 
                             IconButton(onClick = { viewModel.deleteItemFromList(list, item) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Delete item",
-                                    tint = Color.Black
-                                )
+                                Icon(Icons.Default.Close, contentDescription = "Delete item", tint = Color.Black)
                             }
                         }
-
-
                     }
 
-
-                    // Description z ikoną rozwinięcia
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -315,12 +304,13 @@ fun ShoppingListItemCard(
                             maxLines = if (expanded) Int.MAX_VALUE else 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
-                            color = Color.Gray // jaśniejszy kolor
+                            color = Color.Gray
                         )
                         if (!item.description.isNullOrBlank()) {
                             Icon(
                                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = "Expand description"
+                                contentDescription = "Expand description",
+                                tint = Color.Black
                             )
                         }
                     }
@@ -330,7 +320,7 @@ fun ShoppingListItemCard(
             }
 
             IconButton(onClick = { showAddItemDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add item")
+                Icon(Icons.Default.Add, contentDescription = "Add item", tint = Color.Black)
             }
         }
     }

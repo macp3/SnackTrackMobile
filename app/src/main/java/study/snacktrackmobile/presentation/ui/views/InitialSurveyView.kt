@@ -26,8 +26,8 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
-import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
 import study.snacktrackmobile.data.network.ApiConfig
+import study.snacktrackmobile.presentation.ui.components.montserratFont
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +68,8 @@ fun InitialSurveyView(navController: NavController) {
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(24.dp),
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -81,43 +82,99 @@ fun InitialSurveyView(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            DropdownField("Sex", sex, sexOptions, sexError) { sex = it; sexError = false }
-
-            TextInput(height, "Height (cm)", KeyboardOptions(keyboardType = KeyboardType.Number), heightError, 300.dp) {
-                height = it; heightError = false
-            }
-
-            TextInput(weight, "Weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), weightError, 300.dp) {
-                weight = it; weightError = false
-            }
-
-            TextInput(age, "Age", KeyboardOptions(keyboardType = KeyboardType.Number), ageError, 300.dp) {
-                age = it; ageError = false
-            }
-
-            DropdownField("Daily activity level", activityLevel, activityOptions, activityError) {
-                activityLevel = it; activityError = false
-            }
-
-            DropdownField("Training intensity", trainingIntensity, activityOptions, trainingError) {
-                trainingIntensity = it; trainingError = false
-            }
-
-            TextInput(
-                weeklyWeightChangeTempo,
-                "Weekly weight change (0–1 kg/week)",
-                KeyboardOptions(keyboardType = KeyboardType.Number),
-                tempoError,
-                300.dp
-            ) {
-                weeklyWeightChangeTempo = it; tempoError = false
-            }
-
-            TextInput(goalWeight, "Goal weight (kg)", KeyboardOptions(keyboardType = KeyboardType.Number), goalError, 300.dp) {
-                goalWeight = it; goalError = false
-            }
+            // SEX
+            DropdownField(
+                label = "Sex",
+                selected = sex,
+                options = sexOptions,
+                isError = sexError,
+                onSelected = { sex = it; sexError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            // HEIGHT
+            TextInput(
+                value = height,
+                label = "Height (cm)",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = heightError,
+                onValueChange = { height = it; heightError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // WEIGHT
+            TextInput(
+                value = weight,
+                label = "Weight (kg)",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = weightError,
+                onValueChange = { weight = it; weightError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // AGE
+            TextInput(
+                value = age,
+                label = "Age",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = ageError,
+                onValueChange = { age = it; ageError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ACTIVITY LEVEL
+            DropdownField(
+                label = "Daily activity level",
+                selected = activityLevel,
+                options = activityOptions,
+                isError = activityError,
+                onSelected = { activityLevel = it; activityError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // TRAINING INTENSITY
+            DropdownField(
+                label = "Training intensity",
+                selected = trainingIntensity,
+                options = activityOptions,
+                isError = trainingError,
+                onSelected = { trainingIntensity = it; trainingError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // WEEKLY WEIGHT CHANGE
+            TextInput(
+                value = weeklyWeightChangeTempo,
+                label = "Weekly weight change (0–1 kg/week)",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = tempoError,
+                onValueChange = { weeklyWeightChangeTempo = it; tempoError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // GOAL WEIGHT
+            TextInput(
+                value = goalWeight,
+                label = "Goal weight (kg)",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = goalError,
+                onValueChange = { goalWeight = it; goalError = false },
+                modifier = Modifier.fillMaxWidth(0.85f)
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -131,70 +188,76 @@ fun InitialSurveyView(navController: NavController) {
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            DisplayButton("Next", modifier = Modifier.fillMaxWidth(0.6f), onClick = {
-                backendMessage = null
-                errorMessage = null
+            DisplayButton(
+                text = "Next",
+                modifier = Modifier.fillMaxWidth(0.6f),
+                onClick = {
+                    backendMessage = null
+                    errorMessage = null
 
-                // reset error flags
-                sexError = false
-                heightError = false
-                weightError = false
-                ageError = false
-                activityError = false
-                trainingError = false
-                tempoError = false
-                goalError = false
+                    // reset error flags
+                    sexError = false
+                    heightError = false
+                    weightError = false
+                    ageError = false
+                    activityError = false
+                    trainingError = false
+                    tempoError = false
+                    goalError = false
 
-                fun fieldError(condition: Boolean, setError: () -> Unit) {
-                    if (condition) setError()
-                }
+                    fun fieldError(condition: Boolean, setError: () -> Unit) {
+                        if (condition) setError()
+                    }
 
-                fieldError(sex.isBlank()) { sexError = true }
-                fieldError(height.isBlank() || height.toFloatOrNull() == null || height.toFloat() <= 0f) { heightError = true }
-                fieldError(weight.isBlank() || weight.toFloatOrNull() == null || weight.toFloat() <= 0f) { weightError = true }
-                fieldError(age.isBlank() || age.toIntOrNull() == null || age.toInt() <= 0) { ageError = true }
-                fieldError(weeklyWeightChangeTempo.isBlank() || weeklyWeightChangeTempo.toFloatOrNull() == null ||
-                        weeklyWeightChangeTempo.toFloat() !in 0f..1f) { tempoError = true }
-                fieldError(goalWeight.isBlank() || goalWeight.toFloatOrNull() == null || goalWeight.toFloat() <= 0f) { goalError = true }
-                fieldError(activityLevel.isBlank()) { activityError = true }
-                fieldError(trainingIntensity.isBlank()) { trainingError = true }
+                    fieldError(sex.isBlank()) { sexError = true }
+                    fieldError(height.isBlank() || height.toFloatOrNull() == null || height.toFloat() <= 0f) { heightError = true }
+                    fieldError(weight.isBlank() || weight.toFloatOrNull() == null || weight.toFloat() <= 0f) { weightError = true }
+                    fieldError(age.isBlank() || age.toIntOrNull() == null || age.toInt() <= 0) { ageError = true }
+                    fieldError(weeklyWeightChangeTempo.isBlank() || weeklyWeightChangeTempo.toFloatOrNull() == null ||
+                            weeklyWeightChangeTempo.toFloat() !in 0f..1f) { tempoError = true }
+                    fieldError(goalWeight.isBlank() || goalWeight.toFloatOrNull() == null || goalWeight.toFloat() <= 0f) { goalError = true }
+                    fieldError(activityLevel.isBlank()) { activityError = true }
+                    fieldError(trainingIntensity.isBlank()) { trainingError = true }
 
-                if (sexError || heightError || weightError || ageError || tempoError || goalError || activityError || trainingError) {
-                    errorMessage = "Please fill all fields correctly"
-                    return@DisplayButton
-                }
+                    if (sexError || heightError || weightError || ageError || tempoError || goalError || activityError || trainingError) {
+                        errorMessage = "Please fill all fields correctly"
+                        return@DisplayButton
+                    }
 
-                val request = BodyParametersRequest(
-                    sex = Sex.valueOf(sex),
-                    height = height.toFloat(),
-                    weight = weight.toFloat(),
-                    age = age.toInt(),
-                    dailyActivityFactor = mapLevelToFloatDaily(activityLevel),
-                    dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
-                    weeklyWeightChangeTempo = weeklyWeightChangeTempo.toFloat(),
-                    goalWeight = goalWeight.toFloat(),
-                )
+                    val request = BodyParametersRequest(
+                        sex = Sex.valueOf(sex),
+                        height = height.toFloat(),
+                        weight = weight.toFloat(),
+                        age = age.toInt(),
+                        dailyActivityFactor = mapLevelToFloatDaily(activityLevel),
+                        dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
+                        weeklyWeightChangeTempo = weeklyWeightChangeTempo.toFloat(),
+                        goalWeight = goalWeight.toFloat(),
+                    )
 
-                scope.launch {
-                    val token = TokenStorage.getToken(context)
-                    if (token != null) {
-                        val result = sendBodyParameters(token, request)
-                        if (result.isSuccess) {
-                            navController.navigate("MainView") {
-                                popUpTo("InitialSurveyView") { inclusive = true }
+                    scope.launch {
+                        val token = TokenStorage.getToken(context)
+                        if (token != null) {
+                            val result = sendBodyParameters(token, request)
+                            if (result.isSuccess) {
+                                navController.navigate("MainView") {
+                                    popUpTo("InitialSurveyView") { inclusive = true }
+                                }
+                            } else {
+                                backendMessage = result.exceptionOrNull()?.message
                             }
                         } else {
-                            backendMessage = result.exceptionOrNull()?.message
+                            backendMessage = "No authorization token"
                         }
-                    } else {
-                        backendMessage = "No authorization token"
                     }
                 }
-            })
+            )
         }
     }
 }
 
+
+// 🔹 Mapping functions
 fun mapLevelToFloatDaily(level: String): Float = when (level) {
     "None" -> 0.7f
     "Little" -> 0.8f
@@ -213,6 +276,7 @@ fun mapLevelToFloatTraining(level: String): Float = when (level) {
     else -> 0.7f
 }
 
+// 🔹 Send request
 suspend fun sendBodyParameters(
     token: String,
     request: BodyParametersRequest

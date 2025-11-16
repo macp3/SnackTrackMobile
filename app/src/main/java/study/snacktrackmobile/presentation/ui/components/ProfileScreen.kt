@@ -140,24 +140,19 @@ fun ProfileScreen(
                         "${profile.name} ${profile.surname}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp,
-                        fontFamily = montserratFont
+                        fontFamily = montserratFont,
+                        color = Color.Black
                     )
                     Text(profile.email, color = Color.Gray, fontFamily = montserratFont)
 
-                    Spacer(Modifier.height(16.dp))
-                    Divider()
-
-                    Spacer(Modifier.height(16.dp))
-
-                    InfoRow(label = "Status", value = profile.status, fontFamily = montserratFont)
-                    InfoRow(label = "Streak", value = "${profile.streak} 🔥", fontFamily = montserratFont)
+                    InfoRow(label = "Status", value = profile.status, fontFamily = montserratFont, valueColor = Color.Black)
+                    InfoRow(label = "Streak", value = "${profile.streak} 🔥", fontFamily = montserratFont, valueColor = Color.Black)
                     InfoRow(
                         label = "Premium expires",
                         value = profile.premiumExpiration ?: "—",
-                        fontFamily = montserratFont
+                        fontFamily = montserratFont,
+                        valueColor = Color.Black
                     )
-
-                    Spacer(Modifier.height(24.dp))
 
                     Button(
                         onClick = { showPasswordDialog = true },
@@ -168,8 +163,6 @@ fun ProfileScreen(
                         Text("Change Password", color = Color.White, fontFamily = montserratFont)
                     }
 
-                    Spacer(Modifier.height(8.dp))
-
                     Button(
                         onClick = onEditBodyParameters,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
@@ -178,6 +171,7 @@ fun ProfileScreen(
                     ) {
                         Text("Edit Body Parameters", color = Color.White, fontFamily = montserratFont)
                     }
+
                 }
             }
         }
@@ -234,17 +228,18 @@ fun ProfileScreen(
 }
 
 @Composable
-fun InfoRow(label: String, value: String, fontFamily: FontFamily) {
+fun InfoRow(label: String, value: String, fontFamily: FontFamily, valueColor: Color = Color.Black) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, fontWeight = FontWeight.Medium, fontFamily = fontFamily)
-        Text(value, fontWeight = FontWeight.Normal, fontFamily = fontFamily)
+        Text(label, fontWeight = FontWeight.Medium, fontFamily = fontFamily, color = Color.Black)
+        Text(value, fontWeight = FontWeight.Normal, fontFamily = fontFamily, color = valueColor)
     }
 }
+
 
 @Composable
 fun ChangePasswordDialog(

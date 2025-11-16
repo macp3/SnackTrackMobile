@@ -21,33 +21,41 @@ fun TextInput(
     label: String,
     keyboardOptions: KeyboardOptions? = null,
     isError: Boolean,
-    width: Dp? = null,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label, fontFamily = montserratFont) },
+        label = { Text(label, fontFamily = montserratFont, color = Color.Black) },
         singleLine = true,
-        modifier = if (width != null) Modifier.width(width) else Modifier.fillMaxWidth(),
-        textStyle = TextStyle(fontFamily = montserratFont, fontSize = 18.sp),
-
+        modifier = modifier, // użycie przekazanego modifiera
+        textStyle = TextStyle(
+            fontFamily = montserratFont,
+            fontSize = 18.sp,
+            color = Color.Black
+        ),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = if (isError) Color.Red else Color.Black,
-            unfocusedBorderColor = if (isError) Color.Red else Color.Gray,
+            unfocusedBorderColor = if (isError) Color.Red else Color.Black,
             errorBorderColor = Color.Red,
 
             focusedLabelColor = if (isError) Color.Red else Color.Black,
             unfocusedLabelColor = if (isError) Color.Red else Color.Black,
             errorLabelColor = Color.Red,
 
+            cursorColor = Color.Black,
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            errorTextColor = Color.Red,
+
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,
             errorContainerColor = Color.Transparent,
         ),
-
         keyboardOptions = keyboardOptions ?: KeyboardOptions.Default,
         shape = RoundedCornerShape(12.dp),
         isError = isError
     )
 }
+

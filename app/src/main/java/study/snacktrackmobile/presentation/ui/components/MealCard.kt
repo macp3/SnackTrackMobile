@@ -3,7 +3,9 @@ package study.snacktrackmobile.presentation.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -50,12 +52,13 @@ fun MealCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     meal.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontFamily = montserratFont,
+                    color = Color.Black
                 )
 
                 Row {
@@ -67,7 +70,8 @@ fun MealCard(
                     }) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add product"
+                            contentDescription = "Add product",
+                            tint = Color.Black
                         )
                     }
 
@@ -75,11 +79,14 @@ fun MealCard(
                     IconButton(onClick = { expanded = !expanded }) {
                         Icon(
                             imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = null
+                            contentDescription = if (expanded) "Collapse" else "Expand",
+                            tint = Color.Black
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -89,7 +96,8 @@ fun MealCard(
                     "${meal.kcal} kcal",
                     style = MaterialTheme.typography.bodyMedium,
                     fontFamily = montserratFont,
-                    textAlign = TextAlign.Start
+                    textAlign = TextAlign.Start,
+                    color = Color.Black
                 )
 
                 Text(
@@ -98,7 +106,8 @@ fun MealCard(
                             "${String.format("%.1f", meal.products.sumOf { it.carbohydrates.toDouble() })}C",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = montserratFont,
-                    textAlign = TextAlign.End
+                    textAlign = TextAlign.End,
+                    color = Color.Black
                 )
             }
 
@@ -108,6 +117,7 @@ fun MealCard(
                         "No products added yet",
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = montserratFont,
+                        color = Color.Gray
                     )
                 } else {
                     Column {
@@ -123,8 +133,7 @@ fun MealCard(
                                 onEdit = { selectedProduct ->
                                     navController.currentBackStackEntry?.savedStateHandle?.set("product", selectedProduct)
                                     navController.navigate("productEdit?date=$selectedDate")
-                                }
-
+                                },
                             )
                         }
                     }
@@ -133,4 +142,3 @@ fun MealCard(
         }
     }
 }
-

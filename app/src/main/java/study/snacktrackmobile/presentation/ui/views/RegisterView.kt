@@ -163,15 +163,18 @@ fun RegisterFormContent(
     errorMessage: String?,
     onRegisterClick: () -> Unit,
 ) {
+    val inputWidth = 0.85f
+
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         SnackTrackTopBar()
+        Spacer(modifier = Modifier.height(10.dp)) // mniejszy odstęp do nagłówka
 
         Column(
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize()
         ) {
@@ -182,7 +185,7 @@ fun RegisterFormContent(
                 value = name,
                 label = "Name",
                 isError = nameError,
-                width = 300.dp,
+                modifier = Modifier.fillMaxWidth(inputWidth),
                 onValueChange = onNameChange,
             )
 
@@ -192,7 +195,7 @@ fun RegisterFormContent(
                 value = surname,
                 label = "Surname",
                 isError = surnameError,
-                width = 300.dp,
+                modifier = Modifier.fillMaxWidth(inputWidth),
                 onValueChange = onSurnameChange
             )
 
@@ -202,7 +205,7 @@ fun RegisterFormContent(
                 value = email,
                 label = "Email",
                 isError = emailError,
-                width = 300.dp,
+                modifier = Modifier.fillMaxWidth(inputWidth),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 onValueChange = onEmailChange
             )
@@ -213,6 +216,7 @@ fun RegisterFormContent(
                 value = password,
                 label = "Password",
                 isError = passwordError,
+                modifier = Modifier.fillMaxWidth(inputWidth),
                 onValueChange = onPasswordChange
             )
 
@@ -222,6 +226,7 @@ fun RegisterFormContent(
                 value = confirmPassword,
                 label = "Confirm Password",
                 isError = confirmPasswordError,
+                modifier = Modifier.fillMaxWidth(inputWidth),
                 onValueChange = onConfirmPasswordChange
             )
 
@@ -237,7 +242,11 @@ fun RegisterFormContent(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            DisplayButton("Register", onClick = onRegisterClick, modifier = Modifier.fillMaxWidth(0.5f))
+            DisplayButton(
+                "Register",
+                onClick = onRegisterClick,
+                modifier = Modifier.fillMaxWidth(0.5f)
+            )
         }
     }
 }

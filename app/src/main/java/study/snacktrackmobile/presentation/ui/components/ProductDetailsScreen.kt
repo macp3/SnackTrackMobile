@@ -1,24 +1,12 @@
 package study.snacktrackmobile.presentation.ui.components
 
 import DropdownField
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,16 +22,14 @@ fun ProductDetailsScreen(
     selectedMeal: String,
     onBack: () -> Unit,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
-    isEditMode: Boolean = false, // 🔽 nowy parametr – tryb edycji
-    productId: Int? = null       // 🔽 id istniejącego wpisu do edycji
+    isEditMode: Boolean = false,
+    productId: Int? = null
 ) {
     val context = LocalContext.current
 
-    // Opcje jednostek
     val options = listOf(product.servingSizeUnit ?: "unit", "piece")
     var selectedOption by remember { mutableStateOf(options.first()) }
 
-    // Stan dla inputa
     var inputValue by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
 
@@ -54,19 +40,18 @@ fun ProductDetailsScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Text("Name: ${product.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("Description: ${product.description}")
-        Text("Calories: ${product.calories}")
-        Text("Protein: ${product.protein}")
-        Text("Fat: ${product.fat}")
-        Text("Carbohydrates: ${product.carbohydrates}")
-        Text("Brand: ${product.brandName ?: "-"}")
-        Text("Default weight: ${product.defaultWeight}")
-        Text("Serving size unit: ${product.servingSizeUnit}")
+        Text("Name: ${product.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Text("Description: ${product.description}", color = Color.Black)
+        Text("Calories: ${product.calories}", color = Color.Black)
+        Text("Protein: ${product.protein}", color = Color.Black)
+        Text("Fat: ${product.fat}", color = Color.Black)
+        Text("Carbohydrates: ${product.carbohydrates}", color = Color.Black)
+        Text("Brand: ${product.brandName ?: "-"}", color = Color.Black)
+        Text("Default weight: ${product.defaultWeight}", color = Color.Black)
+        Text("Serving size unit: ${product.servingSizeUnit}", color = Color.Black)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔽 DropdownField
         DropdownField(
             label = "Jednostka",
             selected = selectedOption,
@@ -76,7 +61,6 @@ fun ProductDetailsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✏️ TextField do wpisania ilości
         TextInput(
             value = inputValue,
             onValueChange = { inputValue = it },
@@ -86,7 +70,6 @@ fun ProductDetailsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ przycisk Dodaj / Update
         DisplayButton(
             text = if (isEditMode) "Update" else "Add",
             onClick = {
@@ -107,7 +90,6 @@ fun ProductDetailsScreen(
                 }
 
                 if (isEditMode && productId != null) {
-                    // 🔽 aktualizacja istniejącego wpisu
                     val dto = RegisteredAlimentationRequest(
                         essentialId = product.id,
                         mealName = selectedMeal,
@@ -121,7 +103,6 @@ fun ProductDetailsScreen(
                         date = selectedDate
                     )
                 } else {
-                    // 🔽 dodawanie nowego wpisu
                     registeredAlimentationViewModel.addMealProduct(
                         context = context,
                         essentialId = product.id,
@@ -147,5 +128,3 @@ fun ProductDetailsScreen(
         )
     }
 }
-
-

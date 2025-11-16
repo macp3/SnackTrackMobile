@@ -18,11 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.R
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
@@ -43,8 +45,7 @@ fun EditBodyParametersScreen(
     val montserratFont = FontFamily(Font(R.font.montserrat, weight = FontWeight.Normal))
 
     LaunchedEffect(Unit) {
-        val token = TokenStorage.getToken(context)
-        if (token != null) viewModel.getBodyParameters(token)
+        TokenStorage.getToken(context)?.let { viewModel.getBodyParameters(it) }
     }
 
     var sex by remember { mutableStateOf(Sex.male) }
@@ -56,6 +57,7 @@ fun EditBodyParametersScreen(
     var weeklyWeightChangeTempo by remember { mutableStateOf("") }
     var goalWeight by remember { mutableStateOf("") }
 
+    // populate from saved body parameters
     LaunchedEffect(bodyParameters) {
         bodyParameters?.let {
             sex = it.sex
@@ -66,6 +68,9 @@ fun EditBodyParametersScreen(
             goalWeight = it.goalWeight.toString()
         }
     }
+
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var validationError by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -85,44 +90,84 @@ fun EditBodyParametersScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item { Text("Edit Body Parameters", style = MaterialTheme.typography.headlineSmall, fontFamily = montserratFont) }
-
                 item {
-                    DropdownSelector(label = "Sex", options = Sex.entries.map { it.name }, selected = sex.name, onSelect = { sex = Sex.valueOf(it) })
+                    Text(
+                        "Edit Body Parameters",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontFamily = montserratFont,
+                        color = Color.Black
+                    )
                 }
 
-                item { OutlinedTextField(value = height, onValueChange = { height = it }, label = { Text("Height (cm)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()) }
+                item {
+                    DropdownSelector(
+                        label = "Sex",
+                        options = Sex.entries.map { it.name },
+                        selected = sex.name,
+                        onSelect = { sex = Sex.valueOf(it) }
+                    )
+                }
 
-                item { OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("Weight (kg)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()) }
+                item { NumberTextField(label = "Height (cm)", value = height, onValueChange = { height = it }) }
+                item { NumberTextField(label = "Weight (kg)", value = weight, onValueChange = { weight = it }) }
+                item { NumberTextField(label = "Age", value = age, onValueChange = { age = it }) }
 
-                item { OutlinedTextField(value = age, onValueChange = { age = it }, label = { Text("Age") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()) }
+                item {
+                    DropdownSelector(
+                        label = "Daily activity",
+                        options = listOf("None", "Little", "Average", "Intense", "Professional"),
+                        selected = activityLevel,
+                        onSelect = { activityLevel = it }
+                    )
+                }
 
-                item { DropdownSelector(label = "Daily activity", options = listOf("None","Little","Average","Intense","Professional"), selected = activityLevel, onSelect = { activityLevel = it }) }
+                item {
+                    DropdownSelector(
+                        label = "Training intensity",
+                        options = listOf("None", "Little", "Average", "Intense", "Professional"),
+                        selected = trainingIntensity,
+                        onSelect = { trainingIntensity = it }
+                    )
+                }
 
-                item { DropdownSelector(label = "Training intensity", options = listOf("None","Little","Average","Intense","Professional"), selected = trainingIntensity, onSelect = { trainingIntensity = it }) }
-
-                item { OutlinedTextField(value = weeklyWeightChangeTempo, onValueChange = { weeklyWeightChangeTempo = it }, label = { Text("Weekly weight change (kg/week)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()) }
-
-                item { OutlinedTextField(value = goalWeight, onValueChange = { goalWeight = it }, label = { Text("Goal weight (kg)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()) }
+                item { NumberTextField(label = "Weekly weight change (kg/week)", value = weeklyWeightChangeTempo, onValueChange = { weeklyWeightChangeTempo = it }) }
+                item { NumberTextField(label = "Goal weight (kg)", value = goalWeight, onValueChange = { goalWeight = it }) }
 
                 item {
                     Button(
                         onClick = {
-                            scope.launch {
-                                val token = TokenStorage.getToken(context)
-                                if (token != null) {
-                                    val req = BodyParametersRequest(
-                                        sex = sex,
-                                        height = height.toFloatOrNull() ?: 0f,
-                                        weight = weight.toFloatOrNull() ?: 0f,
-                                        age = age.toIntOrNull() ?: 0,
-                                        dailyActivityFactor = mapLevelToFloatDaily(activityLevel),
-                                        dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
-                                        weeklyWeightChangeTempo = weeklyWeightChangeTempo.toFloatOrNull() ?: 0f,
-                                        goalWeight = goalWeight.toFloatOrNull() ?: 0f,
-                                    )
-                                    viewModel.changeBodyParameters(token, req)
-                                    onBack()
+                            // validate numbers
+                            val h = height.toFloatOrNull()
+                            val w = weight.toFloatOrNull()
+                            val a = age.toIntOrNull()
+                            val weekly = weeklyWeightChangeTempo.toFloatOrNull()
+                            val goal = goalWeight.toFloatOrNull()
+
+                            validationError = when {
+                                h == null || h <= 0f -> "Please enter a valid height"
+                                w == null || w <= 0f -> "Please enter a valid weight"
+                                a == null || a <= 0 -> "Please enter a valid age"
+                                weekly == null -> "Please enter valid weekly weight change"
+                                goal == null || goal <= 0f -> "Please enter a valid goal weight"
+                                else -> null
+                            }
+
+                            if (validationError == null) {
+                                scope.launch {
+                                    TokenStorage.getToken(context)?.let { token ->
+                                        val req = BodyParametersRequest(
+                                            sex = sex,
+                                            height = h,
+                                            weight = w,
+                                            age = a,
+                                            dailyActivityFactor = mapLevelToFloatDaily(activityLevel),
+                                            dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
+                                            weeklyWeightChangeTempo = weekly,
+                                            goalWeight = goal
+                                        )
+                                        viewModel.changeBodyParameters(token, req)
+                                        showSuccessDialog = true
+                                    }
                                 }
                             }
                         },
@@ -136,8 +181,54 @@ fun EditBodyParametersScreen(
             }
         }
     }
+
+    // show validation error
+    validationError?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { validationError = null },
+            title = { Text("Invalid input") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { validationError = null }) { Text("OK") }
+            }
+        )
+    }
+
+    // success dialog
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showSuccessDialog = false
+                onBack()
+            },
+            title = { Text("Success") },
+            text = { Text("Body parameters updated successfully!") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSuccessDialog = false
+                    onBack()
+                }) { Text("OK") }
+            }
+        )
+    }
 }
 
+@Composable
+fun NumberTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { if (it.length <= 6) onValueChange(it.filter { c -> c.isDigit() || c == '.' }) },
+        label = { Text(label, color = Color.Black, fontFamily = montserratFont) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier.fillMaxWidth(),
+        textStyle = TextStyle(
+            fontFamily = montserratFont,
+            fontSize = 16.sp,
+            color = Color.Black        // ← tekst wpisywany czarny
+        ),
+    )
+}
 
 @Composable
 fun DropdownSelector(
@@ -205,7 +296,6 @@ fun DropdownSelector(
         }
     }
 }
-
 
 fun mapLevelToFloatDaily(level: String): Float = when (level) {
     "None" -> 0.7f
