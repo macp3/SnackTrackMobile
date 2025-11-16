@@ -24,16 +24,15 @@ fun DropdownField(
     selected: String,
     options: List<String>,
     isError: Boolean = false,
-    onSelected: (String) -> Unit
+    onSelected: (String) -> Unit,
+    modifier: Modifier = Modifier // ✅ dodany parametr
 ) {
     var expanded by remember { mutableStateOf(false) }
-
-    val fieldWidth = Modifier.width(300.dp)
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded },
-        modifier = fieldWidth
+        modifier = modifier // ✅ użycie parametru
     ) {
         OutlinedTextField(
             value = selected,
@@ -46,10 +45,8 @@ fun DropdownField(
                     contentDescription = null
                 )
             },
-            modifier = Modifier
-                .menuAnchor()
-                .then(fieldWidth),
-            shape = RoundedCornerShape(12.dp), // ✅ zaokrąglone pole
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             textStyle = LocalTextStyle.current.copy(fontFamily = montserratFont),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = if (isError) Color.Red else Color.Black,
@@ -68,8 +65,9 @@ fun DropdownField(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = fieldWidth
-                .background(Color.White), // ❌ bez RoundedCornerShape
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(12.dp)),
             properties = PopupProperties(focusable = true)
         ) {
             options.forEach { option ->
@@ -85,8 +83,3 @@ fun DropdownField(
         }
     }
 }
-
-
-
-
-

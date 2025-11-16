@@ -26,7 +26,7 @@ fun SummaryBar() {
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp),
-        shadowElevation = 10.dp,
+        shadowElevation = 8.dp,
         color = Color(0xFFDCFFCC)
     ) {
         Row(
@@ -46,7 +46,18 @@ fun SummaryBar() {
 @Composable
 fun SummaryInfo(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, fontFamily = montserratFont,)
-        Text(value, style = MaterialTheme.typography.titleMedium, fontFamily = montserratFont,)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = montserratFont,
+            color = Color.Gray
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontFamily = montserratFont,
+            color = Color(0xFF2E7D32), // ciemnozielony dla wartości
+        )
     }
 }

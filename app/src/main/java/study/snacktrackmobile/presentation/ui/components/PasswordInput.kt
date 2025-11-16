@@ -30,7 +30,8 @@ fun PasswordInput(
     value: String,
     label: String,
     onValueChange: (String) -> Unit,
-    isError: Boolean
+    isError: Boolean,
+    modifier: Modifier = Modifier
 ) {
     var visibility by remember { mutableStateOf(false) }
 
@@ -42,39 +43,48 @@ fun PasswordInput(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label, fontFamily = montserratFont) },
+        label = { Text(label, fontFamily = montserratFont, color = Color.Black) },
         singleLine = true,
-        modifier = Modifier.width(300.dp),
-
+        modifier = modifier, // przekazanie modifiera
         trailingIcon = {
             IconButton(onClick = { visibility = !visibility }) {
-                Icon(painter = icon, contentDescription = "Toggle Password", tint = Color.Black)
+                Icon(
+                    painter = icon,
+                    contentDescription = "Toggle Password",
+                    tint = Color.Black
+                )
             }
         },
-
-        textStyle = TextStyle(fontSize = 18.sp, fontFamily = montserratFont),
-
+        textStyle = TextStyle(
+            fontSize = 18.sp,
+            fontFamily = montserratFont,
+            color = Color.Black
+        ),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = if (isError) Color.Red else Color.Black,
-            unfocusedBorderColor = if (isError) Color.Red else Color.Gray,
+            unfocusedBorderColor = if (isError) Color.Red else Color.Black,
             errorBorderColor = Color.Red,
 
             focusedLabelColor = if (isError) Color.Red else Color.Black,
             unfocusedLabelColor = if (isError) Color.Red else Color.Black,
             errorLabelColor = Color.Red,
 
+            cursorColor = Color.Black,
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            errorTextColor = Color.Red,
+
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,
             errorContainerColor = Color.Transparent,
         ),
-
-        visualTransformation = if (visibility) VisualTransformation.None else PasswordVisualTransformation(),
+        visualTransformation = if (visibility)
+            VisualTransformation.None
+        else
+            PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         shape = RoundedCornerShape(12.dp),
         isError = isError
     )
 }
-
-
-
 

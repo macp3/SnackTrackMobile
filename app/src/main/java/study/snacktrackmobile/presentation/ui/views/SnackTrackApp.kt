@@ -48,7 +48,7 @@ fun SnackTrackApp() {
     val foodViewModel: FoodViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return FoodViewModel(Request.foodApi, context) as T   // ✅
+                return FoodViewModel(Request.foodApi, context) as T
             }
         }
     )

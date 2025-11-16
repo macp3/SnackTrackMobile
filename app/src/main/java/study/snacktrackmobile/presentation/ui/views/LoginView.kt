@@ -2,16 +2,15 @@ package study.snacktrackmobile.presentation.ui.views
 
 import android.util.Patterns
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,7 +46,7 @@ fun LoginView(
     val loginState by viewModel.loginState.collectAsState()
     val context = LocalContext.current
 
-    /** ✅ FRONTEND VALIDATION */
+    // FRONTEND VALIDATION
     fun validateLoginFrontend(): Boolean {
         emailError = email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()
         passwordError = password.isBlank() || password.length < 6
@@ -63,20 +62,19 @@ fun LoginView(
         return validationMessage == null
     }
 
-    /** ✅ BACKEND MESSAGE (response.message) */
+    // BACKEND MESSAGE
     val backendMessage = when (loginState) {
         is UiState.Error -> (loginState as UiState.Error).message
         is UiState.Success -> {
             val response = (loginState as UiState.Success<LoginResponse>).data
-            response.message   // <-- tu backend może przysłać np. "Invalid credentials"
+            response.message
         }
         else -> null
     }
 
-    /** ✅ Priorytet: backend > frontend */
     val displayedErrorMessage = backendMessage ?: validationMessage
 
-    /** ✅ Nawigacja po poprawnym loginie */
+    // SUCCESS LOGIN → NAVIGATE
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
             val response = (loginState as UiState.Success<LoginResponse>).data
@@ -118,7 +116,6 @@ fun LoginView(
 }
 
 
-
 @Composable
 fun LoginFormContent(
     email: String,
@@ -131,63 +128,75 @@ fun LoginFormContent(
     onLoginClick: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(WindowInsets.ime.asPaddingValues()), // podnosi przy klawiaturze
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         SnackTrackTopBar()
 
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_vector),
-                contentDescription = "App logo",
-                modifier = Modifier
-                    .fillMaxWidth(0.4f)
-                    .aspectRatio(1f)
-                    .padding(bottom = 30.dp),
-                contentScale = ContentScale.Fit
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Image(
+            painter = painterResource(id = R.drawable.logo_vector),
+            contentDescription = "App logo",
+            modifier = Modifier
+                .fillMaxWidth(0.4f)
+                .aspectRatio(1f)
+                .padding(bottom = 20.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        Text(
+            text = "Welcome back!",
+            fontFamily = montserratFont,
+            fontSize = 36.sp,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(25.dp))
+
+        // INPUTY DOSTOSOWANE DO SZEROKOŚCI EKRANU
+        TextInput(
+            value = email,
+            label = "Email",
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            isError = emailError,
+            modifier = Modifier.fillMaxWidth(0.85f),
+            onValueChange = onEmailChange
+        )
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        PasswordInput(
+            value = password,
+            label = "Password",
+            onValueChange = onPasswordChange,
+            isError = passwordError,
+            modifier = Modifier.fillMaxWidth(0.85f)
+        )
+
+        Spacer(modifier = Modifier.height(15.dp))
+
+        if (!errorMessage.isNullOrEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 14.sp,
+                fontFamily = montserratFont
             )
-            Text("Welcome back!", fontFamily = montserratFont, fontSize = 36.sp)
-            Spacer(modifier = Modifier.height(35.dp))
-
-            // EMAIL INPUT
-            TextInput(
-                value = email,
-                label = "Email",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = emailError,
-                width = 300.dp,
-                onValueChange = onEmailChange
-            )
-
-            Spacer(modifier = Modifier.height(15.dp))
-
-            // PASSWORD INPUT
-            PasswordInput(
-                value = password,
-                label = "Password",
-                onValueChange = onPasswordChange,
-                isError = passwordError
-            )
-
-            Spacer(modifier = Modifier.height(15.dp))
-
-            // KOMUNIKAT BŁĘDU (walidacja frontend / backend)
-            if (!errorMessage.isNullOrEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = Color.Red,
-                    fontSize = 14.sp,
-                    fontFamily = montserratFont
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-
-            DisplayButton("Login", onClick = onLoginClick, modifier = Modifier.fillMaxWidth(0.5f))
+            Spacer(modifier = Modifier.height(10.dp))
         }
+
+        DisplayButton(
+            "Login",
+            onClick = onLoginClick,
+            modifier = Modifier.fillMaxWidth(0.5f)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
+
+

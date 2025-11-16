@@ -200,7 +200,7 @@ fun MainView(
                             )
                         } else {
                             ProductDetailsScreen(
-                                alimentation = selectedProduct!! as EssentialFoodResponse,
+                                alimentation = selectedProduct!!,
                                 selectedDate = selectedDate,
                                 selectedMeal = selectedMeal,
                                 onBack = { selectedProduct = null },

@@ -32,8 +32,6 @@ fun MealsDailyView(
         viewModel.loadMeals(token, selectedDate)
     }
 
-    // remember the meals so recomposition isn't heavy
-    remember(mealsState) { mealsState }
     val defaultMeals = listOf(
         Meal(name = "Breakfast", alimentations = emptyList(), kcal = 0),
         Meal(name = "Lunch", alimentations = emptyList(), kcal = 0),
@@ -41,17 +39,14 @@ fun MealsDailyView(
         Meal(name = "Supper", alimentations = emptyList(), kcal = 0),
         Meal(name = "Snack", alimentations = emptyList(), kcal = 0)
     )
-    val mealsToDisplay = remember(mealsState) {
-        defaultMeals.map { default ->
-            mealsState.find { it.name == default.name } ?: default
-        }
+    val mealsToDisplay = defaultMeals.map { default ->
+        mealsState.find { it.name == default.name } ?: default
     }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .padding(top = 10.dp, bottom = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(mealsToDisplay) { meal ->

@@ -38,7 +38,7 @@ fun SnackTrackTopBarWithIcons(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFBFFF99))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -47,7 +47,7 @@ fun SnackTrackTopBarWithIcons(
             imageVector = Icons.Filled.Menu,
             contentDescription = "Menu",
             modifier = Modifier
-                .size(28.dp)
+                .size(24.dp)
                 .clickable { onOpenMenu() },
             tint = Color.Black
         )
@@ -57,14 +57,14 @@ fun SnackTrackTopBarWithIcons(
             Text(
                 text = "SnackTrack",
                 fontFamily = montserratFont,
-                fontSize = 31.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
             )
             Text(
                 text = "Track your progress",
                 fontFamily = montserratFont,
-                fontSize = 17.sp,
+                fontSize = 14.sp,
                 color = Color.Black
             )
         }
@@ -74,13 +74,12 @@ fun SnackTrackTopBarWithIcons(
             imageVector = Icons.Filled.Notifications,
             contentDescription = "Notifications",
             modifier = Modifier
-                .size(28.dp)
+                .size(24.dp)
                 .clickable { onOpenNotifications() },
             tint = Color.Black
         )
     }
 }
-
 
 
 @Composable
@@ -105,12 +104,13 @@ fun RightDrawer(
         ) {
             Column(
                 modifier = Modifier
-                    .width(280.dp)
+                    .width(240.dp) // zmniejszona szerokość drawer
                     .fillMaxHeight()
                     .background(Color.White)
-                    .padding(16.dp),
+                    .padding(12.dp), // mniejszy padding
                 content = content
             )
         }
     }
 }
+

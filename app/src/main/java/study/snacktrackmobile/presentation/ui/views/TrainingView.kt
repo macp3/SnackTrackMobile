@@ -64,7 +64,7 @@ fun TrainingView(
                 Text(
                     text = training.name,
                     fontFamily = montserratFont,
-                    fontSize = 28.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
@@ -79,7 +79,7 @@ fun TrainingView(
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
-                        .height(48.dp)
+                        .height(40.dp)
                         .fillMaxWidth(0.6f)
                 ) {
                     Text("Detach Training", fontFamily = montserratFont, fontWeight = FontWeight.Medium)
@@ -144,14 +144,14 @@ fun TrainingView(
                                             Text(
                                                 text = exercise.name,
                                                 fontFamily = montserratFont,
-                                                fontSize = 18.sp,
+                                                fontSize = 15.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = Color.Black
                                             )
                                             Text(
                                                 text = "${exercise.type} • Difficulty ${exercise.difficulty}",
                                                 fontFamily = montserratFont,
-                                                fontSize = 14.sp,
+                                                fontSize = 11.sp,
                                                 color = Color.DarkGray
                                             )
                                         }
