@@ -21,13 +21,17 @@ object SummaryBarState {
         meals.forEach { meal ->
             meal.alimentations.forEach { alimentation ->
                 val food = alimentation.essentialFood
-                val amount = (alimentation.amount ?: 0f).toDouble()
+                val grams = if ((alimentation.pieces ?: 0).toInt() > 0)
+                    (alimentation.pieces ?: 0).toInt() * (food?.defaultWeight ?: 100f)
+                else
+                    alimentation.amount ?: 0f
 
-                // ✅ jawne rzutowanie na Double
-                kcalSum += ((food?.calories ?: 0f).toDouble() * amount / 100.0)
-                proteinSum += ((food?.protein ?: 0f).toDouble() * amount / 100.0)
-                fatSum += ((food?.fat ?: 0f).toDouble() * amount / 100.0)
-                carbsSum += ((food?.carbohydrates ?: 0f).toDouble() * amount / 100.0)
+
+                kcalSum += (food?.calories ?: 0f) * grams / 100f
+                proteinSum += (food?.protein ?: 0f) * grams / 100f
+                fatSum += (food?.fat ?: 0f) * grams / 100f
+                carbsSum += (food?.carbohydrates ?: 0f) * grams / 100f
+
             }
         }
 

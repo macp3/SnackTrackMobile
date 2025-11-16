@@ -10,7 +10,7 @@ data class RegisteredAlimentationRequest(
     val timestamp: String,        // wysyłamy jako ISO string "yyyy-MM-dd"
     val mealName: String,         // enum name np. "BREAKFAST"
     val amount: Float? = null,
-    val pieces: Int? = null
+    val pieces: Float? = null
 )
 
 

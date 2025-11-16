@@ -1,6 +1,8 @@
 package study.snacktrackmobile.viewmodel
 
 import android.content.Context
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +19,7 @@ import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
 import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import study.snacktrackmobile.data.storage.TokenStorage
 import androidx.compose.runtime.State
+import retrofit2.HttpException
 
 
 private data class Quadruple<A, B, C, D>(
@@ -90,7 +93,7 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
                     val api = entry.mealApi
 
                     val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
-                    val baseCalories = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
+                    val baseCalories = (ef?.calories ?: api?.calories?.toFloat() ?: 0f).toDouble()
                     val baseProtein = (ef?.protein ?: api?.protein ?: 0f).toDouble()
                     val baseFat = (ef?.fat ?: api?.fat ?: 0f).toDouble()
                     val baseCarbs = (ef?.carbohydrates ?: api?.carbohydrates ?: 0f).toDouble()
@@ -99,9 +102,9 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
                     val amount = entry.amount ?: 0f
 
                     val ratio = when {
-                        piecesCount > 0 -> piecesCount
-                        amount > 0f -> amount.toDouble() / baseWeight
-                        else -> 1.0
+                        piecesCount > 0 -> (piecesCount * baseWeight) / 100.0 // pieces * defaultWeight grams -> /100 -> ratio
+                        amount > 0f -> amount.toDouble() / 100.0
+                        else -> baseWeight / 100.0
                     }
 
                     val kcal = baseCalories * ratio
@@ -110,16 +113,7 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
                     val carbs = baseCarbs * ratio
 
                     kcalSum += kcal
-
-                    // 🔽 Tworzysz nowy obiekt z przeliczonymi wartościami
-                    entry.copy(
-                        essentialFood = ef?.copy(
-                            calories = kcal.toFloat(),
-                            protein = protein.toFloat(),
-                            fat = fat.toFloat(),
-                            carbohydrates = carbs.toFloat()
-                        )
-                    )
+                    entry
                 }
 
                 Meal(
@@ -129,6 +123,7 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
                 )
             }
     }
+
 
 
 
@@ -179,8 +174,8 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         essentialId: Int,
         mealName: String,
         date: String,
-        amount: Float = 100f,
-        pieces: Int = 1
+        amount: Float? = null,
+        pieces: Float? = null
     ) {
         viewModelScope.launch {
             val token = TokenStorage.getToken(context) ?: return@launch
@@ -188,6 +183,30 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
             loadMeals(token, date)
         }
     }
+
+    fun copyMeal(
+        context: Context,
+        fromDate: String,
+        fromMealName: String,
+        toDate: String,
+        toMealName: String
+    ) {
+        viewModelScope.launch {
+            val token = TokenStorage.getToken(context) ?: return@launch
+            try {
+                repository.copyMeal(token, fromDate, fromMealName.lowercase(), toDate, toMealName.lowercase())
+                loadMeals(token, toDate) // odśwież dane
+            } catch (e: HttpException) {
+                Log.e("CopyMeal", "HTTP error: ${e.code()} ${e.message()}")
+                Toast.makeText(context, "Copy failed: ${e.code()}", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Log.e("CopyMeal", "Unexpected error: ${e.message}")
+                Toast.makeText(context, "Unexpected error", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+
 
     companion object {
         fun provideFactory(repository: RegisteredAlimentationRepository): ViewModelProvider.Factory {

@@ -16,13 +16,15 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.data.model.Meal
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
 fun MealsDailyView(
     selectedDate: String,
     viewModel: RegisteredAlimentationViewModel,
-    navController: NavController
+    navController: NavController,
+    onEditProduct: (RegisteredAlimentationResponse) -> Unit  // 🔹 dodajemy callback
 ) {
     val context = LocalContext.current
     val mealsState by viewModel.meals.collectAsState()
@@ -55,12 +57,9 @@ fun MealsDailyView(
                 viewModel = viewModel,
                 navController = navController,
                 selectedDate = selectedDate,
-                onEditProduct = { alimentation ->
-                    navController.currentBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("editAlimentation", alimentation) // przekazujesz cały RegisteredAlimentationResponse
-                }
+                onEditProduct = onEditProduct
             )
         }
+
     }
 }

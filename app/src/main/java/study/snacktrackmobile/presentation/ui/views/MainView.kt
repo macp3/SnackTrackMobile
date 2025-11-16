@@ -168,8 +168,14 @@ fun MainView(
                     "Meals" -> MealsDailyView(
                         selectedDate = selectedDate,
                         viewModel = registeredAlimentationViewModel,
-                        navController = navController
+                        navController = navController,
+                        onEditProduct = { product ->
+                            selectedProduct = product
+                            isEditMode = true
+                            selectedTab = "AddProduct"
+                        }
                     )
+
                     "Training" -> TrainingView(
                         viewModel = trainingViewModel,
                         selectedDate = selectedDate,
@@ -196,18 +202,28 @@ fun MainView(
                                 selectedMeal = selectedMeal,
                                 navController = navController,
                                 foodViewModel = foodViewModel,
-                                onProductClick = { product -> selectedProduct = product }
+                                onProductClick = { product ->
+                                    // tymczasowy produkt z AddProductScreen ma id = -1
+                                    selectedProduct = product
+                                    isEditMode = false   // 🔹 nowy produkt → POST
+                                }
                             )
                         } else {
                             ProductDetailsScreen(
                                 alimentation = selectedProduct!!,
                                 selectedDate = selectedDate,
                                 selectedMeal = selectedMeal,
-                                onBack = { selectedProduct = null },
-                                registeredAlimentationViewModel = registeredAlimentationViewModel
+                                onBack = {
+                                    selectedProduct = null
+                                    isEditMode = false
+                                },
+                                registeredAlimentationViewModel = registeredAlimentationViewModel,
+                                isEditMode = selectedProduct!!.id > 0 // 🔹 PUT tylko dla istniejących
                             )
                         }
                     }
+
+
                     "AddProductToDatabase" -> AddProductToDatabaseScreen(
                         navController = navController,
                         foodViewModel = foodViewModel,

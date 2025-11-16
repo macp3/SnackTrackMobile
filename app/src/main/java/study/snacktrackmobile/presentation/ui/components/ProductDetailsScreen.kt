@@ -24,18 +24,31 @@ fun ProductDetailsScreen(
     onBack: () -> Unit,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
     productId: Int? = null,
-    isEditMode : Boolean = false
+    isEditMode: Boolean = false
 ) {
     val food = alimentation.essentialFood ?: return
     val context = LocalContext.current
 
-    // Opcje jednostek
-    val options = listOf(food.servingSizeUnit ?: "unit", "piece")
+    // 1) Jednostka z produktu (znormalizowana)
+    val unitRaw = food.servingSizeUnit?.lowercase()?.trim()
+    val normalizedUnit = when (unitRaw) {
+        "gram" -> "g"
+        "milliliter" -> "ml"
+        null, "" -> "g"
+        else -> unitRaw!!
+    }
+
+    // 2) Dropdown: zawsze "piece" + servingSizeUnit z produktu
+    val options: List<String> = listOf("piece", normalizedUnit).distinct()
     var selectedOption by remember { mutableStateOf(options.first()) }
 
-    var inputValue by remember { mutableStateOf("") }
+    // 3) Prefill quantity zgodnie z wyborem
+    var inputValue by remember {
+        mutableStateOf(if (selectedOption == "piece") "1" else (food.defaultWeight?.toInt()?.toString() ?: ""))
+    }
     var isError by remember { mutableStateOf(false) }
 
+    // 4) UI
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -43,15 +56,8 @@ fun ProductDetailsScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Text("Name: ${food.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("Description: ${food.description}")
-        Text("Calories: ${food.calories}")
-        Text("Protein: ${food.protein}")
-        Text("Fat: ${food.fat}")
-        Text("Carbohydrates: ${food.carbohydrates}")
-        Text("Brand: ${food.brandName ?: "-"}")
-        Text("Default weight: ${food.defaultWeight}")
-        Text("Serving size unit: ${food.servingSizeUnit}")
+        Text("Name: ${food.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Text("Serving size unit: ${normalizedUnit}", color = Color.Black)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -59,7 +65,11 @@ fun ProductDetailsScreen(
             label = "Serving unit",
             selected = selectedOption,
             options = options,
-            onSelected = { selectedOption = it }
+            onSelected = { new ->
+                selectedOption = new
+                // aktualizuj domyślną wartość po zmianie jednostki
+                inputValue = if (selectedOption == "piece") "1" else (food.defaultWeight?.toInt()?.toString() ?: "")
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -67,45 +77,45 @@ fun ProductDetailsScreen(
         TextInput(
             value = inputValue,
             onValueChange = { inputValue = it },
-            label = "Quantity",
+            label = "Quantity (${selectedOption})",
             isError = isError
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         DisplayButton(
-            text = if (isEditMode) "Save" else "Add",   // 🔽 zmiana
+            text = if (isEditMode) "Save" else "Add",
             onClick = {
                 if (inputValue.isBlank()) {
                     isError = true
                     return@DisplayButton
                 }
 
-                val amount: Float
-                val pieces: Int
+                // 5) Wylicz amount/pieces wyłącznie wg wybranej jednostki
+                val amount: Float? = if (selectedOption == "piece") null else inputValue.toFloatOrNull()
+                val pieces: Float? = if (selectedOption == "piece") inputValue.toFloatOrNull() else null
 
-                if (selectedOption == "piece") {
-                    pieces = inputValue.toIntOrNull() ?: 1
-                    amount = (food.defaultWeight ?: 1f) * pieces
-                } else {
-                    amount = inputValue.toFloatOrNull() ?: (food.defaultWeight ?: 100f)
-                    pieces = 0
+                // walidacja
+                if (selectedOption == "piece" && pieces == null) {
+                    isError = true; return@DisplayButton
+                }
+                if (selectedOption != "piece" && amount == null) {
+                    isError = true; return@DisplayButton
                 }
 
                 if (isEditMode) {
                     val dto = RegisteredAlimentationRequest(
                         essentialId = food.id,
-                        mealApiId = alimentation.mealApi?.id,   // jeśli wpis pochodzi z API
-                        mealId = alimentation.meal?.id,         // jeśli wpis pochodzi z lokalnego Meal
-                        timestamp = selectedDate,               // np. "2025-11-13"
-                        mealName = selectedMeal.lowercase(),    // np. "BREAKFAST"
-                        amount = if (pieces == 0) amount else null,
-                        pieces = if (pieces > 0) pieces else null
+                        mealApiId = alimentation.mealApi?.id,
+                        mealId = alimentation.meal?.id,
+                        timestamp = selectedDate,
+                        mealName = selectedMeal.lowercase(),
+                        amount = amount,
+                        pieces = pieces
                     )
-
                     registeredAlimentationViewModel.updateMealProduct(
                         context = context,
-                        productId = alimentation.id, // ID wpisu w bazie
+                        productId = alimentation.id,
                         dto = dto,
                         date = selectedDate
                     )
@@ -115,8 +125,8 @@ fun ProductDetailsScreen(
                         essentialId = food.id,
                         mealName = selectedMeal,
                         date = selectedDate,
-                        amount = amount,
-                        pieces = pieces
+                        amount = amount,   // Float? (null gdy piece)
+                        pieces = pieces    // Int? (null gdy g/ml)
                     )
                 }
 
@@ -125,7 +135,6 @@ fun ProductDetailsScreen(
             modifier = Modifier.size(width = 120.dp, height = 50.dp),
             fontSize = 14
         )
-
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -137,3 +146,5 @@ fun ProductDetailsScreen(
         )
     }
 }
+
+

@@ -4,6 +4,7 @@ import androidx.compose.ui.text.toLowerCase
 import study.snacktrackmobile.data.api.ApiService
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+import java.time.LocalDate
 
 class RegisteredAlimentationRepository(private val api: ApiService) {
 
@@ -23,8 +24,8 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         essentialId: Int,
         mealName: String,
         date: String,
-        amount: Float,
-        pieces: Int
+        amount: Float?,
+        pieces: Float?
     ): Boolean {
         val body = RegisteredAlimentationRequest(
             essentialId = essentialId,
@@ -42,5 +43,33 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         return api.updateEntry("Bearer $token", id, dto)
     }
 
+
+    suspend fun copyMeal(
+        token: String,
+        fromDate: String,
+        fromMealName: String,
+        toDate: String,
+        toMealName: String
+    ) {
+        // pobierz wszystkie wpisy dla dnia źródłowego
+        val allEntries = api.getMyEntries("Bearer $token", fromDate)
+
+        // przefiltruj tylko te z wybranego posiłku
+        val sourceEntries = allEntries.filter { it.mealName.equals(fromMealName, ignoreCase = true) }
+
+        sourceEntries.forEach { entry ->
+            val essentialId = entry.essentialFood?.id ?: return@forEach
+            val dto = RegisteredAlimentationRequest(
+                essentialId = essentialId,
+                mealApiId = entry.mealApi?.id,
+                mealId = entry.meal?.id,
+                timestamp = toDate,
+                mealName = toMealName,
+                amount = entry.amount,
+                pieces = entry.pieces
+            )
+            api.addEntry("Bearer $token", dto, toDate)
+        }
+    }
 }
 

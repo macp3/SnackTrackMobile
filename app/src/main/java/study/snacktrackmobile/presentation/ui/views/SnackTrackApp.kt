@@ -118,27 +118,15 @@ fun SnackTrackApp() {
             MealsDailyView(
                 selectedDate = selectedDate,
                 viewModel = registeredAlimentationViewModel,
-                navController
+                navController = navController,
+                onEditProduct = { alimentation ->
+                    // Tutaj decydujesz, co zrobić po kliknięciu produktu
+                    // np. ustawienie stanu w MainView lub nawigacja:
+                    navController.navigate("MainView?tab=AddProduct") {
+                        // dodatkowe opcje jeśli trzeba
+                    }
+                }
             )
         }
-
-        /*composable("productEdit?date={date}") { backStackEntry ->
-            val date = backStackEntry.arguments?.getString("date") ?: ""
-            val product = navController.previousBackStackEntry
-                ?.savedStateHandle
-                ?.get<Product>("product")
-
-            if (product != null) {
-                ProductDetailsScreen(
-                    product = product,
-                    selectedDate = date,
-                    selectedMeal = product.name,
-                    onBack = { navController.popBackStack() },
-                    registeredAlimentationViewModel = registeredAlimentationViewModel,
-                    isEditMode = true,
-                    productId = product.id
-                )
-            }
-        }*/
     }
 }

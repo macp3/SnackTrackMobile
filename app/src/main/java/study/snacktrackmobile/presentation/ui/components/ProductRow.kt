@@ -4,10 +4,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -32,31 +36,35 @@ fun ProductRow(
 ) {
     val food = alimentation.essentialFood ?: return
 
-    // 🔽 Tekst ilości – albo gram, albo sztuki
+    // 🔹 Tekst ilości – sztuki lub gramatura
     val amountText = when {
         alimentation.pieces != null && alimentation.pieces > 0 ->
-            "${alimentation.pieces.toInt()} piece"
+            "${alimentation.pieces} piece${if (alimentation.pieces > 1) "s" else ""}"
+
         alimentation.amount != null && alimentation.amount > 0f ->
             "${String.format("%.1f", alimentation.amount)} g"
+
         else -> "-"
     }
 
-    // 🔽 Formatowanie makro
-    val kcal = String.format("%.0f", food.calories ?: 0f)
-    val protein = String.format("%.1f", food.protein ?: 0f)
-    val fat = String.format("%.1f", food.fat ?: 0f)
-    val carbs = String.format("%.1f", food.carbohydrates ?: 0f)
+    // 🔹 Makro
+    val kcal = calcNutrient(alimentation, food.calories)
+    val protein = calcNutrient(alimentation, food.protein)
+    val fat = calcNutrient(alimentation, food.fat)
+    val carbs = calcNutrient(alimentation, food.carbohydrates)
+
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEdit(alimentation) }
-            .padding(top = 6.dp),
+            .padding(vertical = 4.dp)
+            .clickable { onEdit(alimentation) }, // 🔹 Klikalny wiersz
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
                 .padding(12.dp)
+                .clickable { onEdit(alimentation) } // 🔹 callback do MainView
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -73,19 +81,28 @@ fun ProductRow(
                     fontFamily = montserratFont
                 )
             }
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        "$kcal kcal",
+                        "${String.format("%.0f", kcal)} kcal",
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = montserratFont
                     )
                     Text(
-                        "${protein}P ${fat}F ${carbs}C",
+                        "${String.format("%.1f", protein)}P ${
+                            String.format(
+                                "%.1f",
+                                fat
+                            )
+                        }F ${String.format("%.1f", carbs)}C",
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = montserratFont
                     )
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
                 IconButton(onClick = { onDelete(alimentation.id) }) {
                     Icon(
                         imageVector = Icons.Default.Close,
