@@ -105,7 +105,8 @@ fun SnackTrackApp() {
                 initialTab = initialTab, // Przekazywanie initial states
                 initialMeal = initialMeal,
                 initialDate = initialDate,
-                foodViewModel = foodViewModel
+                foodViewModel = foodViewModel,
+                userViewModel = userViewModel
             )
         }
 

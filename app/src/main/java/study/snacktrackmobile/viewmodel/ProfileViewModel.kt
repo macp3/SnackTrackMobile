@@ -2,7 +2,6 @@ package study.snacktrackmobile.viewmodel
 
 import android.content.ContentResolver
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
@@ -40,12 +39,9 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
             _loading.value = true
             try {
                 val response = api.getProfile("Bearer $token")
-
                 if (response.isSuccessful) {
                     val userData = response.body()
-
                     userData?.imageUrl = buildImageUrl(userData?.imageUrl)
-
                     _user.value = userData
                 } else {
                     _error.value = "Failed to load profile"
@@ -62,14 +58,8 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         if (path.isNullOrEmpty()) {
             return ApiConfig.BASE_URL + "/images/profiles/default_profile_picture.png"
         }
-        // If backend returns absolute URL, do nothing
-        return if (path.startsWith("http")) {
-            path
-        } else {
-            ApiConfig.BASE_URL + path
-        }
+        return if (path.startsWith("http")) path else ApiConfig.BASE_URL + path
     }
-
 
     // ---------------------------
     // UPLOAD PROFILE IMAGE
@@ -78,13 +68,10 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         viewModelScope.launch {
             try {
                 val imagePart = createMultipart(uri, contentResolver)
-
                 val response = api.uploadImage("Bearer $token", imagePart)
-
                 if (response.isSuccessful) {
                     val relativePath = response.body()?.string()
                     val fullUrl = buildImageUrl(relativePath)
-
                     _user.value = _user.value?.copy(imageUrl = fullUrl)
                 } else {
                     _error.value = "Image upload failed"
@@ -95,33 +82,21 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         }
     }
 
-    // Convert Uri → MultipartBody.Part
     private fun createMultipart(uri: Uri, contentResolver: ContentResolver): MultipartBody.Part {
         val inputStream = contentResolver.openInputStream(uri)
             ?: throw IllegalArgumentException("Could not open input stream")
-
         val tempFile = File.createTempFile("upload_", ".jpg")
         val outputStream = FileOutputStream(tempFile)
-
-        inputStream.use { input ->
-            outputStream.use { output ->
-                input.copyTo(output)
-            }
-        }
-
-        val requestBody = tempFile
-            .asRequestBody("image/*".toMediaTypeOrNull())
-
+        inputStream.use { input -> outputStream.use { output -> input.copyTo(output) } }
+        val requestBody = tempFile.asRequestBody("image/*".toMediaTypeOrNull())
         return MultipartBody.Part.createFormData("image", tempFile.name, requestBody)
     }
-
 
     // ---------------------------
     // CHANGE PASSWORD
     // ---------------------------
     suspend fun changePassword(token: String, newPassword: String) =
         api.changePassword("Bearer $token", newPassword)
-
 
     // ---------------------------
     // ERROR MANAGEMENT
@@ -130,28 +105,40 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         _error.value = msg
     }
 
-
     // ---------------------------
     // BODY PARAMETERS
     // ---------------------------
     fun changeBodyParameters(token: String, request: BodyParametersRequest) {
         viewModelScope.launch {
-            try {
-                api.changeParameters("Bearer $token", request)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            try { api.changeParameters("Bearer $token", request) }
+            catch (e: Exception) { e.printStackTrace() }
         }
     }
 
     fun getBodyParameters(token: String) {
         viewModelScope.launch {
+            try { _bodyParameters.value = api.getBodyParameters("Bearer $token") }
+            catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    fun updatePremium(token: String, expiration: String) {
+        viewModelScope.launch {
             try {
-                val response = api.getBodyParameters("Bearer $token")
-                _bodyParameters.value = response
+                val response = api.updatePremium(
+                    token = "Bearer $token",
+                    expiration = expiration
+                )
+
+                if (response.isSuccessful) {
+                    _user.value = _user.value?.copy(premiumExpiration = expiration)
+                } else {
+                    _error.value = "Premium update failed: ${response.errorBody()?.string()}"
+                }
             } catch (e: Exception) {
-                e.printStackTrace()
+                _error.value = e.message
             }
         }
     }
+
 }
