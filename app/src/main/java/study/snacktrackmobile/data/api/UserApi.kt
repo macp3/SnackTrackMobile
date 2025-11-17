@@ -38,4 +38,10 @@ interface UserApi {
     suspend fun getBodyParameters(
         @Header("Authorization") token: String
     ): BodyParametersResponse
+
+    @PUT("/users/premium")
+    suspend fun updatePremium(
+        @Header("Authorization") token: String,
+        @Query("expiration") expiration: String
+    ): Response<ResponseBody>
 }

@@ -36,7 +36,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import study.snacktrackmobile.data.api.FoodApi
 import study.snacktrackmobile.data.api.TrainingApi
 import study.snacktrackmobile.data.api.UserApi
+import study.snacktrackmobile.data.model.User
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
+import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+import study.snacktrackmobile.data.model.dto.UserResponse
+import study.snacktrackmobile.data.model.enums.Status
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.data.storage.TokenStorage
@@ -60,8 +64,9 @@ fun MainView(
     var selectedTab by remember { mutableStateOf(initialTab) }
     var selectedMeal by remember { mutableStateOf(initialMeal) }
     var rightDrawerOpen by remember { mutableStateOf(false) }
-    var selectedProduct by remember { mutableStateOf<Any?>(null) }
-
+    var isEditMode by remember { mutableStateOf(false) }
+    var alimentationToEdit by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
+    var selectedProduct by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -108,6 +113,14 @@ fun MainView(
         else -> false
     }
 
+    val userResponse by profileViewModel.user.collectAsState()
+
+    LaunchedEffect(authToken) {
+        authToken?.let { token ->
+            profileViewModel.loadProfile(token)
+        }
+    }
+
     // Drawer lewy
     ModalNavigationDrawer(
         drawerState = leftDrawerState,
@@ -120,7 +133,7 @@ fun MainView(
                 onAboutUs = { navController.navigate("AboutUsView") },
                 userViewModel = userViewModel,
                 context = context,
-                onLoggedOut = { navController.navigate("LoginView") { popUpTo("MainView") { inclusive = true } } }
+                onLoggedOut = { navController.navigate("StartView") { popUpTo("MainView") { inclusive = true } } }
             )
         }
 
@@ -171,7 +184,12 @@ fun MainView(
                     "Meals" -> MealsDailyView(
                         selectedDate = selectedDate,
                         viewModel = registeredAlimentationViewModel,
-                        navController = navController
+                        navController = navController,
+                        onEditProduct = { product ->
+                            selectedProduct = product
+                            isEditMode = true
+                            selectedTab = "AddProduct"
+                        }
                     )
                     "Training" -> TrainingView(
                         viewModel = trainingViewModel,
@@ -199,15 +217,23 @@ fun MainView(
                                 selectedMeal = selectedMeal,
                                 navController = navController,
                                 foodViewModel = foodViewModel,
-                                onProductClick = { product -> selectedProduct = product }
+                                onProductClick = { product ->
+                                    // tymczasowy produkt z AddProductScreen ma id = -1
+                                    selectedProduct = product
+                                    isEditMode = false
+                                }
                             )
                         } else {
                             ProductDetailsScreen(
-                                product = selectedProduct!! as EssentialFoodResponse,
+                                alimentation = selectedProduct!!,
                                 selectedDate = selectedDate,
                                 selectedMeal = selectedMeal,
-                                onBack = { selectedProduct = null },
-                                registeredAlimentationViewModel = registeredAlimentationViewModel
+                                onBack = {
+                                    selectedProduct = null
+                                    isEditMode = false
+                                },
+                                registeredAlimentationViewModel = registeredAlimentationViewModel,
+                                isEditMode = selectedProduct!!.id > 0 // 🔹 PUT tylko dla istniejących
                             )
                         }
                     }
@@ -215,6 +241,19 @@ fun MainView(
                         navController = navController,
                         foodViewModel = foodViewModel,
                         modifier = Modifier.fillMaxSize()
+                    )
+                    "Premium" -> PremiumScreen(
+                        user = userResponse?.toUser(),
+                        onPremiumActivated = { newDate ->
+                            authToken?.let { token ->
+                                profileViewModel.updatePremium(token, newDate)
+                            }
+                        },
+                        onExtendPremium = { newDate ->
+                            authToken?.let { token ->
+                                profileViewModel.updatePremium(token, newDate)
+                            }
+                        }
                     )
                 }
             }
@@ -420,4 +459,16 @@ fun DrawerContent(
     }
 }
 
+fun UserResponse.toUser(): User {
+    return User(
+        id = this.id,
+        name = this.name,
+        surname = this.surname,
+        email = this.email,
+        imageUrl = this.imageUrl,
+        premiumExpiration = this.premiumExpiration,
+        status = Status.valueOf(this.status), // zakładając, że masz enum Status
+        streak = this.streak
+    )
+}
 

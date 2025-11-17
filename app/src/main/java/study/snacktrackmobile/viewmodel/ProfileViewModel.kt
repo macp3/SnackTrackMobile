@@ -122,7 +122,23 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         }
     }
 
-    fun updatePremium(newExpirationDate: String) {
-        _user.value = _user.value?.copy(premiumExpiration = newExpirationDate)
+    fun updatePremium(token: String, expiration: String) {
+        viewModelScope.launch {
+            try {
+                val response = api.updatePremium(
+                    token = "Bearer $token",
+                    expiration = expiration
+                )
+
+                if (response.isSuccessful) {
+                    _user.value = _user.value?.copy(premiumExpiration = expiration)
+                } else {
+                    _error.value = "Premium update failed: ${response.errorBody()?.string()}"
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
     }
+
 }
