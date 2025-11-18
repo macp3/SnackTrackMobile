@@ -33,7 +33,7 @@ interface RecipeApi {
         @Path("id") id: Int
     ): Response<Unit>
 
-    @GET("meals/favourites")
+    @GET("users/favourite")
     suspend fun getMyFavourites(
         @Header("Authorization") token: String
     ): List<RecipeResponse>
@@ -53,5 +53,11 @@ interface RecipeApi {
     @GET("meals")
     suspend fun getAllRecipes(
         @Header("Authorization") token: String
+    ): List<RecipeResponse>
+
+    @GET("meals/{mealId}/details")
+    suspend fun getMealWithIngredients(
+        @Header("Authorization") token: String,
+        @Path("mealId") mealId: Int
     ): List<RecipeResponse>
 }

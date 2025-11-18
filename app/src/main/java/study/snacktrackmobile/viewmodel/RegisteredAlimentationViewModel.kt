@@ -22,14 +22,6 @@ import androidx.compose.runtime.State
 import retrofit2.HttpException
 
 
-private data class Quadruple<A, B, C, D>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D
-)
-
-
 class RegisteredAlimentationViewModel(private val repository: RegisteredAlimentationRepository) :
     ViewModel() {
 
@@ -206,7 +198,12 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         }
     }
 
-
+    fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(RegisteredAlimentationViewModel::class.java)) {
+            return RegisteredAlimentationViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
 
     companion object {
         fun provideFactory(repository: RegisteredAlimentationRepository): ViewModelProvider.Factory {

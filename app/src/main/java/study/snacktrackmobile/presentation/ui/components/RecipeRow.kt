@@ -22,7 +22,12 @@ import study.snacktrackmobile.presentation.ui.views.montserratFont // Zakładam,
 @Composable
 fun RecipeRow(
     recipe: RecipeResponse,
-    onClick: (Int) -> Unit
+    inMyRecipes: Boolean,
+    isFavourite: Boolean,
+    onClick: (Int) -> Unit,
+    onDelete: (Int) -> Unit,
+    onEdit: (RecipeResponse) -> Unit,
+    onFavouriteToggle: (Int) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -33,42 +38,59 @@ fun RecipeRow(
     ) {
         Row(
             modifier = Modifier
-                // 🔹 Kliknięcie w cały wiersz aktywuje onClick, np. przejście do detali przepisu
                 .fillMaxWidth()
                 .clickable { onClick(recipe.id) }
-                .padding(16.dp), // Zwiększamy padding dla czystszej estetyki
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Lewa strona: Nazwa i opis
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                // 🔹 Nazwa Przepisu
                 Text(
                     text = recipe.name,
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    fontFamily = montserratFont,
                     color = Color.Black
                 )
-                // 🔹 Opis Przepisu
                 Text(
-                    text = if (recipe.description.isNullOrBlank()) "No description provided." else recipe.description,
+                    text = recipe.description ?: "No description provided.",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = montserratFont,
                     color = Color.Gray
                 )
             }
 
-            // Prawa strona (możesz dodać tu strzałkę lub ikonę, np. Icons.Default.KeyboardArrowRight)
-            // Zostawiamy puste lub dodajemy małą ikonę dla estetyki klikalności.
-            // Icon(
-            //     imageVector = Icons.Default.KeyboardArrowRight,
-            //     contentDescription = "Details",
-            //     tint = Color.LightGray,
-            //     modifier = Modifier.size(24.dp)
-            // )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                // ❤️ FAVOURITE ICON
+                Text(
+                    text = if (isFavourite) "❤" else "♡",
+                    color = if (isFavourite) Color.Red else Color.Gray,
+                    modifier = Modifier.clickable { onFavouriteToggle(recipe.id) }
+                )
+
+                // ✏ & ❌ only in My Recipes
+                if (inMyRecipes) {
+
+                    // Edit
+                    Text(
+                        text = "✏",
+                        color = Color.DarkGray,
+                        modifier = Modifier.clickable { onEdit(recipe) }
+                    )
+
+                    // Delete
+                    Text(
+                        text = "❌",
+                        color = Color.Red,
+                        modifier = Modifier.clickable { onDelete(recipe.id) }
+                    )
+                }
+            }
         }
     }
 }
+
