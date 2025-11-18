@@ -91,7 +91,7 @@ fun CopyMealDialog(
                 // 🔹 POLE TEKSTOWE DATY (clickable)
                 OutlinedTextField(
                     value = formattedDate,
-                    onValueChange = {}, // Pole tylko do odczytu
+                    onValueChange = {},
                     readOnly = true,
                     label = { Text("Select Date") },
                     trailingIcon = {

@@ -29,11 +29,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import study.snacktrackmobile.data.api.FoodApi
+import study.snacktrackmobile.data.api.RecipeApi
 import study.snacktrackmobile.data.api.TrainingApi
 import study.snacktrackmobile.data.api.UserApi
 import study.snacktrackmobile.data.model.User
@@ -43,9 +45,12 @@ import study.snacktrackmobile.data.model.dto.UserResponse
 import study.snacktrackmobile.data.model.enums.Status
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.NotificationsRepository
+import study.snacktrackmobile.data.repository.RecipeRepository
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.*
+import study.snacktrackmobile.presentation.ui.components.RecipesScreen
 import study.snacktrackmobile.viewmodel.*
+import kotlin.jvm.java
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,6 +99,21 @@ fun MainView(
     }
     val trainingViewModel = remember { TrainingViewModel(trainingApi) }
 
+    // Recipe API + Repo + ViewModel
+    val recipeApi = remember {
+        Retrofit.Builder()
+            .baseUrl(ApiConfig.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(RecipeApi::class.java)
+    }
+
+    val recipeRepository = remember { RecipeRepository(recipeApi) }
+    val recipesViewModel: RecipeViewModel = viewModel(
+        factory = RecipeViewModel.provideFactory(recipeRepository)
+    )
+
+
     // Profile API + ViewModel
     val userApi = remember {
         Retrofit.Builder()
@@ -120,6 +140,15 @@ fun MainView(
             profileViewModel.loadProfile(token)
         }
     }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == "Recipes") {
+            authToken?.let { token ->
+                recipesViewModel.loadAllRecipes(token)
+            }
+        }
+    }
+
 
     // Drawer lewy
     ModalNavigationDrawer(
@@ -197,7 +226,15 @@ fun MainView(
                         authToken = authToken,
                         onDateSelected = { date -> selectedDate = date }
                     )
-                    "Recipes" -> Text("Przepisy dnia $selectedDate")
+                    "Recipes" -> RecipesScreen(
+                        viewModel = recipesViewModel,
+                        foodViewModel = foodViewModel, // 🔹 Przekazujemy FoodViewModel
+                        navController = navController, // 🔹 Przekazujemy NavController
+                        onRecipeClick = { recipeId ->
+                            println("Clicked recipe: $recipeId")
+                        }
+                    )
+
                     "Shopping" -> ShoppingListScreen(
                         viewModel = shoppingListViewModel,
                         selectedDate = selectedDate

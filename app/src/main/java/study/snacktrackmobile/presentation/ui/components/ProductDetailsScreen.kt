@@ -16,6 +16,7 @@ import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
+
 @Composable
 fun ProductDetailsScreen(
     alimentation: RegisteredAlimentationResponse,
@@ -24,7 +25,10 @@ fun ProductDetailsScreen(
     onBack: () -> Unit,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
     productId: Int? = null,
-    isEditMode: Boolean = false
+    isEditMode: Boolean = false,
+    // 🔹 NOWE: Opcjonalny callback dla trybu przepisu.
+    // Jeśli nie jest null, nie zapisujemy w API, tylko zwracamy wynik.
+    onYieldResult: ((Float?, Float?) -> Unit)? = null
 ) {
     val food = alimentation.essentialFood ?: return
     val context = LocalContext.current
@@ -67,7 +71,6 @@ fun ProductDetailsScreen(
             options = options,
             onSelected = { new ->
                 selectedOption = new
-                // aktualizuj domyślną wartość po zmianie jednostki
                 inputValue = if (selectedOption == "piece") "1" else (food.defaultWeight?.toInt()?.toString() ?: "")
             }
         )
@@ -84,14 +87,14 @@ fun ProductDetailsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         DisplayButton(
-            text = if (isEditMode) "Save" else "Add",
+            text = if (onYieldResult != null) "Add to Recipe" else (if (isEditMode) "Save" else "Add"),
             onClick = {
                 if (inputValue.isBlank()) {
                     isError = true
                     return@DisplayButton
                 }
 
-                // 5) Wylicz amount/pieces wyłącznie wg wybranej jednostki
+                // 5) Wylicz amount/pieces
                 val amount: Float? = if (selectedOption == "piece") null else inputValue.toFloatOrNull()
                 val pieces: Float? = if (selectedOption == "piece") inputValue.toFloatOrNull() else null
 
@@ -103,36 +106,41 @@ fun ProductDetailsScreen(
                     isError = true; return@DisplayButton
                 }
 
-                if (isEditMode) {
-                    val dto = RegisteredAlimentationRequest(
-                        essentialId = food.id,
-                        mealApiId = alimentation.mealApi?.id,
-                        mealId = alimentation.meal?.id,
-                        timestamp = selectedDate,
-                        mealName = selectedMeal.lowercase(),
-                        amount = amount,
-                        pieces = pieces
-                    )
-                    registeredAlimentationViewModel.updateMealProduct(
-                        context = context,
-                        productId = alimentation.id,
-                        dto = dto,
-                        date = selectedDate
-                    )
+                // 🔹 LOGIKA: Sprawdzamy czy jesteśmy w trybie przepisu
+                if (onYieldResult != null) {
+                    onYieldResult(amount, pieces)
                 } else {
-                    registeredAlimentationViewModel.addMealProduct(
-                        context = context,
-                        essentialId = food.id,
-                        mealName = selectedMeal,
-                        date = selectedDate,
-                        amount = amount,   // Float? (null gdy piece)
-                        pieces = pieces    // Int? (null gdy g/ml)
-                    )
+                    // Standardowa logika (Baza Danych)
+                    if (isEditMode) {
+                        val dto = RegisteredAlimentationRequest(
+                            essentialId = food.id,
+                            mealApiId = alimentation.mealApi?.id,
+                            mealId = alimentation.meal?.id,
+                            timestamp = selectedDate,
+                            mealName = selectedMeal.lowercase(),
+                            amount = amount,
+                            pieces = pieces
+                        )
+                        registeredAlimentationViewModel.updateMealProduct(
+                            context = context,
+                            productId = alimentation.id,
+                            dto = dto,
+                            date = selectedDate
+                        )
+                    } else {
+                        registeredAlimentationViewModel.addMealProduct(
+                            context = context,
+                            essentialId = food.id,
+                            mealName = selectedMeal,
+                            date = selectedDate,
+                            amount = amount,
+                            pieces = pieces
+                        )
+                    }
+                    onBack()
                 }
-
-                onBack()
             },
-            modifier = Modifier.size(width = 120.dp, height = 50.dp),
+            modifier = Modifier.size(width = 160.dp, height = 50.dp),
             fontSize = 14
         )
 
@@ -141,10 +149,8 @@ fun ProductDetailsScreen(
         DisplayButton(
             text = "Back",
             onClick = onBack,
-            modifier = Modifier.size(width = 120.dp, height = 50.dp),
+            modifier = Modifier.size(width = 160.dp, height = 50.dp),
             fontSize = 14
         )
     }
 }
-
-

@@ -16,18 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,18 +31,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.viewmodel.FoodViewModel
-import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
 fun AddProductScreen(
@@ -54,7 +47,9 @@ fun AddProductScreen(
     selectedMeal: String,
     navController: NavController,
     foodViewModel: FoodViewModel,
-    onProductClick: (RegisteredAlimentationResponse) -> Unit
+    onProductClick: (RegisteredAlimentationResponse) -> Unit,
+    // 🔹 Jedyna nowość: flaga, czy jesteśmy w trybie dodawania do przepisu
+    isRecipeMode: Boolean = false
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val allFoods by foodViewModel.foods.collectAsState()
@@ -94,6 +89,7 @@ fun AddProductScreen(
                 onValueChange = { searchQuery = it },
                 label = "Search product",
                 isError = false,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
@@ -106,11 +102,12 @@ fun AddProductScreen(
                 .padding(horizontal = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Tego nie ruszamy - Twoja oryginalna logika
             items(filteredProducts) { product ->
                 ProductItem(product) { clicked ->
-                    // 🔽 budujemy tymczasowy RegisteredAlimentationResponse
+                    // Budujemy obiekt tak jak wcześniej, żeby pasował do reszty aplikacji
                     val alimentation = RegisteredAlimentationResponse(
-                        id = -1, // tymczasowe ID, bo jeszcze nie zapisane w bazie
+                        id = -1,
                         userId = 0,
                         essentialFood = clicked,
                         mealApi = null,
@@ -125,43 +122,69 @@ fun AddProductScreen(
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            DisplayButton(
-                "Add new product",
-                onClick = {
-                    navController.navigate("MainView?tab=AddProductToDatabase&meal=$selectedMeal&date=$selectedDate")
-                },
-                modifier = Modifier.size(width = 120.dp, height = 60.dp),
-                fontSize = 14
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            DisplayButton(
-                "Add meal",
-                onClick = { /* TODO: obsługa dodania całego posiłku */ },
-                modifier = Modifier.size(width = 120.dp, height = 60.dp),
-                fontSize = 14
-            )
+        // 🔹 Ukrywamy przyciski tylko jeśli to tryb przepisu,
+        // w przeciwnym razie zostawiamy stare przyciski
+        if (!isRecipeMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                DisplayButton(
+                    "Add new product",
+                    onClick = {
+                        navController.navigate("MainView?tab=AddProductToDatabase&meal=$selectedMeal&date=$selectedDate")
+                    },
+                    modifier = Modifier.size(width = 120.dp, height = 60.dp),
+                    fontSize = 14
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                DisplayButton(
+                    "Add meal",
+                    onClick = { /* TODO: obsługa dodania całego posiłku */ },
+                    modifier = Modifier.size(width = 120.dp, height = 60.dp),
+                    fontSize = 14
+                )
+            }
         }
     }
 }
 
+// 👇 To jest Twój oryginalny komponent, który musi tu zostać
 @Composable
 fun ProductItem(product: EssentialFoodResponse, onClick: (EssentialFoodResponse) -> Unit) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFEDEDED), RoundedCornerShape(8.dp))
-            .clickable { onClick(product) }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White), // Białe tło
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Cień jak w RecipeRow/ProductRow
     ) {
-        Text(text = product.name ?: "", fontFamily = montserratFont, fontSize = 16.sp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                // 🔹 Kliknięcie w cały wiersz
+                .clickable { onClick(product) }
+                .padding(16.dp), // Zwiększony padding
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                // 🔹 Nazwa Produktu
+                Text(
+                    text = product.name ?: "-",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    fontFamily = montserratFont,
+                    color = Color.Black
+                )
+                Text(
+                    text = product.description ?: "-",
+                    style = MaterialTheme.typography.bodyLarge.copy(),
+                    fontFamily = montserratFont,
+                    color = Color.Black,
+                    fontSize = 14.sp
+                )
+            }
+        }
     }
 }
-
-

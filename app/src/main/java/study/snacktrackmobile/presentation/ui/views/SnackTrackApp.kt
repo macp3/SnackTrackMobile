@@ -17,6 +17,7 @@ import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.database.AppDatabase
 import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
+import study.snacktrackmobile.data.repository.RecipeRepository
 import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
@@ -25,12 +26,18 @@ import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
 import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
 import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
 import study.snacktrackmobile.viewmodel.FoodViewModel
+import study.snacktrackmobile.viewmodel.RecipeViewModel
 import java.time.LocalDate
 
 @Composable
 fun SnackTrackApp() {
     val context = LocalContext.current
     val navController = rememberNavController()
+
+    val recipeRepository = RecipeRepository(Request.recipeApi)
+    val recipesViewModel: RecipeViewModel = viewModel(
+        factory = RecipeViewModel.provideFactory(recipeRepository)
+    )
 
     val userViewModel: UserViewModel = viewModel()
 

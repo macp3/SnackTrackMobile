@@ -66,7 +66,6 @@ fun DropdownField(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
-                .fillMaxWidth()
                 .background(Color.White, RoundedCornerShape(12.dp)),
             properties = PopupProperties(focusable = true)
         ) {

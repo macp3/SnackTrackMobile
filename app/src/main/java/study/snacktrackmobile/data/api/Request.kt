@@ -58,4 +58,5 @@ object Request {
 
     val api: ApiService = retrofit.create(ApiService::class.java)
     val foodApi: FoodApi = retrofit.create(FoodApi::class.java)
+    val recipeApi: RecipeApi = retrofit.create(RecipeApi::class.java)
 }
