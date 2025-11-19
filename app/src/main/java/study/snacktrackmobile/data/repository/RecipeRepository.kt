@@ -36,16 +36,6 @@ class RecipeRepository(private val api: RecipeApi) {
         }
     }
 
-    suspend fun addFavourite(token: String, id: Int): Boolean {
-        val res = api.addFavourite("Bearer $token", id)
-        return res.isSuccessful
-    }
-
-    suspend fun removeFavourite(token: String, id: Int): Boolean {
-        val res = api.removeFavourite("Bearer $token", id)
-        return res.isSuccessful
-    }
-
     suspend fun updateRecipe(token: String, id: Int, request: RecipeRequest): Boolean {
         val res = api.updateRecipe("Bearer $token", id, request)
         return res.isSuccessful

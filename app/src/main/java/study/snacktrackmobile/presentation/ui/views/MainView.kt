@@ -227,12 +227,12 @@ fun MainView(
                         onDateSelected = { date -> selectedDate = date }
                     )
                     "Recipes" -> RecipesScreen(
+                        viewModel = recipesViewModel,
                         foodViewModel = foodViewModel, // 🔹 Przekazujemy FoodViewModel
                         navController = navController, // 🔹 Przekazujemy NavController
                         onRecipeClick = { recipeId ->
                             println("Clicked recipe: $recipeId")
-                        },
-                        recipeViewModel = recipesViewModel
+                        }
                     )
 
                     "Shopping" -> ShoppingListScreen(

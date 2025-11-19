@@ -14,31 +14,21 @@ import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 @Composable
 fun RecipeListDisplay(
     items: List<RecipeResponse>,
-    favourites: Set<Int>,
-    inMyRecipes: Boolean,
-    onClick: (Int) -> Unit,
-    onDelete: (Int) -> Unit,
-    onEdit: (RecipeResponse) -> Unit,
-    onFavouriteToggle: (Int) -> Unit
+    onClick: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(items) { recipe ->
+
+            // 🔹 Używamy nowego, dedykowanego komponentu RecipeRow
             RecipeRow(
                 recipe = recipe,
-                inMyRecipes = inMyRecipes,
-                isFavourite = favourites.contains(recipe.id),
-                onClick = onClick,
-                onDelete = onDelete,
-                onEdit = onEdit,
-                onFavouriteToggle = onFavouriteToggle
+                onClick = onClick // Przekazujemy akcję do obsługi kliknięcia
             )
         }
     }
 }
-
-

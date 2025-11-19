@@ -1,25 +1,25 @@
 package study.snacktrackmobile.viewmodel
 
+import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import study.snacktrackmobile.data.model.Recipe
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.repository.RecipeRepository
+import study.snacktrackmobile.data.storage.TokenStorage
 
 class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
 
     private val _recipes = MutableStateFlow<List<RecipeResponse>>(emptyList())
     val recipes: StateFlow<List<RecipeResponse>> = _recipes
-
-    private val _favouritesIds = MutableStateFlow<Set<Int>>(emptySet())
-    // EXPOSED PUBLIC FLOW - tego brakowało
-    val favouritesIds: StateFlow<Set<Int>> = _favouritesIds
 
     private val _errorMessage = mutableStateOf<String?>(null)
     val errorMessage: State<String?> = _errorMessage
@@ -27,81 +27,66 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
     private val _screen = MutableStateFlow("My recipes")
     val screen: StateFlow<String> = _screen
 
-    fun loadAllRecipes(token: String) {
-        viewModelScope.launch {
-            refreshFavouritesInternal(token)
-            val list = repository.getAllRecipes(token)
-            _recipes.value = list // Lista jest oznaczana w UI na podstawie zbioru favouritesIds
-        }
-    }
+    fun setScreen(screen: String) { _screen.value = screen }
 
-    fun loadMyRecipes(token: String) {
-        viewModelScope.launch {
-            refreshFavouritesInternal(token)
-            val list = repository.getMyRecipes(token)
-            _recipes.value = list
-        }
-    }
-
-    fun loadFavouriteRecipes(token: String) {
-        viewModelScope.launch {
-            val list = repository.getMyFavourites(token)
-            _favouritesIds.value = list.map { it.id }.toSet()
-            _recipes.value = list
-        }
-    }
-
-    // Helper do odświeżania samych ID ulubionych
-    private suspend fun refreshFavouritesInternal(token: String) {
+    fun loadAllRecipes(token: String) = viewModelScope.launch {
         try {
-            val favs = repository.getMyFavourites(token)
-            _favouritesIds.value = favs.map { it.id }.toSet()
+            _recipes.value = repository.getAllRecipes(token)
         } catch (e: Exception) {
-            // Obsługa błędu pobierania ulubionych
+            _errorMessage.value = e.message
         }
     }
 
-    fun toggleFavourite(token: String, recipeId: Int) {
-        viewModelScope.launch {
-            val isFav = _favouritesIds.value.contains(recipeId)
+    fun loadMyRecipes(token: String) = viewModelScope.launch {
+        try {
+            _recipes.value = repository.getMyRecipes(token)
+        } catch (e: Exception) {
+            _errorMessage.value = e.message
+        }
+    }
 
-            if (!isFav) {
-                repository.addFavourite(token, recipeId)
-            } else {
-                repository.removeFavourite(token, recipeId)
-            }
-
-            // Odśwież listę ID ulubionych
-            refreshFavouritesInternal(token)
-
-            // Jeśli jesteśmy na ekranie "Favourites", musimy przeładować całą listę, żeby usunięty element zniknął
-            if (_screen.value == "Favourites") {
-                loadFavouriteRecipes(token)
-            }
+    fun loadMyFavourites(token: String) = viewModelScope.launch {
+        try {
+            _recipes.value = repository.getMyFavourites(token)
+        } catch (e: Exception) {
+            _errorMessage.value = e.message
         }
     }
 
     fun addRecipe(token: String, request: RecipeRequest, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            val result = repository.addRecipe(token, request)
-            result.onSuccess { onSuccess() }
-            result.onFailure { onError(it.message ?: "Unknown error") }
+            try {
+                // Zmieniamy logikę na oczekiwanie obiektu Result (w RecipeRepository to obsłużymy)
+                val result = repository.addRecipe(token, request)
+
+                if (result.isSuccess) {
+                    loadMyRecipes(token)
+                    onSuccess()
+                } else {
+                    // Przekazujemy wiadomość z błędem z Result/Repository do View
+                    onError(result.exceptionOrNull()?.message ?: "Add recipe failed")
+                }
+            } catch (e: Exception) {
+                onError(e.message ?: "Unknown error")
+            }
         }
     }
 
-    // Usunąłem callback z sygnatury, bo loadMyRecipes wewnątrz załatwia sprawę
-    fun deleteRecipe(token: String, id: Int, onComplete: () -> Unit = {}) {
-        viewModelScope.launch {
+    fun updateRecipe(token: String, id: Int, request: RecipeRequest) = viewModelScope.launch {
+        try {
+            repository.updateRecipe(token, id, request)
+            loadMyRecipes(token)
+        } catch (e: Exception) {
+            _errorMessage.value = e.message
+        }
+    }
+
+    fun deleteRecipe(token: String, id: Int) = viewModelScope.launch {
+        try {
             repository.deleteRecipe(token, id)
-            // Po usunięciu odśwież widok
-            if (_screen.value == "My recipes") {
-                loadMyRecipes(token)
-            } else if (_screen.value == "Favourites") {
-                loadFavouriteRecipes(token)
-            } else {
-                loadAllRecipes(token)
-            }
-            onComplete()
+            _recipes.value = _recipes.value.filterNot { it.id == id }
+        } catch (e: Exception) {
+            _errorMessage.value = e.message
         }
     }
 
