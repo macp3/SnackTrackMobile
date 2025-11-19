@@ -28,7 +28,8 @@ fun DisplayButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    fontSize: Int = 18
+    fontSize: Int = 18,
+    containerColor: Color = Color(0xFFB7F999) // 👈 Nowy parametr z domyślnym kolorem
 ) {
     OutlinedButton(
         onClick = onClick,
@@ -38,17 +39,16 @@ fun DisplayButton(
                 shape = RoundedCornerShape(16.dp),
                 clip = false
             ),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB7F999)),
+        colors = ButtonDefaults.buttonColors(containerColor = containerColor),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, Color.Black),
     ) {
         Text(
             text = text,
             fontSize = fontSize.sp,
-            fontFamily = montserratFont,
+            fontFamily = montserratFont, // Upewnij się, że masz dostęp do tej czcionki
             color = Color.Black,
             textAlign = TextAlign.Center
         )
     }
 }
-

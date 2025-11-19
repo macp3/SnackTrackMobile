@@ -2,6 +2,7 @@ package study.snacktrackmobile.data.api
 
 import com.google.android.gms.common.internal.safeparcel.SafeParcelable
 import com.google.android.gms.common.internal.safeparcel.SafeParcelable.Param
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -20,7 +21,7 @@ interface RecipeApi {
     suspend fun addRecipe(
         @Header("Authorization") token: String,
         @Body request: RecipeRequest
-    ): Response<Unit>
+    ): Response<Int>
 
     @PUT("meals/my/edit/{id}")
     suspend fun updateRecipe(
@@ -56,4 +57,12 @@ interface RecipeApi {
     suspend fun getAllRecipes(
         @Header("Authorization") token: String
     ): List<RecipeResponse>
+
+    @Multipart
+    @POST("meals/{mealId}/image") // Upewnij się, że ścieżka pasuje do Twojego Controller RequestMapping
+    suspend fun uploadImage(
+        @Header("Authorization") token: String,
+        @Path("mealId") mealId: Int,
+        @Part image: MultipartBody.Part
+    ): Response<String>
 }

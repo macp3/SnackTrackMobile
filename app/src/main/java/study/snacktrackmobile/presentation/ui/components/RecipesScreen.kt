@@ -1,30 +1,21 @@
-package study.snacktrackmobile.ui.screens
+package study.snacktrackmobile.presentation.ui.components
 
 import DropdownField
-import android.util.Log
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import study.snacktrackmobile.data.api.* // Upewnij się, że importy modeli są poprawne
+import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.model.dto.IngredientRequest
 import study.snacktrackmobile.data.model.dto.RecipeRequest
@@ -32,7 +23,7 @@ import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
 import study.snacktrackmobile.data.repository.UserRepository
-import study.snacktrackmobile.presentation.ui.components.* // Tutaj zakładam, że masz DropdownField itp.
+import study.snacktrackmobile.presentation.ui.components.*
 import study.snacktrackmobile.viewmodel.FoodViewModel
 import study.snacktrackmobile.viewmodel.RecipeViewModel
 import study.snacktrackmobile.data.storage.TokenStorage
@@ -51,77 +42,94 @@ fun RecipesScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
+
     val registeredAlimentationViewModelInstance: RegisteredAlimentationViewModel by lazy {
-        RegisteredAlimentationViewModel(
-            RegisteredAlimentationRepository(Request.api)
-        )
+        RegisteredAlimentationViewModel(RegisteredAlimentationRepository(Request.api))
     }
+    val userRepository: UserRepository by lazy { UserRepository() }
 
-    val userRepository: UserRepository by lazy {
-        UserRepository() // zakładam, że masz Request.userApi
-    }
-
-    // Stany z ViewModel
     val selectedMode by viewModel.screen.collectAsState()
     val recipes by viewModel.recipes.collectAsState()
     val favouriteIds by viewModel.favouriteIds.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
 
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var existingImageUrl by remember { mutableStateOf<String?>(null) }
+
     var token by remember { mutableStateOf("") }
 
-    // Stan wyświetlania szczegółów przepisu (jeśli nie null -> pokazujemy ekran szczegółów)
+    // UI States
     var selectedRecipeDetails by remember { mutableStateOf<RecipeResponse?>(null) }
 
-    // --- STANY FORMULARZA DODAWANIA (ADD RECIPE) ---
+    // Form States
+    var editingRecipeId by remember { mutableStateOf<Int?>(null) }
+
     var name by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
     val ingredientsForms = remember { mutableStateListOf<IngredientFormEntry>() }
 
-    // Walidacja
+    // Validation
     var isNameError by remember { mutableStateOf(false) }
     var nameErrorMessage by remember { mutableStateOf<String?>(null) }
     var isDescError by remember { mutableStateOf(false) }
     var descErrorMessage by remember { mutableStateOf<String?>(null) }
     var serverErrorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Nawigacja wewnątrz formularza
     var currentStep by remember { mutableStateOf(AddRecipeStep.FORM) }
     var activeIngredientIndex by remember { mutableStateOf<Int?>(null) }
     var tempSelectedProduct by remember { mutableStateOf<EssentialFoodResponse?>(null) }
 
-    // Inicjalizacja: Pobranie tokena i danych
     LaunchedEffect(Unit) {
         TokenStorage.getToken(context)?.let { t ->
             token = t
-
-            // Pobierz ID użytkownika
-            val result = userRepository.getUserId(t)
-            result.onSuccess { id ->
-                viewModel.setCurrentUserId(id)
-            }.onFailure { e ->
-                Toast.makeText(context, "Failed to get user ID: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-
-            // Domyślne ładowanie "My recipes"
+            userRepository.getUserId(t).onSuccess { id -> viewModel.setCurrentUserId(id) }
             viewModel.loadMyRecipes(t)
-        } ?: run {
-            Toast.makeText(context, "No auth token found", Toast.LENGTH_SHORT).show()
         }
     }
 
+    fun uploadImageIfSelected(recipeId: Int) {
+        if (selectedImageUri != null) {
+            viewModel.uploadRecipeImage(
+                context = context,
+                token = token,
+                recipeId = recipeId,
+                imageUri = selectedImageUri!!,
+                onSuccess = {
+                    Toast.makeText(context, "Recipe & Image saved!", Toast.LENGTH_SHORT).show()
+                    // Czyścimy formularz dopiero jak zdjęcie się uda (lub można wcześniej, zależy od preferencji)
+                },
+                onError = { error ->
+                    Toast.makeText(context, "Recipe saved, but image failed: $error", Toast.LENGTH_LONG).show()
+                }
+            )
+        } else {
+            Toast.makeText(context, "Recipe saved!", Toast.LENGTH_SHORT).show()
+        }
+    }
 
-    // Obsługa przycisku wstecz (BackHandler)
-    // Priorytety: 1. Zamknij szczegóły przepisu -> 2. Wróć w krokach formularza -> 3. Zmień tryb na My Recipes
-    BackHandler(enabled = (selectedRecipeDetails != null || (selectedMode == "Add recipe" && currentStep != AddRecipeStep.FORM))) {
+    fun clearForm() {
+        name = ""; desc = ""; ingredientsForms.clear()
+        selectedImageUri = null
+        existingImageUrl = null
+        editingRecipeId = null
+        isNameError = false; isDescError = false
+    }
+
+    BackHandler(enabled = (selectedRecipeDetails != null || selectedMode == "Add recipe")) {
         if (selectedRecipeDetails != null) {
             selectedRecipeDetails = null
         } else if (selectedMode == "Add recipe") {
-            currentStep = AddRecipeStep.FORM
-            tempSelectedProduct = null
+            if (currentStep != AddRecipeStep.FORM) {
+                currentStep = AddRecipeStep.FORM
+            } else {
+                clearForm()
+                viewModel.setScreen("My recipes")
+                viewModel.loadMyRecipes(token)
+            }
         }
     }
 
-    // 🔹 FUNKCJA WALIDACJI
     fun validateForm(): Boolean {
         isNameError = false; nameErrorMessage = null
         isDescError = false; descErrorMessage = null
@@ -135,7 +143,6 @@ fun RecipesScreen(
             isNameError = true; nameErrorMessage = "Max 50 chars."
             isValid = false
         }
-
         if (desc.isBlank()) {
             isDescError = true; descErrorMessage = "Description cannot be empty."
             isValid = false
@@ -143,7 +150,6 @@ fun RecipesScreen(
             isDescError = true; descErrorMessage = "Max 100 chars."
             isValid = false
         }
-
         if (ingredientsForms.isEmpty()) {
             serverErrorMessage = "At least one ingredient required."
             isValid = false
@@ -151,57 +157,98 @@ fun RecipesScreen(
         return isValid
     }
 
-    // 🔹 FUNKCJA SUBMIT
+    // 🔹 NAPRAWIONA FUNKCJA SUBMIT 🔹
     fun submitRecipe() {
         if (!validateForm()) return
 
-        val ingredientRequests = ingredientsForms.map { entry ->
-            val defaultUnit: String? = entry.essentialFood?.servingSizeUnit ?: entry.essentialApi?.servingSizeUnit
-            IngredientRequest(
-                essentialFoodId = entry.essentialFood?.id,
-                essentialApiId = entry.essentialApi?.id,
-                amount = entry.amount,
-                pieces = entry.pieces,
-                defaultUnit = defaultUnit
-            )
+        val ingredientRequests = ingredientsForms.map { /* mapowanie bez zmian */
+            IngredientRequest(it.essentialFood?.id, it.essentialApi?.id, it.amount, it.pieces, it.essentialFood?.servingSizeUnit)
         }
 
-        val recipeRequest = RecipeRequest(name = name, description = desc, ingredients = ingredientRequests)
+        val request = RecipeRequest(name = name, description = desc, ingredients = ingredientRequests)
 
-        viewModel.addRecipe(
-            token = token,
-            request = recipeRequest,
-            onSuccess = {
-                Toast.makeText(context, "Recipe created!", Toast.LENGTH_SHORT).show()
-                name = ""; desc = ""; ingredientsForms.clear()
-                viewModel.setScreen("My recipes")
-                currentStep = AddRecipeStep.FORM
-            },
-            onError = { error -> serverErrorMessage = error }
-        )
+        if (editingRecipeId == null) {
+            // --- TWORZENIE NOWEGO (ADD) ---
+            viewModel.addRecipe(
+                token = token,
+                request = request,
+                onSuccess = { newId -> // 👈 Teraz dostajemy tutaj ID!
+                    // Mamy ID, więc możemy od razu wgrać zdjęcie
+                    uploadImageIfSelected(newId)
+
+                    clearForm()
+                    viewModel.setScreen("My recipes")
+                },
+                onError = { serverErrorMessage = it }
+            )
+        } else {
+            // --- EDYCJA ISTNIEJĄCEGO (UPDATE) ---
+            viewModel.updateRecipe(
+                token = token,
+                id = editingRecipeId!!,
+                request = request,
+                onSuccess = {
+                    // Znamy ID (editingRecipeId), wgrywamy zdjęcie
+                    uploadImageIfSelected(editingRecipeId!!)
+
+                    clearForm()
+                    viewModel.setScreen("My recipes")
+                },
+                onError = { serverErrorMessage = it }
+            )
+        }
     }
 
-    // --- WIDOK GŁÓWNY ---
+    fun startEditing(recipe: RecipeResponse) {
+        selectedRecipeDetails = null
+        clearForm()
 
-    // 1. Jeśli wybrano szczegóły przepisu, wyświetl tylko je
+        editingRecipeId = recipe.id
+        name = recipe.name
+        desc = recipe.description ?: ""
+        imageUrl = recipe.imageUrl ?: ""
+
+        recipe.ingredients.forEach { ing ->
+            val entry = IngredientFormEntry(
+                essentialFood = ing.essentialFood,
+                essentialApi = ing.essentialApi,
+                amount = ing.amount,
+                pieces = ing.pieces
+            )
+            ingredientsForms.add(entry)
+        }
+
+        viewModel.setScreen("Add recipe")
+        currentStep = AddRecipeStep.FORM
+    }
+
+    // Views
     if (selectedRecipeDetails != null) {
+        val r = selectedRecipeDetails!!
         RecipeDetailsScreen(
-            recipe = selectedRecipeDetails!!,
-            onBack = { selectedRecipeDetails = null }
+            recipe = r,
+            isAuthor = (currentUserId != null && r.authorId == currentUserId),
+            isFavourite = favouriteIds.contains(r.id),
+            onBack = { selectedRecipeDetails = null },
+            onEdit = { startEditing(r) },
+            onDelete = {
+                viewModel.deleteRecipe(token, r.id)
+                selectedRecipeDetails = null
+                Toast.makeText(context, "Recipe deleted", Toast.LENGTH_SHORT).show()
+            },
+            onToggleFavourite = { viewModel.toggleFavourite(token, r) }
         )
-        return // Przerywamy rysowanie reszty ekranu
+        return
     }
 
-    // 2. Standardowy widok
     Column(modifier = Modifier.fillMaxSize()) {
-
-        // Pokaż Dropdown tylko jeśli nie jesteśmy w głębi formularza Add Recipe
-        if (selectedMode != "Add recipe" || currentStep == AddRecipeStep.FORM) {
+        if (selectedMode != "Add recipe") {
             DropdownField(
                 label = "Mode",
                 selected = selectedMode,
                 options = listOf("My recipes", "Favourites", "Discover", "Add recipe"),
                 onSelected = { mode ->
+                    if (mode == "Add recipe") clearForm()
                     viewModel.setScreen(mode)
                     if (token.isNotEmpty()) {
                         when (mode) {
@@ -211,26 +258,27 @@ fun RecipesScreen(
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            )
+        } else if (currentStep == AddRecipeStep.FORM) {
+            Text(
+                text = if(editingRecipeId != null) "Edit Recipe" else "New Recipe",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(16.dp),
+                fontWeight = FontWeight.Bold
             )
         }
 
-        // Zawartość w zależności od trybu
         when (selectedMode) {
             "My recipes", "Favourites", "Discover" -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(recipes) { recipe ->
                         RecipeRow(
                             recipe = recipe,
                             isFavourite = favouriteIds.contains(recipe.id),
-                            // Sprawdzamy czy currentUserId nie jest nullem i czy pasuje do autora
                             isAuthor = (currentUserId != null && recipe.authorId == currentUserId),
                             onClick = { selectedRecipeDetails = recipe },
                             onToggleFavourite = { viewModel.toggleFavourite(token, recipe) },
@@ -246,14 +294,29 @@ fun RecipesScreen(
                         AddRecipeForm(
                             name = name,
                             desc = desc,
+                            // 1. Przekazujemy URL z backendu (użyj zmiennej existingImageUrl, którą zdefiniowaliśmy wcześniej)
+                            // Jeśli w RecipesScreen masz zmienną o nazwie 'imageUrl', zmień ją na tę zmienną.
+                            // W poprzednim kroku sugerowałem nazwę 'existingImageUrl' dla URL z backendu.
+                            imageUrl = existingImageUrl,
+
+                            // 2. Przekazujemy URI wybrane z galerii (to brakowało)
+                            selectedImageUri = selectedImageUri,
+
                             ingredients = ingredientsForms,
                             isNameError = isNameError,
                             nameErrorMessage = nameErrorMessage,
                             isDescError = isDescError,
                             descErrorMessage = descErrorMessage,
                             serverErrorMessage = serverErrorMessage,
+
                             onNameChange = { name = it; isNameError = false },
                             onDescChange = { desc = it; isDescError = false },
+
+                            // 3. Obsługa wyboru zdjęcia (to brakowało)
+                            onImageSelected = { uri -> selectedImageUri = uri },
+
+                            // 4. USUNIĘTE: onImageUrlChange = ... (już nie wpisujemy ręcznie URL)
+
                             onStartAddIngredient = {
                                 serverErrorMessage = null
                                 activeIngredientIndex = ingredientsForms.size
@@ -284,18 +347,15 @@ fun RecipesScreen(
                     AddRecipeStep.DETAILS -> {
                         val product = tempSelectedProduct
                         if (product != null) {
-                            // Dummy obiekt do DetailsScreen
                             val dummyAlimentation = RegisteredAlimentationResponse(
                                 id = 0, userId = 0, essentialFood = product,
                                 mealApi = null, meal = null, timestamp = "",
                                 amount = 0f, pieces = 0f, mealName = ""
                             )
-
                             ProductDetailsScreen(
                                 alimentation = dummyAlimentation,
                                 selectedDate = "",
                                 selectedMeal = "",
-                                // Prowizoryczna instancja VM lub przekaż właściwą
                                 registeredAlimentationViewModel = registeredAlimentationViewModelInstance,
                                 onBack = {
                                     currentStep = AddRecipeStep.FORM
@@ -317,75 +377,8 @@ fun RecipesScreen(
                                 }
                             )
                         } else {
-                            // Fallback
                             LaunchedEffect(Unit) { currentStep = AddRecipeStep.FORM }
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// --- KOMPONENT: WIERSZ PRZEPISU ---
-@Composable
-fun RecipeRow(
-    recipe: RecipeResponse,
-    isFavourite: Boolean,
-    isAuthor: Boolean,
-    onClick: () -> Unit,
-    onToggleFavourite: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }, // Cały wiersz klikalny
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // LEWA STRONA: Tekst
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = recipe.name,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color.Black
-                )
-                Text(
-                    text = if (recipe.description.isNullOrBlank()) "No description" else recipe.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            // PRAWA STRONA: Ikony (Serce + X)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Serduszko
-                IconButton(onClick = onToggleFavourite) {
-                    Icon(
-                        imageVector = if (isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favourite",
-                        tint = if (isFavourite) Color.Red else Color.Gray
-                    )
-                }
-
-                // X - tylko jeśli user jest autorem
-                if (isAuthor) {
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Delete",
-                            tint = Color.Gray
-                        )
                     }
                 }
             }

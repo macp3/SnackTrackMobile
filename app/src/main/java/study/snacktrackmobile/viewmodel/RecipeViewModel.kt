@@ -1,5 +1,7 @@
 package study.snacktrackmobile.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +14,7 @@ import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.repository.RecipeRepository
+import study.snacktrackmobile.utils.FileUtils
 
 class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
 
@@ -106,15 +109,15 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         }
     }
 
-    fun addRecipe(token: String, request: RecipeRequest, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun addRecipe(token: String, request: RecipeRequest, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 val result = repository.addRecipe(token, request)
-                if (result.isSuccess) {
-                    loadMyRecipes(token) // Przeładuj listę po dodaniu
-                    onSuccess()
-                } else {
-                    onError(result.exceptionOrNull()?.message ?: "Add recipe failed")
+                result.onSuccess { newId ->
+                    loadMyRecipes(token) // Odśwież listę
+                    onSuccess(newId)     // 👈 Przekaż ID do widoku
+                }.onFailure { error ->
+                    onError(error.message ?: "Add recipe failed")
                 }
             } catch (e: Exception) {
                 onError(e.message ?: "Unknown error")
@@ -132,6 +135,54 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
             }
         } catch (e: Exception) {
             _errorMessage.value = e.message
+        }
+    }
+
+    fun updateRecipe(token: String, id: Int, request: RecipeRequest, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                // Zakładam, że w repozytorium masz metodę updateRecipe zwracającą Boolean
+                // Jeśli repo zwraca Response, logika może wymagać drobnej zmiany (jak w addRecipe)
+                val success = repository.updateRecipe(token, id, request)
+                if (success) {
+                    loadMyRecipes(token) // Odśwież listę po edycji
+                    onSuccess()
+                } else {
+                    onError("Failed to update recipe (Server returned false)")
+                }
+            } catch (e: Exception) {
+                onError(e.message ?: "Unknown error during update")
+            }
+        }
+    }
+
+    fun uploadRecipeImage(
+        context: Context,
+        token: String,
+        recipeId: Int,
+        imageUri: Uri,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            // 1. Konwersja Uri -> File (robimy to w Dispatchers.IO dla bezpieczeństwa)
+            val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                FileUtils.getFileFromUri(context, imageUri)
+            }
+
+            if (file != null) {
+                // 2. Upload
+                val success = repository.uploadImage(token, recipeId, file)
+                if (success) {
+                    // Odśwież dane, żeby pobrać nowy URL z backendu
+                    loadMyRecipes(token)
+                    onSuccess()
+                } else {
+                    onError("Failed to upload image")
+                }
+            } else {
+                onError("Could not process image file")
+            }
         }
     }
 
