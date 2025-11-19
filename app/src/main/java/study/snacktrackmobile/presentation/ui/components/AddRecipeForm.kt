@@ -202,36 +202,6 @@ fun AddRecipeForm(
     }
 }
 
-// 🔹 Komponent dla pustego wiersza (gdy jeszcze nie wybrano produktu)
-@Composable
-fun EmptyIngredientRow(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color.LightGray) // Obramowanie sugerujące "miejsce na coś"
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "+ Select ingredient",
-                fontFamily = montserratFont,
-                fontSize = 16.sp,
-                color = Color.Gray,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
 data class IngredientFormEntry(
     val essentialFood: EssentialFoodResponse? = null,
     val essentialApi: ApiFoodResponseDetailed? = null,

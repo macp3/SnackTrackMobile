@@ -1,74 +1,93 @@
 package study.snacktrackmobile.presentation.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.dto.RecipeResponse
-import study.snacktrackmobile.presentation.ui.views.montserratFont // Zakładam, że masz tę czcionkę
+// Upewnij się, że importy czcionek są poprawne
+// import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
 fun RecipeRow(
     recipe: RecipeResponse,
-    onClick: (Int) -> Unit
+    isFavourite: Boolean,
+    isAuthor: Boolean,
+    onClick: () -> Unit,
+    onToggleFavourite: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .clickable { onClick() }, // Cały wiersz klikalny
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
-                // 🔹 Kliknięcie w cały wiersz aktywuje onClick, np. przejście do detali przepisu
                 .fillMaxWidth()
-                .clickable { onClick(recipe.id) }
-                .padding(16.dp), // Zwiększamy padding dla czystszej estetyki
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Lewa strona: Nazwa i opis
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                // 🔹 Nazwa Przepisu
+            // LEWA STRONA: Tekst (Nazwa i Opis)
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = recipe.name,
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    fontFamily = montserratFont,
                     color = Color.Black
                 )
-                // 🔹 Opis Przepisu
                 Text(
-                    text = if (recipe.description.isNullOrBlank()) "No description provided." else recipe.description,
+                    text = if (recipe.description.isNullOrBlank()) "No description" else recipe.description,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = montserratFont,
-                    color = Color.Gray
+                    color = Color.Gray,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            // Prawa strona (możesz dodać tu strzałkę lub ikonę, np. Icons.Default.KeyboardArrowRight)
-            // Zostawiamy puste lub dodajemy małą ikonę dla estetyki klikalności.
-            // Icon(
-            //     imageVector = Icons.Default.KeyboardArrowRight,
-            //     contentDescription = "Details",
-            //     tint = Color.LightGray,
-            //     modifier = Modifier.size(24.dp)
-            // )
+            // PRAWA STRONA: Ikony (Serce + X)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Przycisk Serduszka
+                IconButton(
+                    onClick = onToggleFavourite,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favourite",
+                        tint = if (isFavourite) Color.Red else Color.Gray
+                    )
+                }
+
+                // Przycisk X - widoczny TYLKO jeśli user jest autorem
+                if (isAuthor) {
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Delete",
+                            tint = Color.DarkGray
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 package study.snacktrackmobile.data.api
 
+import com.google.android.gms.common.internal.safeparcel.SafeParcelable
+import com.google.android.gms.common.internal.safeparcel.SafeParcelable.Param
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -33,7 +35,7 @@ interface RecipeApi {
         @Path("id") id: Int
     ): Response<Unit>
 
-    @GET("meals/favourites")
+    @GET("users/favourite")
     suspend fun getMyFavourites(
         @Header("Authorization") token: String
     ): List<RecipeResponse>

@@ -100,4 +100,26 @@ class UserRepository {
             Result.failure(e)
         }
     }
+
+    // Pobiera ID zalogowanego użytkownika
+    suspend fun getUserId(token: String): Result<Int> {
+        return try {
+            val res = Request.api.getUserID("Bearer $token")
+            if (res.isSuccessful) {
+                val id = res.body()
+                if (id != null) {
+                    Result.success(id)
+                } else {
+                    Result.failure(Exception("Empty body"))
+                }
+            } else {
+                val errorBody = res.errorBody()?.string()
+                val msg = if (errorBody.isNullOrBlank()) "Error ${res.code()}" else errorBody
+                Result.failure(Exception(msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 }

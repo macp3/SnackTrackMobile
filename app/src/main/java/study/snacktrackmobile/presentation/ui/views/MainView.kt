@@ -48,7 +48,7 @@ import study.snacktrackmobile.data.repository.NotificationsRepository
 import study.snacktrackmobile.data.repository.RecipeRepository
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.*
-import study.snacktrackmobile.presentation.ui.components.RecipesScreen
+import study.snacktrackmobile.ui.screens.RecipesScreen
 import study.snacktrackmobile.viewmodel.*
 import kotlin.jvm.java
 
@@ -230,9 +230,6 @@ fun MainView(
                         viewModel = recipesViewModel,
                         foodViewModel = foodViewModel, // 🔹 Przekazujemy FoodViewModel
                         navController = navController, // 🔹 Przekazujemy NavController
-                        onRecipeClick = { recipeId ->
-                            println("Clicked recipe: $recipeId")
-                        }
                     )
 
                     "Shopping" -> ShoppingListScreen(

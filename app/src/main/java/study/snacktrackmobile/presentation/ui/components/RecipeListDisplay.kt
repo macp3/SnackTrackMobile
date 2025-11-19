@@ -14,7 +14,11 @@ import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 @Composable
 fun RecipeListDisplay(
     items: List<RecipeResponse>,
-    onClick: (Int) -> Unit
+    favouriteIds: Set<Int>,       // Potrzebne do określenia koloru serca
+    currentUserId: Int?,          // Potrzebne do weryfikacji autora (ikona X)
+    onClick: (RecipeResponse) -> Unit, // Przekazujemy cały obiekt do ekranu szczegółów
+    onToggleFavourite: (RecipeResponse) -> Unit,
+    onDelete: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -24,10 +28,16 @@ fun RecipeListDisplay(
     ) {
         items(items) { recipe ->
 
-            // 🔹 Używamy nowego, dedykowanego komponentu RecipeRow
+            val isFavourite = favouriteIds.contains(recipe.id)
+            val isAuthor = currentUserId != null && recipe.authorId == currentUserId
+
             RecipeRow(
                 recipe = recipe,
-                onClick = onClick // Przekazujemy akcję do obsługi kliknięcia
+                isFavourite = isFavourite,
+                isAuthor = isAuthor,
+                onClick = { onClick(recipe) },
+                onToggleFavourite = { onToggleFavourite(recipe) },
+                onDelete = { onDelete(recipe.id) }
             )
         }
     }

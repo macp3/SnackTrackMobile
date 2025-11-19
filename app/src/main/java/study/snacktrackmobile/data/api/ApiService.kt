@@ -26,6 +26,10 @@ interface ApiService {
     @POST("auth/register")
     suspend fun register(@Body body: RegisterRequest): Response<ResponseBody>
 
+    @GET("users/getId")
+    suspend fun getUserID(@Header("Authorization") token: String): Response<Int>
+
+
     @GET("registered/my")
     suspend fun getMyEntries(
         @Header("Authorization") token: String,
