@@ -22,4 +22,7 @@ interface ShoppingListDao {
 
     @Query("SELECT * FROM shopping_lists WHERE date = :date AND userEmail = :email")
     suspend fun getByDateAndUserOnce(date: String, email: String): List<ShoppingList>
+
+    @Query("SELECT * FROM shopping_lists WHERE userEmail = :email ORDER BY date DESC LIMIT 20")
+    suspend fun getLastLists(email: String): List<ShoppingList>
 }

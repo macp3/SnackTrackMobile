@@ -88,7 +88,7 @@ fun MealCard(
         calcNutrient(it, (it.essentialFood?.carbohydrates ?: it.mealApi?.carbohydrates)?.toFloat())
     }
     val kcal = meal.alimentations.sumOf {
-        calcNutrient(it, (it.essentialFood?.calories ?: it.mealApi?.calories)?.toFloat())
+        calcNutrient(it, (it.essentialFood?.calories ?: it.mealApi?.calorie)?.toFloat())
     }
 
     Card(

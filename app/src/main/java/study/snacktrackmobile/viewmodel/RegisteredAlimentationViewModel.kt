@@ -93,7 +93,7 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
                     val api = entry.mealApi
 
                     val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
-                    val baseCalories = (ef?.calories ?: api?.calories?.toFloat() ?: 0f).toDouble()
+                    val baseCalories = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
                     val baseProtein = (ef?.protein ?: api?.protein ?: 0f).toDouble()
                     val baseFat = (ef?.fat ?: api?.fat ?: 0f).toDouble()
                     val baseCarbs = (ef?.carbohydrates ?: api?.carbohydrates ?: 0f).toDouble()

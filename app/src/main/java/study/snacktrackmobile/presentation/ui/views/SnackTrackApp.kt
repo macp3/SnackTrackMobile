@@ -41,17 +41,6 @@ fun SnackTrackApp() {
 
     val userViewModel: UserViewModel = viewModel()
 
-    // Room DAO + ShoppingListViewModel
-    val shoppingListDao = AppDatabase.getDatabase(context).shoppingListDao()
-    val shoppingListViewModel: ShoppingListViewModel = viewModel<ShoppingListViewModel>(
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ShoppingListViewModel(shoppingListDao) as T
-            }
-        }
-    )
-
     val foodViewModel: FoodViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -106,7 +95,6 @@ fun SnackTrackApp() {
 
             MainView(
                 navController = navController,
-                shoppingListViewModel = shoppingListViewModel,
                 registeredAlimentationViewModel = registeredAlimentationViewModel,
                 loggedUserEmail = loggedUserEmail ?: "",
                 initialTab = initialTab, // Przekazywanie initial states

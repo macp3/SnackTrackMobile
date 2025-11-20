@@ -8,13 +8,21 @@ import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.dao.ShoppingListDao
 import study.snacktrackmobile.data.model.ShoppingList
 import study.snacktrackmobile.data.model.ShoppingListItem
+import study.snacktrackmobile.data.services.AiApiService // Upewnij się, że importujesz z dobrego pakietu
+import study.snacktrackmobile.data.services.AiShoppingRequest
 
 class ShoppingListViewModel(
-    private val dao: ShoppingListDao
+    private val dao: ShoppingListDao,
+    private val aiService: AiApiService,
+    // ZMIANA: Wstrzykujemy funkcję pobierającą token, zamiast obiektu Storage
+    private val getToken: suspend () -> String?
 ) : ViewModel() {
 
     private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
     val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
 
     private var currentDate: String? = null
     private var currentUserEmail: String? = null
@@ -47,11 +55,7 @@ class ShoppingListViewModel(
                 userEmail = email
             )
             val newId = dao.insert(newList)
-
-            // Odświeżenie list po dodaniu
-            val updatedLists = dao.getByDateAndUserOnce(date, email)
-            _shoppingLists.value = updatedLists
-
+            refreshCurrentLists()
             onAdded(newId)
         }
     }
@@ -59,10 +63,7 @@ class ShoppingListViewModel(
     fun deleteList(list: ShoppingList) {
         viewModelScope.launch {
             dao.delete(list)
-            // Odświeżenie list
-            val email = currentUserEmail ?: return@launch
-            val date = currentDate ?: return@launch
-            _shoppingLists.value = dao.getByDateAndUserOnce(date, email)
+            refreshCurrentLists()
         }
     }
 
@@ -140,6 +141,74 @@ class ShoppingListViewModel(
                 dao.insert(copiedList)
             }
             refreshCurrentLists()
+        }
+    }
+
+    fun generateAiShoppingList(
+        userPrompt: String,
+        selectedDate: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val email = currentUserEmail ?: return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // 1. Gather Context (History) from local DB
+                // UWAGA: Upewnij się, że dodałeś metodę getLastLists do DAO!
+                val recentLists = dao.getLastLists(email)
+                val productContext = recentLists
+                    .flatMap { it.items }
+                    .map { it.name }
+                    .distinct()
+                    .take(50)
+
+                // 2. Prepare Request
+                val request = AiShoppingRequest(
+                    prompt = userPrompt,
+                    productContext = productContext
+                )
+
+                // 3. Get Token safely via lambda
+                val rawToken = getToken() // Wywołanie wstrzykniętej funkcji
+                if (rawToken == null) {
+                    onError("User not logged in (Token missing)")
+                    return@launch
+                }
+                val token = "Bearer $rawToken"
+
+                // 4. Call Backend
+                val generatedItems = aiService.generateShoppingList(token, request)
+
+                // 5. Convert Response
+                val newShoppingListItems = generatedItems.map {
+                    ShoppingListItem(
+                        name = it.name,
+                        quantity = it.quantity,
+                        description = it.description ?: "",
+                        bought = false
+                    )
+                }
+
+                // 6. Save to Database
+                val newList = ShoppingList(
+                    name = "AI Plan (${generatedItems.size} items)",
+                    date = selectedDate,
+                    userEmail = email,
+                    items = newShoppingListItems
+                )
+                dao.insert(newList)
+
+                refreshCurrentLists()
+                onSuccess()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onError(e.message ?: "Unknown error occurred")
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 

@@ -1,24 +1,19 @@
 package study.snacktrackmobile.presentation.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import study.snacktrackmobile.data.model.ShoppingList
@@ -33,7 +28,9 @@ import java.util.Locale
 @Composable
 fun ShoppingListScreen(
     viewModel: ShoppingListViewModel,
-    selectedDate: String
+    selectedDate: String,
+    isUserPremium: Boolean,       // <--- Nowy parametr
+    onNavigateToPremium: () -> Unit // <--- Callback do przekierowania
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var showCopyDialog by remember { mutableStateOf(false) }
@@ -42,75 +39,209 @@ fun ShoppingListScreen(
     var newlyAddedListId by remember { mutableStateOf<Long?>(null) }
     var showDeleteListDialog by remember { mutableStateOf<ShoppingList?>(null) }
 
+    // AI & Premium States
+    var showAiDialog by remember { mutableStateOf(false) }
+    var showPremiumUpsellDialog by remember { mutableStateOf(false) }
+    var aiPrompt by remember { mutableStateOf("") }
+    val isLoading by viewModel.isLoading.collectAsState()
+
     LaunchedEffect(selectedDate) {
         viewModel.setDate(selectedDate)
     }
 
     val lists by viewModel.shoppingLists.collectAsState()
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(lists) { list ->
-            val isNew = list.id == newlyAddedListId
-            val backgroundColor by animateColorAsState(
-                targetValue = if (isNew) Color(0xFFE0F7FA) else Color(0xFFF5F5F5)
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(lists) { list ->
+                val isNew = list.id == newlyAddedListId
+                val backgroundColor by animateColorAsState(
+                    targetValue = if (isNew) Color(0xFFE0F7FA) else Color(0xFFF5F5F5)
+                )
 
-            ShoppingListItemCard(
-                list = list,
-                backgroundColor = backgroundColor,
-                viewModel = viewModel,
-                onDeleteList = { showDeleteListDialog = list }
-            )
+                ShoppingListItemCard(
+                    list = list,
+                    backgroundColor = backgroundColor,
+                    viewModel = viewModel,
+                    onDeleteList = { showDeleteListDialog = list }
+                )
 
-            if (isNew) {
-                LaunchedEffect(list.id) {
-                    kotlinx.coroutines.delay(2000)
-                    newlyAddedListId = null
+                if (isNew) {
+                    LaunchedEffect(list.id) {
+                        kotlinx.coroutines.delay(2000)
+                        newlyAddedListId = null
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 1. ADD BUTTON
+                    Button(
+                        onClick = { showDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE0E0E0),
+                            contentColor = Color.Black
+                        )
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Black)
+                        Spacer(Modifier.width(4.dp))
+                        Text("New", fontFamily = montserratFont, color = Color.Black, maxLines = 1)
+                    }
+
+                    // 2. COPY BUTTON
+                    Button(
+                        onClick = { showCopyDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE0E0E0),
+                            contentColor = Color.Black
+                        )
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = Color.Black)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Copy", fontFamily = montserratFont, color = Color.Black, maxLines = 1)
+                    }
+
+                    // 3. AI BUTTON (Z Logicznym sprawdzaniem Premium)
+                    Button(
+                        onClick = {
+                            if (isUserPremium) {
+                                showAiDialog = true
+                            } else {
+                                showPremiumUpsellDialog = true
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            // Jeśli Premium: Fioletowy, Jeśli Free: Szary z kłódką (opcjonalnie) lub taki sam
+                            containerColor = if (isUserPremium) Color(0xFFD1C4E9) else Color(0xFFE0E0E0),
+                            contentColor = Color.Black
+                        )
+                    ) {
+                        if (isUserPremium) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = "AI", tint = Color.Black)
+                        } else {
+                            // Kłódka dla użytkowników bez premium
+                            Icon(Icons.Default.Lock, contentDescription = "Locked", tint = Color.Gray)
+                        }
+                        Spacer(Modifier.width(4.dp))
+                        Text("AI", fontFamily = montserratFont, color = Color.Black)
+                    }
                 }
             }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Loading Overlay
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable(enabled = false) { },
+                contentAlignment = Alignment.Center
             ) {
-                Button(
-                    onClick = { showDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE0E0E0),
-                        contentColor = Color.Black
-                    )
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add list", tint = Color.Black)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add new", fontFamily = montserratFont, color = Color.Black)
-                }
-
-                Button(
-                    onClick = { showCopyDialog = true },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE0E0E0),
-                        contentColor = Color.Black
-                    )
-                ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy lists", tint = Color.Black)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Copy", fontFamily = montserratFont, color = Color.Black)
-                }
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
     }
 
-    // Dialog tworzenia nowej listy
+    // --- DIALOGS ---
+
+    // 1. PREMIUM UPSELL DIALOG (Dla użytkowników Free)
+    if (showPremiumUpsellDialog) {
+        AlertDialog(
+            onDismissRequest = { showPremiumUpsellDialog = false },
+            icon = {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(48.dp))
+            },
+            title = { Text("Premium Feature") },
+            text = {
+                Text(
+                    "AI Shopping Assistant is available only for Premium users.\n\nUpgrade now to let AI plan your shopping based on your history!",
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPremiumUpsellDialog = false
+                        onNavigateToPremium() // Przenosi do ekranu Premium
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Text("Go Premium")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPremiumUpsellDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // 2. AI Dialog (Tylko dla Premium - działa jak wcześniej)
+    if (showAiDialog) {
+        AlertDialog(
+            onDismissRequest = { showAiDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("AI Assistant")
+                }
+            },
+            text = {
+                Column {
+                    Text("Do you want to give more information for your shopping list?")
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = aiPrompt,
+                        onValueChange = { aiPrompt = it },
+                        label = { Text("e.g. I want to make pizza today") },
+                        placeholder = { Text("Leave empty for auto-generation") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "We will use your previous shopping history to personalize the results.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showAiDialog = false
+                        viewModel.generateAiShoppingList(
+                            userPrompt = aiPrompt,
+                            selectedDate = selectedDate,
+                            onSuccess = { aiPrompt = "" },
+                            onError = { error -> println("AI Error: $error") }
+                        )
+                    }
+                ) { Text("Generate") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAiDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // 3. Create New List Dialog
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -118,7 +249,7 @@ fun ShoppingListScreen(
             text = {
                 TextField(
                     value = newListName,
-                    onValueChange = { if (it.length <= 40) newListName = it }, // limit 40 znaków
+                    onValueChange = { if (it.length <= 40) newListName = it },
                     label = { Text("List name") },
                     singleLine = true
                 )
@@ -137,6 +268,8 @@ fun ShoppingListScreen(
             dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancel") } }
         )
     }
+
+    // 4. Copy List Dialog
     if (showCopyDialog) {
         DatePickerDialog(
             onDismissRequest = { showCopyDialog = false },
@@ -161,9 +294,7 @@ fun ShoppingListScreen(
         }
     }
 
-
-
-    // Dialog potwierdzenia usunięcia listy
+    // 5. Delete Confirmation Dialog
     if (showDeleteListDialog != null) {
         AlertDialog(
             onDismissRequest = { showDeleteListDialog = null },
@@ -182,6 +313,7 @@ fun ShoppingListScreen(
     }
 }
 
+// Element listy zakupów (Card)
 @Composable
 fun ShoppingListItemCard(
     list: ShoppingList,
@@ -204,7 +336,7 @@ fun ShoppingListItemCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xffF3F0F0))
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -325,7 +457,7 @@ fun ShoppingListItemCard(
         }
     }
 
-    // Dialog dodawania pozycji
+    // --- DIALOGI ITEMÓW (Bez zmian) ---
     if (showAddItemDialog) {
         AlertDialog(
             onDismissRequest = { showAddItemDialog = false },
@@ -355,12 +487,7 @@ fun ShoppingListItemCard(
             confirmButton = {
                 TextButton(onClick = {
                     if (newItemName.isNotBlank() && newItemQuantity.isNotBlank()) {
-                        viewModel.addItemToList(
-                            list,
-                            newItemName,
-                            newItemQuantity,
-                            newItemDescription
-                        )
+                        viewModel.addItemToList(list, newItemName, newItemQuantity, newItemDescription)
                         newItemName = ""
                         newItemQuantity = ""
                         newItemDescription = ""
@@ -402,13 +529,7 @@ fun ShoppingListItemCard(
             confirmButton = {
                 TextButton(onClick = {
                     val oldItem = itemToEdit ?: return@TextButton
-                    viewModel.editItemInList(
-                        list,
-                        oldItem,
-                        editedItemName,
-                        editedItemQuantity,
-                        editedItemDescription
-                    )
+                    viewModel.editItemInList(list, oldItem, editedItemName, editedItemQuantity, editedItemDescription)
                     showEditItemDialog = false
                 }) { Text("Save") }
             },
@@ -442,7 +563,4 @@ fun ShoppingListItemCard(
             }
         )
     }
-
-
-
 }

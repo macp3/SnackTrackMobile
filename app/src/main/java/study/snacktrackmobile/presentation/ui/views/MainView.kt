@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -39,7 +38,6 @@ import study.snacktrackmobile.data.api.RecipeApi
 import study.snacktrackmobile.data.api.TrainingApi
 import study.snacktrackmobile.data.api.UserApi
 import study.snacktrackmobile.data.model.User
-import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.model.dto.UserResponse
 import study.snacktrackmobile.data.model.enums.Status
@@ -50,13 +48,14 @@ import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.*
 import study.snacktrackmobile.presentation.ui.components.RecipesScreen
 import study.snacktrackmobile.viewmodel.*
+import study.snacktrackmobile.data.services.AiApiService
+import study.snacktrackmobile.data.database.AppDatabase // Odkomentuj i zaimportuj swoją bazę danych
 import kotlin.jvm.java
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainView(
     navController: NavController,
-    shoppingListViewModel: ShoppingListViewModel,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
     foodViewModel: FoodViewModel,
     userViewModel: UserViewModel,
@@ -80,6 +79,34 @@ fun MainView(
     LaunchedEffect(Unit) {
         authToken = TokenStorage.getToken(context)
     }
+
+    // ---------------------------------------------------------
+    // KONFIGURACJA SHOPPING LIST VIEW MODEL (AI + Context)
+    // ---------------------------------------------------------
+
+    // 1. Pobranie instancji bazy danych (Jeśli używasz Room)
+    // val db = remember { AppDatabase.getInstance(context) }
+
+    // 2. Konfiguracja API dla AI
+    val aiApiService = remember {
+        Retrofit.Builder()
+            .baseUrl(ApiConfig.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AiApiService::class.java)
+    }
+
+    // 3. Tworzenie ViewModelu z Fabryką
+    // Zastąp `AppDatabase.getDatabase(context)` swoim sposobem pobierania bazy
+    val shoppingListViewModel: ShoppingListViewModel = viewModel(
+        factory = ShoppingListViewModelFactory(
+            context = context,
+            dao = study.snacktrackmobile.data.database.AppDatabase.getDatabase(context).shoppingListDao(),
+            aiService = aiApiService
+        )
+    )
+    // ---------------------------------------------------------
+
 
     // Ustawienie użytkownika w ViewModel i inicjalizacja daty
     LaunchedEffect(loggedUserEmail) {
@@ -134,6 +161,12 @@ fun MainView(
     }
 
     val userResponse by profileViewModel.user.collectAsState()
+
+    // OBLICZANIE STATUSU PREMIUM
+    // Funkcja isPremiumActive pochodzi z pliku PremiumScreen.kt (ten sam pakiet)
+    val isPremium = remember(userResponse) {
+        isPremiumActive(userResponse?.premiumExpiration)
+    }
 
     LaunchedEffect(authToken) {
         authToken?.let { token ->
@@ -228,13 +261,17 @@ fun MainView(
                     )
                     "Recipes" -> RecipesScreen(
                         viewModel = recipesViewModel,
-                        foodViewModel = foodViewModel, // 🔹 Przekazujemy FoodViewModel
-                        navController = navController, // 🔹 Przekazujemy NavController
+                        foodViewModel = foodViewModel,
+                        navController = navController,
                     )
 
                     "Shopping" -> ShoppingListScreen(
                         viewModel = shoppingListViewModel,
-                        selectedDate = selectedDate
+                        selectedDate = selectedDate,
+                        isUserPremium = isPremium, // <-- Przekazanie statusu Premium
+                        onNavigateToPremium = {
+                            selectedTab = "Premium" // <-- Przekierowanie do zakładki Premium
+                        }
                     )
                     "Profile" -> ProfileScreen(
                         viewModel = profileViewModel,
@@ -252,7 +289,6 @@ fun MainView(
                                 navController = navController,
                                 foodViewModel = foodViewModel,
                                 onProductClick = { product ->
-                                    // tymczasowy produkt z AddProductScreen ma id = -1
                                     selectedProduct = product
                                     isEditMode = false
                                 }
@@ -267,7 +303,7 @@ fun MainView(
                                     isEditMode = false
                                 },
                                 registeredAlimentationViewModel = registeredAlimentationViewModel,
-                                isEditMode = selectedProduct!!.id > 0 // 🔹 PUT tylko dla istniejących
+                                isEditMode = selectedProduct!!.id > 0
                             )
                         }
                     }
@@ -370,7 +406,6 @@ fun DrawerContent(
             .padding(vertical = 32.dp, horizontal = 16.dp)
     ) {
         // Premium z gradientem i badge "Pro"
-        // Premium z ikoną i badge "Pro"
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -505,4 +540,3 @@ fun UserResponse.toUser(): User {
         streak = this.streak
     )
 }
-
