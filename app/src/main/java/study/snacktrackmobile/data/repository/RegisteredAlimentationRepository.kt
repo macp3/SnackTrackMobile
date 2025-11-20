@@ -21,14 +21,18 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
 
     suspend fun addEntry(
         token: String,
-        essentialId: Int,
-        mealName: String,
+        essentialId: Int? = null,
+        mealId: Int? = null,      // <--- ID Przepisu (Meal w backendzie)
+        mealApiId: Int? = null,
+        mealName: String,         // <--- np. "BREAKFAST"
         date: String,
-        amount: Float?,
-        pieces: Float?
+        amount: Float? = null,
+        pieces: Float? = null
     ): Boolean {
         val body = RegisteredAlimentationRequest(
             essentialId = essentialId,
+            mealId = mealId,
+            mealApiId = mealApiId,
             timestamp = date,
             mealName = mealName.lowercase(),
             amount = amount,

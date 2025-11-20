@@ -29,7 +29,8 @@ fun AddProductScreen(
     navController: NavController,
     foodViewModel: FoodViewModel,
     onProductClick: (RegisteredAlimentationResponse) -> Unit,
-    isRecipeMode: Boolean = false
+    isRecipeMode: Boolean = false,
+    onAddMealClick: () -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -150,23 +151,21 @@ fun AddProductScreen(
         // Przyciski na dole (tylko jeśli nie tryb przepisu)
         if (!isRecipeMode) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 DisplayButton(
                     "Add new product",
-                    onClick = {
-                        navController.navigate("MainView?tab=AddProductToDatabase&meal=$selectedMeal&date=$selectedDate")
-                    },
+                    onClick = { navController.navigate("MainView?tab=AddProductToDatabase&meal=$selectedMeal&date=$selectedDate") },
                     modifier = Modifier.size(width = 120.dp, height = 60.dp),
                     fontSize = 14
                 )
                 Spacer(modifier = Modifier.width(16.dp))
+
+                // TUTAJ ZMIANA:
                 DisplayButton(
                     "Add meal",
-                    onClick = { /* TODO: Add meal logic */ },
+                    onClick = onAddMealClick, // <--- Wywołujemy callback
                     modifier = Modifier.size(width = 120.dp, height = 60.dp),
                     fontSize = 14
                 )

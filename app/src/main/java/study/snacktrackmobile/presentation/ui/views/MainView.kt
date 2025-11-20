@@ -50,6 +50,7 @@ import study.snacktrackmobile.presentation.ui.components.RecipesScreen
 import study.snacktrackmobile.viewmodel.*
 import study.snacktrackmobile.data.services.AiApiService
 import study.snacktrackmobile.data.database.AppDatabase // Odkomentuj i zaimportuj swoją bazę danych
+import study.snacktrackmobile.data.model.dto.RecipeResponse
 import kotlin.jvm.java
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +71,7 @@ fun MainView(
     var rightDrawerOpen by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
     var alimentationToEdit by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
+    var recipeToOpen by remember { mutableStateOf<RecipeResponse?>(null) }
     var selectedProduct by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
     val leftDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -157,6 +159,7 @@ fun MainView(
         "Meals" -> true
         "Training" -> userTraining != null
         "Shopping" -> true
+        "Recipes" -> true
         else -> false
     }
 
@@ -248,9 +251,17 @@ fun MainView(
                         viewModel = registeredAlimentationViewModel,
                         navController = navController,
                         onEditProduct = { product ->
-                            selectedProduct = product
-                            isEditMode = true
-                            selectedTab = "AddProduct"
+                            // LOGIKA KLIKNIĘCIA
+                            if (product.meal != null) {
+                                // To jest PRZEPIS -> idziemy do zakładki Recipes i ustawiamy przepis do wyświetlenia
+                                recipeToOpen = product.meal // <-- BEZPOŚREDNIE PRZYPISANIE
+                                selectedTab = "Recipes"
+                            } else {
+                                // To jest ZWYKŁY PRODUKT -> idziemy do edycji produktu
+                                selectedProduct = product
+                                isEditMode = true
+                                selectedTab = "AddProduct"
+                            }
                         }
                     )
                     "Training" -> TrainingView(
@@ -262,7 +273,11 @@ fun MainView(
                     "Recipes" -> RecipesScreen(
                         viewModel = recipesViewModel,
                         foodViewModel = foodViewModel,
+                        registeredAlimentationViewModel = registeredAlimentationViewModel, // Przekazujemy VM
                         navController = navController,
+                        selectedDate = selectedDate,
+                        recipeToOpen = recipeToOpen,
+                        onRecipeOpened = { recipeToOpen = null }// Przekazujemy wybraną datę z kalendarza
                     )
 
                     "Shopping" -> ShoppingListScreen(
@@ -291,6 +306,12 @@ fun MainView(
                                 onProductClick = { product ->
                                     selectedProduct = product
                                     isEditMode = false
+                                },
+                                // DODAJEMY OBSŁUGĘ Add Meal -> Przełącz na Recipes
+                                onAddMealClick = {
+                                    selectedTab = "Recipes"
+                                    recipesViewModel.setScreen("Discover") // Lub "My recipes" zależnie co wolisz
+                                    authToken?.let { token -> recipesViewModel.loadAllRecipes(token) }
                                 }
                             )
                         } else {

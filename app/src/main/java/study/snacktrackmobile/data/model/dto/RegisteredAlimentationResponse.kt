@@ -9,7 +9,7 @@ data class RegisteredAlimentationResponse(
     val userId: Int,
     val essentialFood: EssentialFoodResponse? = null,
     val mealApi: ApiFoodResponseDetailed? = null,
-    val meal: MealResponse? = null,
+    val meal: RecipeResponse? = null,
     val timestamp: String,
     val amount: Float?,
     val pieces: Float? = null,

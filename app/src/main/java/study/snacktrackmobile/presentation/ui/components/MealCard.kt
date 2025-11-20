@@ -1,7 +1,5 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import DropdownField
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,56 +7,32 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.Meal
-import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.util.Locale
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.rememberDatePickerState
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,22 +48,9 @@ fun MealCard(
     val coroutineScope = rememberCoroutineScope()
 
     var showCopyDialog by remember { mutableStateOf(false) }
-    var fromMealName by remember { mutableStateOf("breakfast") }
     val mealOptions = listOf("breakfast", "lunch", "dinner", "supper", "snack")
-    val datePickerState = rememberDatePickerState()
 
-    val protein = meal.alimentations.sumOf {
-        calcNutrient(it, (it.essentialFood?.protein ?: it.mealApi?.protein)?.toFloat())
-    }
-    val fat = meal.alimentations.sumOf {
-        calcNutrient(it, (it.essentialFood?.fat ?: it.mealApi?.fat)?.toFloat())
-    }
-    val carbs = meal.alimentations.sumOf {
-        calcNutrient(it, (it.essentialFood?.carbohydrates ?: it.mealApi?.carbohydrates)?.toFloat())
-    }
-    val kcal = meal.alimentations.sumOf {
-        calcNutrient(it, (it.essentialFood?.calories ?: it.mealApi?.calorie)?.toFloat())
-    }
+    val summary = meal.calculateTotalMacros()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -146,7 +107,6 @@ fun MealCard(
                     onDismiss = { showCopyDialog = false },
                     onConfirm = { fromDate, fromMealName ->
                         coroutineScope.launch {
-                            val token = TokenStorage.getToken(context) ?: return@launch
                             viewModel.copyMeal(
                                 context = context,
                                 fromDate = fromDate,
@@ -167,7 +127,8 @@ fun MealCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "${String.format("%.0f", kcal)} kcal",
+                    // Użycie obiektu summary
+                    "${String.format("%.0f", summary.kcal)} kcal",
                     style = MaterialTheme.typography.bodyMedium,
                     fontFamily = montserratFont,
                     textAlign = TextAlign.Start,
@@ -175,7 +136,8 @@ fun MealCard(
                 )
 
                 Text(
-                    "${String.format("%.1f", protein)}P ${String.format("%.1f", fat)}F ${String.format("%.1f", carbs)}C",
+                    // Użycie obiektu summary
+                    "${String.format("%.1f", summary.protein)}P ${String.format("%.1f", summary.fat)}F ${String.format("%.1f", summary.carbs)}C",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = montserratFont,
                     textAlign = TextAlign.End,
@@ -215,12 +177,87 @@ fun MealCard(
 
 fun calcNutrient(
     entry: RegisteredAlimentationResponse,
-    baseValue: Float?
+    baseValue: Float? // Ten parametr jest używany tylko dla essentialFood, dla meal jest ignorowany
 ): Double {
+    // PRZYPADEK B: To jest PRODUKT (EssentialFood / MealApi)
     val per100 = (baseValue ?: 0f).toDouble()
     val defaultWeight = (entry.essentialFood?.defaultWeight ?: 100f).toDouble()
     val pieces = (entry.pieces ?: 0).toDouble()
     val grams = (entry.amount ?: 0f).toDouble()
     val totalGrams = if (pieces > 0.0) pieces * defaultWeight else grams
     return per100 * (totalGrams / 100.0)
+}
+
+data class MacroSummary(
+    val kcal: Double = 0.0,
+    val protein: Double = 0.0,
+    val fat: Double = 0.0,
+    val carbs: Double = 0.0
+)
+
+fun Meal.calculateTotalMacros(): MacroSummary {
+    var kcalSum = 0.0
+    var proteinSum = 0.0
+    var fatSum = 0.0
+    var carbsSum = 0.0
+
+    this.alimentations.forEach { alimentation ->
+        // 1. OBSŁUGA PRZEPISU (Recipe)
+        if (alimentation.meal != null) {
+            val recipe = alimentation.meal
+            val servings = alimentation.pieces ?: 1f
+
+            recipe.ingredients.forEach { ing ->
+                val ef = ing.essentialFood
+                val api = ing.essentialApi
+
+                val baseKcal = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
+                val baseP = (ef?.protein ?: api?.protein ?: 0f).toDouble()
+                val baseF = (ef?.fat ?: api?.fat ?: 0f).toDouble()
+                val baseC = (ef?.carbohydrates ?: api?.carbohydrates ?: 0f).toDouble()
+
+                val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
+                val iAmount = ing.amount ?: 0f
+                val iPieces = ing.pieces ?: 0f
+
+                val ratio = when {
+                    iPieces > 0 -> (iPieces * baseWeight) / 100.0
+                    iAmount > 0 -> iAmount.toDouble() / 100.0
+                    else -> 0.0
+                }
+
+                kcalSum += baseKcal * ratio * servings
+                proteinSum += baseP * ratio * servings
+                fatSum += baseF * ratio * servings
+                carbsSum += baseC * ratio * servings
+            }
+        }
+        // 2. OBSŁUGA POJEDYNCZEGO PRODUKTU (EssentialFood lub MealApi)
+        else {
+            val ef = alimentation.essentialFood
+            val api = alimentation.mealApi
+
+            val baseKcal = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
+            val baseP = (ef?.protein ?: api?.protein ?: 0f).toDouble()
+            val baseF = (ef?.fat ?: api?.fat ?: 0f).toDouble()
+            val baseC = (ef?.carbohydrates ?: api?.carbohydrates ?: 0f).toDouble()
+
+            val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
+            val userAmount = alimentation.amount ?: 0f
+            val userPieces = alimentation.pieces ?: 0f
+
+            val ratio = when {
+                userPieces > 0 -> (userPieces * baseWeight) / 100.0
+                userAmount > 0 -> userAmount.toDouble() / 100.0
+                else -> 0.0
+            }
+
+            kcalSum += baseKcal * ratio
+            proteinSum += baseP * ratio
+            fatSum += baseF * ratio
+            carbsSum += baseC * ratio
+        }
+    }
+
+    return MacroSummary(kcalSum, proteinSum, fatSum, carbsSum)
 }

@@ -39,15 +39,14 @@ enum class AddRecipeStep {
 fun RecipesScreen(
     viewModel: RecipeViewModel,
     foodViewModel: FoodViewModel,
-    navController: NavController
+    navController: NavController,
+    registeredAlimentationViewModel: RegisteredAlimentationViewModel, // Nowy parametr,
+    selectedDate: String? = null,
+    recipeToOpen: RecipeResponse? = null,
+    onRecipeOpened: () -> Unit = {}
 ) {
     val context = LocalContext.current
-
-    val registeredAlimentationViewModelInstance: RegisteredAlimentationViewModel by lazy {
-        RegisteredAlimentationViewModel(RegisteredAlimentationRepository(Request.api))
-    }
     val userRepository: UserRepository by lazy { UserRepository() }
-
     val selectedMode by viewModel.screen.collectAsState()
     val recipes by viewModel.recipes.collectAsState()
     val favouriteIds by viewModel.favouriteIds.collectAsState()
@@ -55,12 +54,9 @@ fun RecipesScreen(
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var existingImageUrl by remember { mutableStateOf<String?>(null) }
-
-    var token by remember { mutableStateOf("") }
-
-    // UI States
     var selectedRecipeDetails by remember { mutableStateOf<RecipeResponse?>(null) }
 
+    var token by remember { mutableStateOf("") }
     // Form States
     var editingRecipeId by remember { mutableStateOf<Int?>(null) }
 
@@ -85,6 +81,12 @@ fun RecipesScreen(
             token = t
             userRepository.getUserId(t).onSuccess { id -> viewModel.setCurrentUserId(id) }
             viewModel.loadMyRecipes(t)
+        }
+    }
+    LaunchedEffect(recipeToOpen) {
+        if (recipeToOpen != null) {
+            selectedRecipeDetails = recipeToOpen
+            onRecipeOpened() // Informujemy MainView, że przepis został otwarty
         }
     }
 
@@ -229,7 +231,12 @@ fun RecipesScreen(
             recipe = r,
             isAuthor = (currentUserId != null && r.authorId == currentUserId),
             isFavourite = favouriteIds.contains(r.id),
-            onBack = { selectedRecipeDetails = null },
+            selectedDate = selectedDate ?: "", // Przekazujemy datę
+            registeredAlimentationViewModel = registeredAlimentationViewModel, // Przekazujemy VM
+            onBack = {
+                // Powrót do listy przepisów
+                selectedRecipeDetails = null
+            },
             onEdit = { startEditing(r) },
             onDelete = {
                 viewModel.deleteRecipe(token, r.id)
@@ -356,7 +363,7 @@ fun RecipesScreen(
                                 alimentation = dummyAlimentation,
                                 selectedDate = "",
                                 selectedMeal = "",
-                                registeredAlimentationViewModel = registeredAlimentationViewModelInstance,
+                                registeredAlimentationViewModel = registeredAlimentationViewModel,
                                 onBack = {
                                     currentStep = AddRecipeStep.FORM
                                     tempSelectedProduct = null

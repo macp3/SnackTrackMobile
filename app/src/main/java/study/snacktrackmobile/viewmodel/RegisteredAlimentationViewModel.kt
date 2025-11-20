@@ -20,15 +20,7 @@ import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import study.snacktrackmobile.data.storage.TokenStorage
 import androidx.compose.runtime.State
 import retrofit2.HttpException
-
-
-private data class Quadruple<A, B, C, D>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D
-)
-
+import study.snacktrackmobile.data.model.dto.RecipeResponse
 
 class RegisteredAlimentationViewModel(private val repository: RegisteredAlimentationRepository) :
     ViewModel() {
@@ -83,41 +75,63 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
 
     private fun mapToUi(input: List<RegisteredAlimentationResponse>): List<Meal> {
         return input
+            // Grupowanie po porze dnia (mealName)
             .groupBy { normalizeMealName(it.mealName ?: "Other") }
-            .map { (mealName, entries) ->
+            .map { (dailyMealName, entries) ->
 
                 var kcalSum = 0.0
 
                 val recalculatedEntries = entries.map { entry ->
-                    val ef = entry.essentialFood
-                    val api = entry.mealApi
+                    // SPRAWDZAMY CZY TO PRZEPIS (Backend: Meal)
+                    if (entry.meal != null) {
+                        // Mamy cały obiekt przepisu w entry.meal
+                        val recipeData = entry.meal
 
-                    val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
-                    val baseCalories = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
-                    val baseProtein = (ef?.protein ?: api?.protein ?: 0f).toDouble()
-                    val baseFat = (ef?.fat ?: api?.fat ?: 0f).toDouble()
-                    val baseCarbs = (ef?.carbohydrates ?: api?.carbohydrates ?: 0f).toDouble()
+                        // Sumujemy kcal ze wszystkich składników przepisu
+                        val totalRecipeKcal = recipeData.ingredients.sumOf { ing ->
+                            val ef = ing.essentialFood
+                            val api = ing.essentialApi
 
-                    val piecesCount = (entry.pieces ?: 0).toDouble()
-                    val amount = entry.amount ?: 0f
+                            // Logika wyciągania kalorii z EssentialFood lub Api
+                            val baseCal = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
+                            val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
 
-                    val ratio = when {
-                        piecesCount > 0 -> (piecesCount * baseWeight) / 100.0 // pieces * defaultWeight grams -> /100 -> ratio
-                        amount > 0f -> amount.toDouble() / 100.0
-                        else -> baseWeight / 100.0
+                            val iAmount = ing.amount ?: 0f
+                            val iPieces = ing.pieces ?: 0f
+
+                            val ratio = when {
+                                iPieces > 0 -> (iPieces * baseWeight) / 100.0
+                                iAmount > 0 -> iAmount.toDouble() / 100.0
+                                else -> 0.0
+                            }
+                            baseCal * ratio
+                        }
+
+                        // Mnożymy przez ilość porcji zapisaną w dzienniku
+                        val servings = entry.pieces ?: 1f
+                        kcalSum += (totalRecipeKcal * servings)
+
+                        entry // Zwracamy wpis (ProductRow go wyświetli)
                     }
+                    // SPRAWDZAMY CZY TO ZWYKŁY PRODUKT
+                    else {
+                        val ef = entry.essentialFood
+                        val api = entry.mealApi
+                        val baseCal = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
+                        val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
 
-                    val kcal = baseCalories * ratio
-                    val protein = baseProtein * ratio
-                    val fat = baseFat * ratio
-                    val carbs = baseCarbs * ratio
-
-                    kcalSum += kcal
-                    entry
+                        val ratio = when {
+                            (entry.pieces ?: 0f) > 0 -> ((entry.pieces!!.toDouble()) * baseWeight) / 100.0
+                            (entry.amount ?: 0f) > 0 -> (entry.amount!!.toDouble()) / 100.0
+                            else -> 0.0
+                        }
+                        kcalSum += (baseCal * ratio)
+                        entry
+                    }
                 }
 
                 Meal(
-                    name = mealName,
+                    name = dailyMealName,
                     kcal = kcalSum.toInt(),
                     alimentations = recalculatedEntries
                 )
@@ -179,7 +193,15 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
     ) {
         viewModelScope.launch {
             val token = TokenStorage.getToken(context) ?: return@launch
-            repository.addEntry(token, essentialId, mealName, date, amount, pieces)
+            // Tu używamy essentialId
+            repository.addEntry(
+                token = token,
+                essentialId = essentialId,
+                mealName = mealName,
+                date = date,
+                amount = amount,
+                pieces = pieces
+            )
             loadMeals(token, date)
         }
     }
@@ -206,7 +228,39 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         }
     }
 
+    fun addRecipeToMeal(
+        context: Context,
+        recipe: RecipeResponse, // Przepis z UI
+        date: String,
+        mealName: String,
+        servings: Float
+    ) {
+        viewModelScope.launch {
+            val token = TokenStorage.getToken(context) ?: return@launch
 
+            try {
+                // Wysyłamy JEDEN request z ID przepisu (recipe.id -> mealId)
+                val success = repository.addEntry(
+                    token = token,
+                    mealId = recipe.id,
+                    essentialId = null,
+                    mealName = mealName,
+                    date = date,
+                    pieces = servings,
+                    amount = null
+                )
+
+                if (success) {
+                    loadMeals(token, date)
+                    Toast.makeText(context, "Recipe added to $mealName", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Failed to add recipe", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     companion object {
         fun provideFactory(repository: RegisteredAlimentationRepository): ViewModelProvider.Factory {
