@@ -1,10 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.10"
+    // Używamy aliasu z katalogu, żeby wersja zgadzała się z Kotlinem (2.0.21)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms.google.services)
-    id("kotlin-kapt")
+    // Zamiast id("kotlin-kapt") używamy KSP
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -41,9 +43,9 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.3" // dopasuj do wersji Compose
-    }
+    // Dla Kotlina 2.0+ ten blok często nie jest już potrzebny,
+    // ale jeśli go zostawiasz, upewnij się, że nie koliduje.
+    // Wtyczka kotlin.compose powinna to obsłużyć automatycznie.
 }
 
 dependencies {
@@ -52,7 +54,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
-    implementation("androidx.compose.ui:ui") // zastępuje libs.androidx.ui
+    implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
@@ -60,8 +62,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     // Kotlinx Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:0.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Zaktualizowana wersja
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0") // Zaktualizowana wersja
 
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -89,10 +91,14 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation("com.squareup.okhttp3:okhttp-urlconnection:4.11.0")
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
 
+    // Room (Zaktualizowane do użycia aliasów i KSP)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    // Zamiast kapt używamy ksp
+    ksp(libs.androidx.room.compiler)
+
+    implementation(libs.play.services.cast.framework)
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Testy
