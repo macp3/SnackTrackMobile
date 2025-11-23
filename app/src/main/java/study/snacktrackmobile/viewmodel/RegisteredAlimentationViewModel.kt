@@ -3,6 +3,7 @@ package study.snacktrackmobile.viewmodel
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -11,16 +12,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import study.snacktrackmobile.data.model.Meal
 import study.snacktrackmobile.data.model.Product
+import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
-import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import study.snacktrackmobile.data.storage.TokenStorage
-import androidx.compose.runtime.State
-import retrofit2.HttpException
-import study.snacktrackmobile.data.model.dto.RecipeResponse
+import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 
 class RegisteredAlimentationViewModel(private val repository: RegisteredAlimentationRepository) :
     ViewModel() {
@@ -37,7 +37,7 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
     private val _errorMessage = mutableStateOf<String?>(null)
     val errorMessage: State<String?> = _errorMessage
 
-    //tymczasowo
+    // tymczasowo
     private val allProducts = listOf(
         Product(1, "Bread", "100 g", 247, 13f, 4.2f, 41f),
         Product(2, "Milk", "200 ml", 60, 3.2f, 3.3f, 5f),
@@ -138,9 +138,6 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
             }
     }
 
-
-
-
     fun updateMealProduct(
         context: Context,
         productId: Int,
@@ -159,10 +156,6 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
             }
         }
     }
-
-
-
-
 
     fun deleteEntry(token: String, id: Int) {
         viewModelScope.launch {
@@ -183,9 +176,11 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         else allProducts.filter { it.name.contains(query, ignoreCase = true) }
     }
 
+    // 🔹 ZAKTUALIZOWANA FUNKCJA ADD
     fun addMealProduct(
         context: Context,
-        essentialId: Int,
+        essentialId: Int? = null, // Teraz opcjonalne
+        mealApiId: Int? = null,   // Nowe pole
         mealName: String,
         date: String,
         amount: Float? = null,
@@ -193,16 +188,23 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
     ) {
         viewModelScope.launch {
             val token = TokenStorage.getToken(context) ?: return@launch
-            // Tu używamy essentialId
-            repository.addEntry(
-                token = token,
-                essentialId = essentialId,
-                mealName = mealName,
-                date = date,
-                amount = amount,
-                pieces = pieces
-            )
-            loadMeals(token, date)
+
+            try {
+                // UWAGA: Musisz upewnić się, że w Repository funkcja addEntry też przyjmuje mealApiId!
+                repository.addEntry(
+                    token = token,
+                    essentialId = essentialId,
+                    mealApiId = mealApiId, // Przekazujemy ID z API
+                    mealName = mealName,
+                    date = date,
+                    amount = amount,
+                    pieces = pieces
+                )
+                loadMeals(token, date)
+            } catch (e: Exception) {
+                _errorMessage.value = "Error adding product: ${e.message}"
+                e.printStackTrace()
+            }
         }
     }
 
@@ -240,10 +242,12 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
 
             try {
                 // Wysyłamy JEDEN request z ID przepisu (recipe.id -> mealId)
+                // Używamy nullable dla essentialId
                 val success = repository.addEntry(
                     token = token,
                     mealId = recipe.id,
                     essentialId = null,
+                    mealApiId = null,
                     mealName = mealName,
                     date = date,
                     pieces = servings,
@@ -276,6 +280,3 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         }
     }
 }
-
-
-
