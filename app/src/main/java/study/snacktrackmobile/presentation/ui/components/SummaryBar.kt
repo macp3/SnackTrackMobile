@@ -34,10 +34,40 @@ fun SummaryBar() {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SummaryInfo("kcal", String.format("%.0f", SummaryBarState.totalKcal))
-            SummaryInfo("Protein", String.format("%.1fg", SummaryBarState.totalProtein))
-            SummaryInfo("Fat", String.format("%.1fg", SummaryBarState.totalFat))
-            SummaryInfo("Carbs", String.format("%.1fg", SummaryBarState.totalCarbs))
+            SummaryInfo(
+                label = "kcal",
+                value = String.format(
+                    "%.0f/%.0f",
+                    SummaryBarState.totalKcal,
+                    SummaryBarState.limitKcal
+                )
+            )
+            SummaryInfo(
+                label = "Protein",
+                value = String.format(
+                    "%.1f/%.1fg",
+                    SummaryBarState.totalProtein,
+                    SummaryBarState.limitProtein
+                )
+            )
+
+            SummaryInfo(
+                label = "Fat",
+                value = String.format(
+                    "%.1f/%.1fg",
+                    SummaryBarState.totalFat,
+                    SummaryBarState.limitFat
+                )
+            )
+
+            SummaryInfo(
+                label = "Carbs",
+                value = String.format(
+                    "%.1f/%.1fg",
+                    SummaryBarState.totalCarbs,
+                    SummaryBarState.limitCarbs
+                )
+            )
         }
     }
 }

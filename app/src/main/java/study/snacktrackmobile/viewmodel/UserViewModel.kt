@@ -7,9 +7,12 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import okhttp3.Request
+import study.snacktrackmobile.data.api.UserApi
 import study.snacktrackmobile.data.model.LoginResponse
 import study.snacktrackmobile.data.repository.UserRepository
 import study.snacktrackmobile.data.storage.TokenStorage
+import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import study.snacktrackmobile.presentation.ui.state.UiState
 
 class UserViewModel : ViewModel() {
@@ -68,5 +71,14 @@ class UserViewModel : ViewModel() {
         }
     }
 
+    suspend fun loadUserParameters(token: String) {
+        val userApi: UserApi = study.snacktrackmobile.data.api.Request.userApi
+        val response = userApi.getBodyParameters("Bearer $token")
 
+        // Przypisanie limitów do stanu widoku
+        SummaryBarState.limitKcal = response.calorieLimit
+        SummaryBarState.limitProtein = response.proteinLimit
+        SummaryBarState.limitFat = response.fatLimit
+        SummaryBarState.limitCarbs = response.carbohydratesLimit
+    }
 }

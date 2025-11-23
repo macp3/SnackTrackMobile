@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import study.snacktrackmobile.data.model.Meal
+import study.snacktrackmobile.data.model.dto.BodyParametersResponse
 
 object SummaryBarState {
 
@@ -11,6 +12,12 @@ object SummaryBarState {
     var totalProtein by mutableStateOf(0f)
     var totalFat by mutableStateOf(0f)
     var totalCarbs by mutableStateOf(0f)
+
+    // Nowe pola na limity z BodyParametersResponse
+    var limitKcal by mutableStateOf(1f)
+    var limitProtein by mutableStateOf(1f)
+    var limitFat by mutableStateOf(1f)
+    var limitCarbs by mutableStateOf(1f)
 
     fun update(meals: List<Meal>) {
         var kcalSum = 0.0

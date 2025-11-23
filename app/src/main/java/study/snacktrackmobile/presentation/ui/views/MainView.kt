@@ -52,6 +52,9 @@ import study.snacktrackmobile.data.services.AiApiService
 import study.snacktrackmobile.data.database.AppDatabase // Odkomentuj i zaimportuj swoją bazę danych
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import kotlin.jvm.java
+import androidx.activity.compose.BackHandler
+import android.app.Activity
+import android.content.ContextWrapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +83,7 @@ fun MainView(
     var authToken by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         authToken = TokenStorage.getToken(context)
+        userViewModel.loadUserParameters(authToken ?: return@LaunchedEffect)
     }
 
     // ---------------------------------------------------------
@@ -181,6 +185,41 @@ fun MainView(
         if (selectedTab == "Recipes") {
             authToken?.let { token ->
                 recipesViewModel.loadAllRecipes(token)
+            }
+        }
+    }
+
+    // POBRANIE AKTYWNOŚCI DO ZAMYKANIA APLIKACJI
+    val activity = LocalContext.current
+
+    // OBSŁUGA PRZYCISKU WSTECZ
+    BackHandler(enabled = true) {
+        when {
+            // 1. Zamknij prawy panel powiadomień
+            rightDrawerOpen -> rightDrawerOpen = false
+
+            // 2. Zamknij lewe menu
+            leftDrawerState.isOpen -> scope.launch { leftDrawerState.close() }
+
+            // 3. Zamknij szczegóły przepisu
+            selectedTab == "Recipes" && recipeToOpen != null -> {
+                recipeToOpen = null
+            }
+
+            // 4. Zamknij edycję/dodawanie produktu
+            selectedTab == "AddProduct" && selectedProduct != null -> {
+                selectedProduct = null
+                isEditMode = false
+            }
+
+            // 5. Wróć do ekranu głównego (Meals), jeśli jesteś gdzie indziej
+            selectedTab != "Meals" -> {
+                selectedTab = "Meals"
+            }
+
+            // 6. EXIT: Jesteś na głównym ekranie -> zamknij aplikację (zachowaj token)
+            else -> {
+                context.findActivity()?.finish()
             }
         }
     }
@@ -560,4 +599,10 @@ fun UserResponse.toUser(): User {
         status = Status.valueOf(this.status), // zakładając, że masz enum Status
         streak = this.streak
     )
+}
+
+fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
