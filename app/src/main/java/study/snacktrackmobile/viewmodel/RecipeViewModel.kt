@@ -186,6 +186,20 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         }
     }
 
+    // Dodaj w RecipeViewModel
+
+    // Nowa funkcja do pobierania pełnych danych
+    fun openRecipeDetails(token: String, recipeId: Int, onLoaded: (RecipeResponse) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.getRecipeDetails(token, recipeId)
+            result.onSuccess { fullRecipe ->
+                onLoaded(fullRecipe)
+            }.onFailure {
+                _errorMessage.value = "Failed to load details: ${it.message}"
+            }
+        }
+    }
+
     companion object {
         fun provideFactory(repo: RecipeRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {

@@ -65,4 +65,10 @@ interface RecipeApi {
         @Path("mealId") mealId: Int,
         @Part image: MultipartBody.Part
     ): Response<String>
+
+    @GET("meals/{id}/details")
+    suspend fun getRecipeDetails(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int
+    ): RecipeResponse
 }

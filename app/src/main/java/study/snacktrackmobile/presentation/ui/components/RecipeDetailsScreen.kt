@@ -1,6 +1,5 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,11 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,8 +19,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
@@ -33,15 +30,15 @@ fun RecipeDetailsScreen(
     recipe: RecipeResponse,
     isAuthor: Boolean,
     isFavourite: Boolean,
-    selectedDate: String, // Data do dodania
-    registeredAlimentationViewModel: RegisteredAlimentationViewModel, // VM do zapisu
+    selectedDate: String,
+    registeredAlimentationViewModel: RegisteredAlimentationViewModel,
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onToggleFavourite: () -> Unit
 ) {
     val context = LocalContext.current
-    var showMealDialog by remember { mutableStateOf(false) } // Stan dla dialogu wyboru posiłku
+    var showMealDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -49,7 +46,7 @@ fun RecipeDetailsScreen(
                 .fillMaxSize()
                 .background(Color.White)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp) // Padding na dole, żeby FloatingButton nie zasłaniał treści
+                .padding(bottom = 80.dp)
         ) {
             // --- IMAGE PLACEHOLDER ---
             Box(
@@ -59,8 +56,6 @@ fun RecipeDetailsScreen(
                     .background(Color.LightGray),
                 contentAlignment = Alignment.Center
             ) {
-                // ... (Wyświetlanie obrazka bez zmian)
-
                 // Back Button
                 IconButton(
                     onClick = onBack,
@@ -107,40 +102,54 @@ fun RecipeDetailsScreen(
                     }
                 }
 
-                // ... (Reszta wyświetlania nazwy, opisu i składników bez zmian)
                 Spacer(modifier = Modifier.height(16.dp))
-                Divider()
+                HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
                     text = recipe.name,
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
-                // ... reszta textów ...
+
+                if (!recipe.description.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = recipe.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.DarkGray
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.Black)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                recipe.ingredients.forEach { ingredient ->
-                    // ... (kod wyświetlania RecipeDetailIngredientRow bez zmian)
-                    // Pamiętaj, by używać logiki z poprzedniego pliku do mapowania na dummyAlimentation
-                    val essentialFood = ingredient.essentialFood
-                    val essentialApi=  ingredient.essentialApi
-                    // ... (twoja logika mapowania)
-                    if (essentialFood != null) {
-                        val dummy = RegisteredAlimentationResponse(
-                            id = ingredient.id, userId = 0, essentialFood = essentialFood, mealApi = null, meal = null,
-                            timestamp = "", amount = ingredient.amount ?: 0f, pieces = ingredient.pieces ?: 0f, mealName = ""
-                        )
-                        RecipeDetailIngredientRow(dummy)
-                    } else if (essentialApi != null) {
-                        val dummy = RegisteredAlimentationResponse(
-                            id = ingredient.id, userId = 0, essentialFood = null, mealApi = essentialApi, meal = null,
-                            timestamp = "", amount = ingredient.amount ?: 0f, pieces = ingredient.pieces ?: 0f, mealName = ""
-                        )
-                        RecipeDetailIngredientRow(dummy)
+                // 🔹 LISTA SKŁADNIKÓW
+                if (recipe.ingredients.isEmpty()) {
+                    Text("No ingredients", color = Color.Gray)
+                } else {
+                    recipe.ingredients.forEach { ingredient ->
+                        // Sprawdzamy, czy któryś ze składników istnieje
+                        if (ingredient.essentialFood != null || ingredient.essentialApi != null) {
+
+                            val dummy = RegisteredAlimentationResponse(
+                                id = ingredient.id,
+                                userId = 0,
+                                // 1. Mapujemy lokalne jedzenie
+                                essentialFood = ingredient.essentialFood,
+                                // 2. Mapujemy jedzenie z API (To tutaj był problem!)
+                                mealApi = ingredient.essentialApi,
+                                meal = null,
+                                timestamp = "",
+                                amount = ingredient.amount ?: 0f,
+                                pieces = ingredient.pieces ?: 0f,
+                                mealName = ""
+                            )
+
+                            RecipeDetailIngredientRow(dummy)
+                        }
                     }
                 }
             }
@@ -159,7 +168,7 @@ fun RecipeDetailsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add", )
+                Icon(Icons.Default.Add, contentDescription = "Add")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "Add to Diary",
@@ -172,7 +181,6 @@ fun RecipeDetailsScreen(
 
     // --- DIALOG WYBORU POSIŁKU ---
     if (showMealDialog) {
-        // Dodajemy stan do przechowywania liczby porcji (domyślnie 1)
         var servingsInput by remember { mutableStateOf("1") }
 
         AlertDialog(
@@ -180,31 +188,25 @@ fun RecipeDetailsScreen(
             title = { Text("Select Meal", fontFamily = montserratFont) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
-                    // NOWOŚĆ: Pole do wprowadzenia liczby porcji
                     TextInput(
                         value = servingsInput,
                         onValueChange = { newValue ->
-                            // Prosta walidacja: akceptujemy tylko cyfry i kropkę
                             if (newValue.all { it.isDigit() || it == '.' }) {
                                 servingsInput = newValue
                             }
                         },
                         label = "Servings",
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
-                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                         isError = false
                     )
 
                     val meals = listOf("Breakfast", "Lunch", "Dinner", "Supper", "Snack")
                     meals.forEach { meal ->
-                        val servings = servingsInput.toFloatOrNull() ?: 1f // Konwersja na float (domyślnie 1.0)
+                        val servings = servingsInput.toFloatOrNull() ?: 1f
 
                         Button(
                             onClick = {
-                                // Walidacja: upewnij się, że porcje są > 0
                                 if (servings > 0f) {
                                     registeredAlimentationViewModel.addRecipeToMeal(
                                         context = context,
@@ -224,7 +226,6 @@ fun RecipeDetailsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(meal, color = Color(0xFF00695C), fontFamily = montserratFont)
-                                // NOWOŚĆ: Wyświetlanie 2*servings
                                 Text(
                                     text = "(${String.format("%.1f", servings)} servings)",
                                     color = Color(0xFF00695C),
@@ -250,9 +251,33 @@ fun RecipeDetailsScreen(
 fun RecipeDetailIngredientRow(
     alimentation: RegisteredAlimentationResponse
 ) {
-    val food = alimentation.essentialFood ?: return
+    val name = alimentation.essentialFood?.name
+        ?: alimentation.mealApi?.name
+        ?: "Unknown Ingredient"
 
-    // Logika wyświetlania ilości (taka sama jak w ProductRow)
+    // --- DEBUGOWANIE ---
+    // Jeśli nazwa jest nieznana, wyświetlimy co siedzi w obiekcie
+    if (name == "Unknown Ingredient") {
+        val apiDebug = alimentation.mealApi
+        val id = apiDebug?.id ?: "null"
+        val rawName = apiDebug?.name ?: "null"
+        Text(
+            text = "DEBUG ERROR: API ID=$id, Name=$rawName",
+            color = Color.Red,
+            fontSize = 10.sp
+        )
+    }
+    // -------------------
+
+    val baseKcal = alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toFloat() ?: 0f
+    val baseP = alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein ?: 0f
+    val baseF = alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat ?: 0f
+    val baseC = alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates ?: 0f
+
+    val defaultWeight = alimentation.essentialFood?.defaultWeight
+        ?: alimentation.mealApi?.defaultWeight
+        ?: 100f
+
     val amountText = when {
         alimentation.pieces != null && alimentation.pieces > 0 ->
             "${alimentation.pieces} piece${if (alimentation.pieces > 1) "s" else ""}"
@@ -261,11 +286,17 @@ fun RecipeDetailIngredientRow(
         else -> "-"
     }
 
-    // Obliczanie makro
-    val kcal = calcNutrient(alimentation, food.calories)
-    val protein = calcNutrient(alimentation, food.protein)
-    val fat = calcNutrient(alimentation, food.fat)
-    val carbs = calcNutrient(alimentation, food.carbohydrates)
+    fun calculateTotal(baseVal: Float): Double {
+        val pieces = alimentation.pieces ?: 0f
+        val grams = alimentation.amount ?: 0f
+        val totalGrams = if (pieces > 0) pieces * defaultWeight else grams
+        return baseVal * (totalGrams / 100.0)
+    }
+
+    val kcal = calculateTotal(baseKcal)
+    val protein = calculateTotal(baseP)
+    val fat = calculateTotal(baseF)
+    val carbs = calculateTotal(baseC)
 
     Card(
         modifier = Modifier
@@ -281,13 +312,13 @@ fun RecipeDetailIngredientRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Lewa strona: Nazwa i ilość
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = food.name ?: "-",
+                    text = name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontFamily = montserratFont,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
                 )
                 Text(
                     text = amountText,
@@ -297,13 +328,13 @@ fun RecipeDetailIngredientRow(
                 )
             }
 
-            // Prawa strona: Makro (bez przycisku usuwania)
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "${String.format("%.0f", kcal)} kcal",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = montserratFont,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
                 Text(
                     text = "${String.format("%.1f", protein)}P ${String.format("%.1f", fat)}F ${String.format("%.1f", carbs)}C",

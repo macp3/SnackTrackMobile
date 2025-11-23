@@ -6,20 +6,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ApiFoodResponseDetailed(
-    val id: Int,
-    val name: String? = null,
-
-    @SerialName("calorie")
-    val calorie: Int? = null,
-
-    val protein: Float? = null,
-    val carbohydrates: Float? = null,
-    val fat: Float? = null,
-
-    val defaultWeight: Float? = null,
-    val servingSizeUnit: String? = null,
-
-    val brandName: String? = null,
-
-    val quantity: String? = null
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String? = null,
+    @SerialName("calorie") val calorie: Int? = null, // Backend wysyła "calorie" (int)
+    @SerialName("protein") val protein: Float? = null,
+    @SerialName("carbohydrates") val carbohydrates: Float? = null,
+    @SerialName("fat") val fat: Float? = null,
+    @SerialName("defaultWeight") val defaultWeight: Float? = null,
+    @SerialName("servingSizeUnit") val servingSizeUnit: String? = null,
+    @SerialName("brandName") val brandName: String? = null,
+    @SerialName("quantity") val quantity: String? = null
 )

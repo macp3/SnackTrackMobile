@@ -1,6 +1,5 @@
 package study.snacktrackmobile.data.converters
 
-import study.snacktrackmobile.data.model.EssentialFood
 import study.snacktrackmobile.data.model.Ingredient
 import study.snacktrackmobile.data.model.Recipe
 import study.snacktrackmobile.data.model.dto.IngredientResponse

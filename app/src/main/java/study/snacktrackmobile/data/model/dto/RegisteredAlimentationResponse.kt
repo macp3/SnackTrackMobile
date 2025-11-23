@@ -1,17 +1,25 @@
 package study.snacktrackmobile.data.model.dto
 
 import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class RegisteredAlimentationResponse(
     val id: Int,
     val userId: Int,
+
+    @SerialName("essentialFood")
     val essentialFood: EssentialFoodResponse? = null,
+
+    // Tutaj w widoku mapujemy 'essentialApi' na 'mealApi',
+    // więc typ musi być ApiFoodResponseDetailed
+    @SerialName("mealApi")
     val mealApi: ApiFoodResponseDetailed? = null,
+
     val meal: RecipeResponse? = null,
     val timestamp: String,
-    val amount: Float?,
+    val amount: Float? = null,
     val pieces: Float? = null,
     val mealName: String? = null
 )

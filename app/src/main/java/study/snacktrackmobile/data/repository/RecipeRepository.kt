@@ -9,6 +9,14 @@ import study.snacktrackmobile.data.model.dto.RecipeResponse
 import java.io.File
 
 class RecipeRepository(private val api: RecipeApi) {
+    suspend fun getRecipeDetails(token: String, id: Int): Result<RecipeResponse> {
+        return try {
+            val response = api.getRecipeDetails("Bearer $token", id)
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     suspend fun getAllRecipes(token: String): List<RecipeResponse> =
         api.getAllRecipes("Bearer $token")
