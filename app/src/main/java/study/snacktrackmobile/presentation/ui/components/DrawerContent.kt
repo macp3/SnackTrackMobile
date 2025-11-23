@@ -3,17 +3,7 @@ package study.snacktrackmobile.presentation.ui.components
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,7 +13,6 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -31,11 +20,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,8 +34,6 @@ import study.snacktrackmobile.viewmodel.UserViewModel
 fun DrawerContent(
     onClose: () -> Unit,
     onNavigate: (String) -> Unit,
-    onSettings: () -> Unit,
-    onAboutUs: () -> Unit,
     userViewModel: UserViewModel,
     context: Context,
     onLoggedOut: () -> Unit
@@ -64,7 +47,7 @@ fun DrawerContent(
             .background(Color.White)
             .padding(vertical = 32.dp, horizontal = 16.dp)
     ) {
-        // Premium z gradientem i badge "Pro"
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,7 +58,6 @@ fun DrawerContent(
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Ikona gwiazdki z gradientem
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -89,10 +71,8 @@ fun DrawerContent(
             ) {
                 Icon(Icons.Default.Star, contentDescription = "Premium", tint = Color.White)
             }
-
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Tekst Premium z badge
             Box(modifier = Modifier) {
                 Text(
                     "Premium",
@@ -101,24 +81,17 @@ fun DrawerContent(
                     color = Color(0xFF2E7D32)
                 )
 
-                // Badge "Pro" mniejszy, bliżej tekstu i stonowany
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 30.dp, y = 0.dp) // bliżej tekstu
-                        .background(Color(0xFF81C784), shape = RoundedCornerShape(4.dp)) // bardziej stonowany zielony
+                        .offset(x = 30.dp)
+                        .background(Color(0xFF81C784), shape = RoundedCornerShape(4.dp))
                         .padding(horizontal = 4.dp, vertical = 1.dp)
                 ) {
-                    Text(
-                        "Pro",
-                        fontSize = 9.sp,
-                        color = Color.White,
-                        fontFamily = montserratFont
-                    )
+                    Text("Pro", fontSize = 9.sp, color = Color.White, fontFamily = montserratFont)
                 }
             }
         }
-
 
         Spacer(modifier = Modifier.height(24.dp))
         Text("Menu", fontSize = 24.sp, fontFamily = montserratFont, color = Color(0xFF2E7D32))
@@ -146,7 +119,6 @@ fun DrawerContent(
             }
         }
 
-        // Główne sekcje
         DrawerItem(Icons.Default.Restaurant, "Meals") { onNavigate("Meals") }
         DrawerItem(Icons.Default.FitnessCenter, "Training") { onNavigate("Training") }
         DrawerItem(Icons.Default.Book, "Recipes") { onNavigate("Recipes") }
@@ -157,13 +129,11 @@ fun DrawerContent(
         HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Dodatkowe opcje
-        DrawerItem(Icons.Default.Settings, "Settings") { onSettings() }
-        DrawerItem(Icons.Default.Info, "About Us") { onAboutUs() }
+        DrawerItem(Icons.Default.Info, "About Us") { onNavigate("AboutUs") }
+
         DrawerItem(Icons.AutoMirrored.Filled.ExitToApp, "Log Out") { showLogoutDialog = true }
     }
 
-    // Dialog wylogowania
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },

@@ -108,18 +108,10 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .background(Color(0xFFF5F5F5)),
+                .background(Color(0xFFFFFF)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(6.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-            ) {
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -225,7 +217,7 @@ fun ProfileScreen(
             )
         }
     }
-}
+
 
 @Composable
 fun InfoRow(label: String, value: String, fontFamily: FontFamily, valueColor: Color = Color.Black) {

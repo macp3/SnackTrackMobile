@@ -1,30 +1,22 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
+import DropdownField
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.R
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
@@ -75,114 +67,147 @@ fun EditBodyParametersScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-            .padding(16.dp)
+            .background(Color.White)
     ) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(6.dp),
-            modifier = Modifier.fillMaxSize()
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Text(
-                        "Edit Body Parameters",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontFamily = montserratFont,
-                        color = Color.Black
-                    )
-                }
+            item { Spacer(modifier = Modifier.height(16.dp)) }
 
-                item {
-                    DropdownSelector(
-                        label = "Sex",
-                        options = Sex.entries.map { it.name },
-                        selected = sex.name,
-                        onSelect = { sex = Sex.valueOf(it) }
-                    )
-                }
+            item {
+                Text(
+                    "Edit Body Parameters",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontFamily = montserratFont,
+                    color = Color.Black,
+                    textAlign = TextAlign.Center
+                )
+            }
 
-                item { NumberTextField(label = "Height (cm)", value = height, onValueChange = { height = it }) }
-                item { NumberTextField(label = "Weight (kg)", value = weight, onValueChange = { weight = it }) }
-                item { NumberTextField(label = "Age", value = age, onValueChange = { age = it }) }
+            // 🔹 DropdownField zamiast DropdownSelector
+            item {
+                DropdownField(
+                    label = "Sex",
+                    options = Sex.entries.map { it.name },
+                    selected = sex.name,
+                    onSelected = { sex = Sex.valueOf(it) }
+                )
+            }
 
-                item {
-                    DropdownSelector(
-                        label = "Daily activity",
-                        options = listOf("None", "Little", "Average", "Intense", "Professional"),
-                        selected = activityLevel,
-                        onSelect = { activityLevel = it }
-                    )
-                }
+            // 🔹 TextInput zamiast NumberTextField
+            item {
+                TextInput(
+                    value = height,
+                    onValueChange = { height = it },
+                    label = "Height (cm)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+            item {
+                TextInput(
+                    value = weight,
+                    onValueChange = { weight = it },
+                    label = "Weight (kg)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+            item {
+                TextInput(
+                    value = age,
+                    onValueChange = { age = it },
+                    label = "Age",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
 
-                item {
-                    DropdownSelector(
-                        label = "Training intensity",
-                        options = listOf("None", "Little", "Average", "Intense", "Professional"),
-                        selected = trainingIntensity,
-                        onSelect = { trainingIntensity = it }
-                    )
-                }
+            item {
+                DropdownField(
+                    label = "Daily activity",
+                    options = listOf("None", "Little", "Average", "Intense", "Professional"),
+                    selected = activityLevel,
+                    onSelected = { activityLevel = it }
+                )
+            }
 
-                item { NumberTextField(label = "Weekly weight change (kg/week)", value = weeklyWeightChangeTempo, onValueChange = { weeklyWeightChangeTempo = it }) }
-                item { NumberTextField(label = "Goal weight (kg)", value = goalWeight, onValueChange = { goalWeight = it }) }
+            item {
+                DropdownField(
+                    label = "Training intensity",
+                    options = listOf("None", "Little", "Average", "Intense", "Professional"),
+                    selected = trainingIntensity,
+                    onSelected = { trainingIntensity = it }
+                )
+            }
 
-                item {
-                    Button(
-                        onClick = {
-                            // validate numbers
-                            val h = height.toFloatOrNull()
-                            val w = weight.toFloatOrNull()
-                            val a = age.toIntOrNull()
-                            val weekly = weeklyWeightChangeTempo.toFloatOrNull()
-                            val goal = goalWeight.toFloatOrNull()
+            item {
+                TextInput(
+                    value = weeklyWeightChangeTempo,
+                    onValueChange = { weeklyWeightChangeTempo = it },
+                    label = "Weekly weight change (kg/week)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+            item {
+                TextInput(
+                    value = goalWeight,
+                    onValueChange = { goalWeight = it },
+                    label = "Goal weight (kg)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
 
-                            validationError = when {
-                                h == null || h <= 0f -> "Please enter a valid height"
-                                w == null || w <= 0f -> "Please enter a valid weight"
-                                a == null || a <= 0 -> "Please enter a valid age"
-                                weekly == null -> "Please enter valid weekly weight change"
-                                goal == null || goal <= 0f -> "Please enter a valid goal weight"
-                                else -> null
-                            }
+            // 🔹 DisplayButton zamiast zwykłego Button
+            item {
+                DisplayButton(
+                    text = "Save changes",
+                    onClick = {
+                        val h = height.toFloatOrNull()
+                        val w = weight.toFloatOrNull()
+                        val a = age.toIntOrNull()
+                        val weekly = weeklyWeightChangeTempo.toFloatOrNull()
+                        val goal = goalWeight.toFloatOrNull()
 
-                            if (validationError == null) {
-                                scope.launch {
-                                    TokenStorage.getToken(context)?.let { token ->
-                                        val req = BodyParametersRequest(
-                                            sex = sex,
-                                            height = h,
-                                            weight = w,
-                                            age = a,
-                                            dailyActivityFactor = mapLevelToFloatDaily(activityLevel),
-                                            dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
-                                            weeklyWeightChangeTempo = weekly,
-                                            goalWeight = goal
-                                        )
-                                        viewModel.changeBodyParameters(token, req)
-                                        showSuccessDialog = true
-                                    }
+                        validationError = when {
+                            h == null || h <= 0f -> "Please enter a valid height"
+                            w == null || w <= 0f -> "Please enter a valid weight"
+                            a == null || a <= 0 -> "Please enter a valid age"
+                            weekly == null -> "Please enter valid weekly weight change"
+                            goal == null || goal <= 0f -> "Please enter a valid goal weight"
+                            else -> null
+                        }
+
+                        if (validationError == null) {
+                            scope.launch {
+                                TokenStorage.getToken(context)?.let { token ->
+                                    val req = BodyParametersRequest(
+                                        sex = sex,
+                                        height = h,
+                                        weight = w,
+                                        age = a,
+                                        dailyActivityFactor = mapLevelToFloatDaily(activityLevel),
+                                        dailyActivityTrainingFactor = mapLevelToFloatTraining(trainingIntensity),
+                                        weeklyWeightChangeTempo = weekly,
+                                        goalWeight = goal
+                                    )
+                                    viewModel.changeBodyParameters(token, req)
+                                    showSuccessDialog = true
                                 }
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Save changes", color = Color.White, fontFamily = montserratFont)
-                    }
-                }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
         }
     }
 
-    // show validation error
+    // 🔹 AlertDialog bez zmian
     validationError?.let { msg ->
         AlertDialog(
             onDismissRequest = { validationError = null },
@@ -194,7 +219,6 @@ fun EditBodyParametersScreen(
         )
     }
 
-    // success dialog
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -213,89 +237,6 @@ fun EditBodyParametersScreen(
     }
 }
 
-@Composable
-fun NumberTextField(label: String, value: String, onValueChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { if (it.length <= 6) onValueChange(it.filter { c -> c.isDigit() || c == '.' }) },
-        label = { Text(label, color = Color.Black, fontFamily = montserratFont) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier.fillMaxWidth(),
-        textStyle = TextStyle(
-            fontFamily = montserratFont,
-            fontSize = 16.sp,
-            color = Color.Black        // ← tekst wpisywany czarny
-        ),
-    )
-}
-
-@Composable
-fun DropdownSelector(
-    label: String,
-    options: List<String>,
-    selected: String,
-    onSelect: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val rotation by animateFloatAsState(if (expanded) 180f else 0f)
-
-    Column(Modifier.fillMaxWidth()) {
-        Text(label, color = Color.DarkGray, modifier = Modifier.padding(bottom = 4.dp))
-
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(selected, color = Color.Black)
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.rotate(rotation),
-                    tint = Color(0xFF2E7D32)
-                )
-            }
-        }
-
-        AnimatedVisibility(expanded) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(2.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column {
-                    options.forEach { option ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSelect(option)
-                                    expanded = false
-                                }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(option, color = Color.Black)
-                        }
-                        Divider(color = Color.LightGray, thickness = 0.5.dp)
-                    }
-                }
-            }
-        }
-    }
-}
 
 fun mapLevelToFloatDaily(level: String): Float = when (level) {
     "None" -> 0.7f

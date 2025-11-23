@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,9 +65,11 @@ fun AddProductToDatabaseScreen(
                 .verticalScroll(scrollState) // ✅ Umożliwia przewijanie
                 .padding(horizontal = 10.dp)
                 .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Add new product", fontSize = 16.sp, fontFamily = montserratFont)
+            Spacer(modifier.height(16.dp))
+
+            Text("Add new product", fontSize = 24.sp, fontFamily = montserratFont,)
             // Pola formularza
             TextInput(
                 value = name,
@@ -179,7 +182,7 @@ fun AddProductToDatabaseScreen(
                     fontSize = 14
                 )
             } // Koniec przewijanej kolumny
-            Spacer(modifier.height(10.dp))
+            Spacer(modifier.height(16.dp))
         }
     }
 

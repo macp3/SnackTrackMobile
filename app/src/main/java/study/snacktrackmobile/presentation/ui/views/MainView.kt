@@ -219,8 +219,6 @@ fun MainView(
             DrawerContent(
                 onClose = { scope.launch { leftDrawerState.close() } },
                 onNavigate = { selectedTab = it },
-                onSettings = { navController.navigate("SettingsView") },
-                onAboutUs = { navController.navigate("AboutUsView") },
                 userViewModel = userViewModel,
                 context = context,
                 onLoggedOut = { navController.navigate("StartView") { popUpTo("MainView") { inclusive = true } } }
@@ -249,7 +247,7 @@ fun MainView(
             },
             bottomBar = {
                 Column {
-                    if (selectedTab != "AddProduct" && selectedTab != "AddProductToDatabase") {
+                    if (selectedTab != "AddProduct" && selectedTab != "AddProductToDatabase" && selectedTab != "AboutUs") {
                         SummaryBar()
                     }
                     BottomNavigationBar(
@@ -370,6 +368,9 @@ fun MainView(
                                 profileViewModel.updatePremium(token, newDate)
                             }
                         }
+                    )
+                    "AboutUs" -> AboutUsScreen(
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }

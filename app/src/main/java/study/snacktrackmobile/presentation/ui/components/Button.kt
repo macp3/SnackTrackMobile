@@ -29,7 +29,7 @@ fun DisplayButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     fontSize: Int = 18,
-    containerColor: Color = Color(0xFFB7F999) // 👈 Nowy parametr z domyślnym kolorem
+    containerColor: Color = Color(0xFFB7F999)
 ) {
     OutlinedButton(
         onClick = onClick,
@@ -46,7 +46,7 @@ fun DisplayButton(
         Text(
             text = text,
             fontSize = fontSize.sp,
-            fontFamily = montserratFont, // Upewnij się, że masz dostęp do tej czcionki
+            fontFamily = montserratFont,
             color = Color.Black,
             textAlign = TextAlign.Center
         )
