@@ -1,8 +1,17 @@
 package study.snacktrackmobile.presentation.ui.views
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -23,6 +32,7 @@ import study.snacktrackmobile.viewmodel.ShoppingListViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
+import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
 import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
 import study.snacktrackmobile.viewmodel.FoodViewModel
@@ -33,6 +43,7 @@ import java.time.LocalDate
 fun SnackTrackApp() {
     val context = LocalContext.current
     val navController = rememberNavController()
+    var startDestination by remember { mutableStateOf<String?>(null) }
 
     val recipeRepository = RecipeRepository(Request.recipeApi)
     val recipesViewModel: RecipeViewModel = viewModel(
@@ -55,74 +66,96 @@ fun SnackTrackApp() {
     val registeredAlimentationViewModel: RegisteredAlimentationViewModel =
         viewModel(factory = RegisteredAlimentationViewModel.provideFactory(repo))
 
+    LaunchedEffect(Unit) {
+        val existingToken = TokenStorage.getToken(context) // To jest funkcja suspend, tu zadziała!
+        startDestination = if (existingToken != null) "MainView" else "StartView"
+    }
 
-    // === NavHost ===
-    NavHost(navController = navController, startDestination = "StartView") {
-        composable("StartView") {
-            StartView(navController)
+
+    // --- 4. LOGIKA WYŚWIETLANIA ---
+    if (startDestination == null) {
+        // A. POKAZUJEMY EKRAN ŁADOWANIA dopóki sprawdzamy token
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator() // Kręciołek ładowania
         }
+    } else {
+        // B. GDY MAMY JUŻ EKRAN STARTOWY -> POKAZUJEMY NAVHOST
+        NavHost(
+            navController = navController,
+            startDestination = startDestination!! // Wykrzyknik jest bezpieczny, bo jesteśmy w bloku else
+        ) {
 
-        composable("RegisterView") {
-            RegisterView(navController, userViewModel)
-        }
+            composable("StartView") {
+                StartView(navController)
+            }
 
-        composable("LoginView") {
-            LoginView(navController, userViewModel)
-        }
+            composable("RegisterView") {
+                RegisterView(navController, userViewModel)
+            }
 
-        // ✅ Poprawiona trasa MainView: dodanie opcjonalnych argumentów dla głębokiej nawigacji
-        composable(
-            route = "MainView?tab={tab}&meal={meal}&date={date}",
-            arguments = listOf(
-                navArgument("tab") {
-                    type = NavType.StringType
-                    defaultValue = "Meals"
-                },
-                navArgument("meal") {
-                    type = NavType.StringType
-                    defaultValue = "Breakfast"
-                },
-                navArgument("date") {
-                    type = NavType.StringType
-                    defaultValue = LocalDate.now().toString()
-                }
-            )
-        ) { backStackEntry ->
-            val loggedUserEmail by userViewModel.currentUserEmail.collectAsState()
-            val initialTab = backStackEntry.arguments?.getString("tab") ?: "Meals"
-            val initialMeal = backStackEntry.arguments?.getString("meal") ?: "Breakfast"
-            val initialDate = backStackEntry.arguments?.getString("date") ?: LocalDate.now().toString()
+            composable("LoginView") {
+                LoginView(navController, userViewModel)
+            }
 
-            MainView(
-                navController = navController,
-                registeredAlimentationViewModel = registeredAlimentationViewModel,
-                loggedUserEmail = loggedUserEmail ?: "",
-                initialTab = initialTab, // Przekazywanie initial states
-                initialMeal = initialMeal,
-                initialDate = initialDate,
-                foodViewModel = foodViewModel,
-                userViewModel = userViewModel
-            )
-        }
-
-        composable("InitialSurveyView") {
-            InitialSurveyView(navController)
-        }
-
-        composable("MealsDaily/{date}") { backStackEntry ->
-            val selectedDate = backStackEntry.arguments?.getString("date") ?: ""
-            MealsDailyView(
-                selectedDate = selectedDate,
-                viewModel = registeredAlimentationViewModel,
-                navController = navController,
-                onEditProduct = { alimentation ->
-                    // Tutaj decydujesz, co zrobić po kliknięciu produktu
-                    // np. ustawienie stanu w MainView lub nawigacja:
-                    navController.navigate("MainView?tab=AddProduct") {
-                        // dodatkowe opcje jeśli trzeba
+            composable(
+                route = "MainView?tab={tab}&meal={meal}&date={date}",
+                arguments = listOf(
+                    navArgument("tab") {
+                        type = NavType.StringType
+                        defaultValue = "Meals"
+                    },
+                    navArgument("meal") {
+                        type = NavType.StringType
+                        defaultValue = "Breakfast"
+                    },
+                    navArgument("date") {
+                        type = NavType.StringType
+                        defaultValue = LocalDate.now().toString()
                     }
+                )
+            ) { backStackEntry ->
+                val viewModelEmail by userViewModel.currentUserEmail.collectAsState()
+
+                val finalEmail = if (!viewModelEmail.isNullOrBlank()) {
+                    viewModelEmail!!
+                } else {
+                    ""
                 }
-            )
+
+                val initialTab = backStackEntry.arguments?.getString("tab") ?: "Meals"
+                val initialMeal = backStackEntry.arguments?.getString("meal") ?: "Breakfast"
+                val initialDate = backStackEntry.arguments?.getString("date") ?: LocalDate.now().toString()
+
+                MainView(
+                    navController = navController,
+                    registeredAlimentationViewModel = registeredAlimentationViewModel,
+                    loggedUserEmail = finalEmail,
+                    initialTab = initialTab,
+                    initialMeal = initialMeal,
+                    initialDate = initialDate,
+                    foodViewModel = foodViewModel,
+                    userViewModel = userViewModel
+                )
+            }
+
+            composable("InitialSurveyView") {
+                InitialSurveyView(navController)
+            }
+
+            composable("MealsDaily/{date}") { backStackEntry ->
+                val selectedDate = backStackEntry.arguments?.getString("date") ?: ""
+                MealsDailyView(
+                    selectedDate = selectedDate,
+                    viewModel = registeredAlimentationViewModel,
+                    navController = navController,
+                    onEditProduct = { alimentation ->
+                        navController.navigate("MainView?tab=AddProduct")
+                    }
+                )
+            }
         }
     }
 }

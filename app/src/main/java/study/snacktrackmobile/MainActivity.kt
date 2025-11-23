@@ -43,10 +43,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContent {
-            SnackTrackApp()
-        }
-
+        // Logika powiadomień
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             when {
                 ContextCompat.checkSelfPermission(
@@ -63,6 +60,7 @@ class MainActivity : ComponentActivity() {
             fetchAndSendFCMToken()
         }
 
+        // Jedyne wywołanie setContent - tu uruchamiamy aplikację
         setContent {
             SnackTrackMobileTheme {
                 SnackTrackApp()
