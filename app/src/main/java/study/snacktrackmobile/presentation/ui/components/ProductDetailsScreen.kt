@@ -11,11 +11,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
-
 
 @Composable
 fun ProductDetailsScreen(
@@ -26,33 +24,46 @@ fun ProductDetailsScreen(
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
     productId: Int? = null,
     isEditMode: Boolean = false,
-    // 🔹 NOWE: Opcjonalny callback dla trybu przepisu.
-    // Jeśli nie jest null, nie zapisujemy w API, tylko zwracamy wynik.
     onYieldResult: ((Float?, Float?) -> Unit)? = null
 ) {
-    val food = alimentation.essentialFood ?: return
     val context = LocalContext.current
 
-    // 1) Jednostka z produktu (znormalizowana)
-    val unitRaw = food.servingSizeUnit?.lowercase()?.trim()
-    val normalizedUnit = when (unitRaw) {
+    // 🔹 1. BEZPIECZNE POBIERANIE DANYCH (Lokalne vs API)
+    // Jeśli essentialFood jest null (produkt z API), bierzemy dane z mealApi
+    val name = alimentation.essentialFood?.name
+        ?: alimentation.mealApi?.name
+        ?: "Unknown Product"
+
+    val rawUnit = alimentation.essentialFood?.servingSizeUnit
+        ?: alimentation.mealApi?.servingSizeUnit
+
+    val defaultWeight = alimentation.essentialFood?.defaultWeight
+        ?: alimentation.mealApi?.defaultWeight
+        ?: 100f // Domyślna waga dla API jeśli brak danych
+
+    // 🔹 2. Normalizacja jednostki
+    val unitRawString = rawUnit?.lowercase()?.trim()
+    val normalizedUnit = when (unitRawString) {
         "gram" -> "g"
         "milliliter" -> "ml"
-        null, "" -> "g"
-        else -> unitRaw!!
+        null, "" -> "g" // Domyślnie gramy, jeśli API nie podało jednostki
+        else -> unitRawString
     }
 
-    // 2) Dropdown: zawsze "piece" + servingSizeUnit z produktu
+    // 🔹 3. Dropdown: zawsze "piece" + jednostka produktu
     val options: List<String> = listOf("piece", normalizedUnit).distinct()
     var selectedOption by remember { mutableStateOf(options.first()) }
 
-    // 3) Prefill quantity zgodnie z wyborem
+    // 🔹 4. Prefill quantity
     var inputValue by remember {
-        mutableStateOf(if (selectedOption == "piece") "1" else (food.defaultWeight?.toInt()?.toString() ?: ""))
+        mutableStateOf(
+            if (selectedOption == "piece") "1"
+            else (defaultWeight.toInt().toString())
+        )
     }
     var isError by remember { mutableStateOf(false) }
 
-    // 4) UI
+    // 🔹 5. UI
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,8 +71,8 @@ fun ProductDetailsScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Text("Name: ${food.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-        Text("Serving size unit: ${normalizedUnit}", color = Color.Black)
+        Text("Name: $name", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Text("Serving size unit: $normalizedUnit", color = Color.Black)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -71,7 +82,8 @@ fun ProductDetailsScreen(
             options = options,
             onSelected = { new ->
                 selectedOption = new
-                inputValue = if (selectedOption == "piece") "1" else (food.defaultWeight?.toInt()?.toString() ?: "")
+                // Reset wartości przy zmianie typu
+                inputValue = if (selectedOption == "piece") "1" else defaultWeight.toInt().toString()
             }
         )
 
@@ -80,7 +92,7 @@ fun ProductDetailsScreen(
         TextInput(
             value = inputValue,
             onValueChange = { inputValue = it },
-            label = "Quantity (${selectedOption})",
+            label = "Quantity ($selectedOption)",
             isError = isError
         )
 
@@ -94,11 +106,11 @@ fun ProductDetailsScreen(
                     return@DisplayButton
                 }
 
-                // 5) Wylicz amount/pieces
+                // 6) Wylicz amount/pieces
                 val amount: Float? = if (selectedOption == "piece") null else inputValue.toFloatOrNull()
                 val pieces: Float? = if (selectedOption == "piece") inputValue.toFloatOrNull() else null
 
-                // walidacja
+                // Walidacja
                 if (selectedOption == "piece" && pieces == null) {
                     isError = true; return@DisplayButton
                 }
@@ -106,21 +118,28 @@ fun ProductDetailsScreen(
                     isError = true; return@DisplayButton
                 }
 
-                // 🔹 LOGIKA: Sprawdzamy czy jesteśmy w trybie przepisu
+                // 🔹 LOGIKA ZAPISU
                 if (onYieldResult != null) {
+                    // Tryb przepisu (tylko zwracamy dane)
                     onYieldResult(amount, pieces)
                 } else {
-                    // Standardowa logika (Baza Danych)
+                    // Przygotowanie requestu (DTO)
+                    // Musimy sprawdzić, które ID wysłać (lokalne czy API)
+                    val essentialId = alimentation.essentialFood?.id
+                    val mealApiId = alimentation.mealApi?.id
+
+                    // Tworzymy obiekt requestu
+                    val dto = RegisteredAlimentationRequest(
+                        essentialId = essentialId, // Może być null dla produktu z API
+                        mealApiId = mealApiId,     // Może być null dla produktu lokalnego
+                        mealId = alimentation.meal?.id,
+                        timestamp = selectedDate,
+                        mealName = selectedMeal.lowercase(),
+                        amount = amount,
+                        pieces = pieces
+                    )
+
                     if (isEditMode) {
-                        val dto = RegisteredAlimentationRequest(
-                            essentialId = food.id,
-                            mealApiId = alimentation.mealApi?.id,
-                            mealId = alimentation.meal?.id,
-                            timestamp = selectedDate,
-                            mealName = selectedMeal.lowercase(),
-                            amount = amount,
-                            pieces = pieces
-                        )
                         registeredAlimentationViewModel.updateMealProduct(
                             context = context,
                             productId = alimentation.id,
@@ -128,9 +147,23 @@ fun ProductDetailsScreen(
                             date = selectedDate
                         )
                     } else {
+                        // UWAGA: Tutaj używamy generycznej metody addMealProduct
+                        // Jeśli Twoja metoda w ViewModelu przyjmuje 'essentialId' jako nie-nullowy Int,
+                        // musisz ją zaktualizować w ViewModelu, aby przyjmowała DTO lub nullable ID.
+                        // Zakładam, że ViewModel ma metodę obsługującą oba przypadki,
+                        // lub użyjemy tutaj DTO jeśli ViewModel na to pozwala.
+
+                        // Jeśli ViewModel wymaga osobnych parametrów, a essentialId jest null,
+                        // to prawdopodobnie masz tam metodę obsługującą mealApiId lub musisz ją dodać.
+
+                        // Bezpieczniejsza wersja (przekazanie DTO do ViewModelu, jeśli obsługuje):
+                        // registeredAlimentationViewModel.addMealProductFromDto(context, dto)
+
+                        // Wersja dopasowana do Twojego starego kodu (z poprawką na nulle):
                         registeredAlimentationViewModel.addMealProduct(
                             context = context,
-                            essentialId = food.id,
+                            essentialId = essentialId,
+                            mealApiId = mealApiId, // <--- UPEWNIJ SIĘ, ŻE VIEWMODEL TO PRZYJMUJE
                             mealName = selectedMeal,
                             date = selectedDate,
                             amount = amount,

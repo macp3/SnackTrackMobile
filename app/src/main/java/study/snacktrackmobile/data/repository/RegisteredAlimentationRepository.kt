@@ -19,20 +19,22 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         }
     }
 
+    // W RegisteredAlimentationRepository.kt
+
     suspend fun addEntry(
         token: String,
-        essentialId: Int? = null,
-        mealId: Int? = null,      // <--- ID Przepisu (Meal w backendzie)
-        mealApiId: Int? = null,
-        mealName: String,         // <--- np. "BREAKFAST"
+        essentialId: Int? = null, // Zmiana na Nullable
+        mealApiId: Int? = null,   // Dodanie nowego parametru
+        mealId: Int? = null,      // Opcjonalnie dla przepisów
+        mealName: String,
         date: String,
-        amount: Float? = null,
-        pieces: Float? = null
+        amount: Float?,
+        pieces: Float?
     ): Boolean {
         val body = RegisteredAlimentationRequest(
             essentialId = essentialId,
+            mealApiId = mealApiId, // Mapowanie do DTO
             mealId = mealId,
-            mealApiId = mealApiId,
             timestamp = date,
             mealName = mealName.lowercase(),
             amount = amount,

@@ -1,6 +1,8 @@
 [versions]
 agp = "8.9.0"
 kotlin = "2.0.21"
+# Wersja KSP musi pasować do wersji Kotlina (dla 2.0.21 jest to 2.0.21-1.0.26)
+ksp = "2.0.21-1.0.26"
 coreKtx = "1.10.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -14,8 +16,9 @@ firebaseMessagingKtx = "25.0.1"
 navigationCompose = "2.9.5"
 compose-material-icons = "1.6.0"
 firebaseCrashlyticsBuildtools = "3.0.6"
-roomCommonJvm = "2.8.3"
-roomRuntimeJvm = "2.8.3"
+# Ujednolicona wersja Room
+room = "2.6.1"
+playServicesCastFramework = "22.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,11 +40,20 @@ firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messa
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "compose-material-icons" }
 firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
-androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
-androidx-room-runtime-jvm = { group = "androidx.room", name = "room-runtime-jvm", version.ref = "roomRuntimeJvm" }
+
+# Definicje Room
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+play-services-cast-framework = { group = "com.google.android.gms", name = "play-services-cast-framework", version.ref = "playServicesCastFramework" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+# Plugin do serializacji zgodny z wersją Kotlina
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
+# Plugin KSP
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
