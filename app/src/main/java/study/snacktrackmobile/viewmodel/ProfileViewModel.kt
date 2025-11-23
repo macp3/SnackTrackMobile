@@ -14,6 +14,7 @@ import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.dto.BodyParametersResponse
 import study.snacktrackmobile.data.model.dto.UserResponse
 import study.snacktrackmobile.data.network.ApiConfig
+import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import java.io.File
 import java.io.FileOutputStream
 
@@ -110,7 +111,19 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
     // ---------------------------
     fun changeBodyParameters(token: String, request: BodyParametersRequest) {
         viewModelScope.launch {
-            try { api.changeParameters("Bearer $token", request) }
+            try {
+                api.changeParameters("Bearer $token", request)
+                val updated = api.getBodyParameters("Bearer $token")
+
+                // 🔥 2. Zaktualizuj lokalny Flow
+                _bodyParameters.value = updated
+
+                // 🔥 3. Zaktualizuj SummaryBarState (główny UI)
+                SummaryBarState.limitKcal = updated.calorieLimit
+                SummaryBarState.limitProtein = updated.proteinLimit
+                SummaryBarState.limitFat = updated.fatLimit
+                SummaryBarState.limitCarbs = updated.carbohydratesLimit
+            }
             catch (e: Exception) { e.printStackTrace() }
         }
     }

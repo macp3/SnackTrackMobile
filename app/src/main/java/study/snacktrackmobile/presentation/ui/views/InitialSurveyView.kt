@@ -237,12 +237,14 @@ fun InitialSurveyView(navController: NavController) {
 
                     scope.launch {
                         val token = TokenStorage.getToken(context)
+
                         if (token != null) {
                             val result = sendBodyParameters(token, request)
                             if (result.isSuccess) {
                                 navController.navigate("MainView") {
                                     popUpTo("InitialSurveyView") { inclusive = true }
                                 }
+
                             } else {
                                 backendMessage = result.exceptionOrNull()?.message
                             }
