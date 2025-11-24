@@ -1,20 +1,36 @@
 package study.snacktrackmobile.presentation.ui.views
 
 import android.content.Context
+import android.app.Activity
+import android.content.ContextWrapper
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
@@ -24,6 +40,7 @@ import study.snacktrackmobile.data.api.RecipeApi
 import study.snacktrackmobile.data.api.TrainingApi
 import study.snacktrackmobile.data.api.UserApi
 import study.snacktrackmobile.data.model.User
+import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.model.dto.UserResponse
 import study.snacktrackmobile.data.model.enums.Status
@@ -35,12 +52,8 @@ import study.snacktrackmobile.presentation.ui.components.*
 import study.snacktrackmobile.presentation.ui.components.RecipesScreen
 import study.snacktrackmobile.viewmodel.*
 import study.snacktrackmobile.data.services.AiApiService
-import study.snacktrackmobile.data.database.AppDatabase // Odkomentuj i zaimportuj swoją bazę danych
-import study.snacktrackmobile.data.model.dto.RecipeResponse
+import study.snacktrackmobile.data.database.AppDatabase // Odkomentuj jeśli używasz Room
 import kotlin.jvm.java
-import androidx.activity.compose.BackHandler
-import android.app.Activity
-import android.content.ContextWrapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,19 +80,46 @@ fun MainView(
     val context = LocalContext.current
 
     var authToken by remember { mutableStateOf<String?>(null) }
+
+    // Inicjalizacja profilu
+    val userApi = remember {
+        Retrofit.Builder()
+            .baseUrl(ApiConfig.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(UserApi::class.java)
+    }
+    val profileViewModel = remember { ProfileViewModel(userApi) }
+    val userResponse by profileViewModel.user.collectAsState()
+
     LaunchedEffect(Unit) {
         authToken = TokenStorage.getToken(context)
-        userViewModel.loadUserParameters(authToken ?: return@LaunchedEffect)
+        // userViewModel.loadUserParameters - jeśli masz taką metodę, odkomentuj
+        // userViewModel.loadUserParameters(authToken ?: return@LaunchedEffect)
+    }
+
+    LaunchedEffect(authToken) {
+        authToken?.let { token ->
+            profileViewModel.loadProfile(token)
+        }
+    }
+
+    // GLOBAL LOADER - Czekamy na token i usera
+    if (authToken == null || userResponse == null) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color(0xFF2E7D32))
+        }
+        return
     }
 
     // ---------------------------------------------------------
-    // KONFIGURACJA SHOPPING LIST VIEW MODEL (AI + Context)
+    // KONFIGURACJA VIEWMODELI
     // ---------------------------------------------------------
 
-    // 1. Pobranie instancji bazy danych (Jeśli używasz Room)
-    // val db = remember { AppDatabase.getInstance(context) }
-
-    // 2. Konfiguracja API dla AI
+    // 1. AI & Shopping
     val aiApiService = remember {
         Retrofit.Builder()
             .baseUrl(ApiConfig.BASE_URL)
@@ -88,8 +128,6 @@ fun MainView(
             .create(AiApiService::class.java)
     }
 
-    // 3. Tworzenie ViewModelu z Fabryką
-    // Zastąp `AppDatabase.getDatabase(context)` swoim sposobem pobierania bazy
     val shoppingListViewModel: ShoppingListViewModel = viewModel(
         factory = ShoppingListViewModelFactory(
             context = context,
@@ -97,18 +135,8 @@ fun MainView(
             aiService = aiApiService
         )
     )
-    // ---------------------------------------------------------
 
-
-    // Ustawienie użytkownika w ViewModel i inicjalizacja daty
-    LaunchedEffect(loggedUserEmail) {
-        shoppingListViewModel.setUser(loggedUserEmail)
-        if (selectedTab == "Shopping") {
-            shoppingListViewModel.setDate(selectedDate)
-        }
-    }
-
-    // Training API + ViewModel
+    // 2. Training
     val trainingApi = remember {
         Retrofit.Builder()
             .baseUrl(ApiConfig.BASE_URL)
@@ -118,7 +146,7 @@ fun MainView(
     }
     val trainingViewModel = remember { TrainingViewModel(trainingApi) }
 
-    // Recipe API + Repo + ViewModel
+    // 3. Recipes
     val recipeApi = remember {
         Retrofit.Builder()
             .baseUrl(ApiConfig.BASE_URL)
@@ -126,22 +154,17 @@ fun MainView(
             .build()
             .create(RecipeApi::class.java)
     }
-
     val recipeRepository = remember { RecipeRepository(recipeApi) }
     val recipesViewModel: RecipeViewModel = viewModel(
         factory = RecipeViewModel.provideFactory(recipeRepository)
     )
 
+    // 4. 🔹 COMMENTS (NOWOŚĆ)
+    val commentViewModel: CommentViewModel = viewModel(
+        factory = CommentViewModel.provideFactory()
+    )
 
-    // Profile API + ViewModel
-    val userApi = remember {
-        Retrofit.Builder()
-            .baseUrl(ApiConfig.BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(UserApi::class.java)
-    }
-    val profileViewModel = remember { ProfileViewModel(userApi) }
+    // ---------------------------------------------------------
 
     val userTraining by remember { derivedStateOf { trainingViewModel.userTraining } }
 
@@ -153,17 +176,23 @@ fun MainView(
         else -> false
     }
 
-    val userResponse by profileViewModel.user.collectAsState()
-
-    // OBLICZANIE STATUSU PREMIUM
-    // Funkcja isPremiumActive pochodzi z pliku PremiumScreen.kt (ten sam pakiet)
+    // Status Premium
     val isPremium = remember(userResponse) {
         isPremiumActive(userResponse?.premiumExpiration)
     }
 
-    LaunchedEffect(authToken) {
-        authToken?.let { token ->
-            profileViewModel.loadProfile(token)
+    // 🔹 USTAWIENIE ID UŻYTKOWNIKA (Dla Recipes i Comments)
+    LaunchedEffect(userResponse) {
+        if (userResponse != null) {
+            recipesViewModel.setCurrentUserId(userResponse!!.id)
+            commentViewModel.setCurrentUserId(userResponse!!.id) // <-- Tego brakowało
+        }
+    }
+
+    LaunchedEffect(loggedUserEmail) {
+        shoppingListViewModel.setUser(loggedUserEmail)
+        if (selectedTab == "Shopping") {
+            shoppingListViewModel.setDate(selectedDate)
         }
     }
 
@@ -175,43 +204,22 @@ fun MainView(
         }
     }
 
-    // POBRANIE AKTYWNOŚCI DO ZAMYKANIA APLIKACJI
     val activity = LocalContext.current
 
-    // OBSŁUGA PRZYCISKU WSTECZ
     BackHandler(enabled = true) {
         when {
-            // 1. Zamknij prawy panel powiadomień
             rightDrawerOpen -> rightDrawerOpen = false
-
-            // 2. Zamknij lewe menu
             leftDrawerState.isOpen -> scope.launch { leftDrawerState.close() }
-
-            // 3. Zamknij szczegóły przepisu
-            selectedTab == "Recipes" && recipeToOpen != null -> {
-                recipeToOpen = null
-            }
-
-            // 4. Zamknij edycję/dodawanie produktu
+            selectedTab == "Recipes" && recipeToOpen != null -> recipeToOpen = null
             selectedTab == "AddProduct" && selectedProduct != null -> {
                 selectedProduct = null
                 isEditMode = false
             }
-
-            // 5. Wróć do ekranu głównego (Meals), jeśli jesteś gdzie indziej
-            selectedTab != "Meals" -> {
-                selectedTab = "Meals"
-            }
-
-            // 6. EXIT: Jesteś na głównym ekranie -> zamknij aplikację (zachowaj token)
-            else -> {
-                context.findActivity()?.finish()
-            }
+            selectedTab != "Meals" -> selectedTab = "Meals"
+            else -> context.findActivity()?.finish()
         }
     }
 
-
-    // Drawer lewy
     ModalNavigationDrawer(
         drawerState = leftDrawerState,
         gesturesEnabled = !rightDrawerOpen,
@@ -224,7 +232,6 @@ fun MainView(
                 onLoggedOut = { navController.navigate("StartView") { popUpTo("MainView") { inclusive = true } } }
             )
         }
-
     ) {
         Scaffold(
             topBar = {
@@ -274,13 +281,10 @@ fun MainView(
                         viewModel = registeredAlimentationViewModel,
                         navController = navController,
                         onEditProduct = { product ->
-                            // LOGIKA KLIKNIĘCIA
                             if (product.meal != null) {
-                                // To jest PRZEPIS -> idziemy do zakładki Recipes i ustawiamy przepis do wyświetlenia
-                                recipeToOpen = product.meal // <-- BEZPOŚREDNIE PRZYPISANIE
+                                recipeToOpen = product.meal
                                 selectedTab = "Recipes"
                             } else {
-                                // To jest ZWYKŁY PRODUKT -> idziemy do edycji produktu
                                 selectedProduct = product
                                 isEditMode = true
                                 selectedTab = "AddProduct"
@@ -296,20 +300,18 @@ fun MainView(
                     "Recipes" -> RecipesScreen(
                         viewModel = recipesViewModel,
                         foodViewModel = foodViewModel,
-                        registeredAlimentationViewModel = registeredAlimentationViewModel, // Przekazujemy VM
                         navController = navController,
+                        registeredAlimentationViewModel = registeredAlimentationViewModel,
+                        commentViewModel = commentViewModel, // 🔹 Teraz przekazujemy ViewModel
                         selectedDate = selectedDate,
                         recipeToOpen = recipeToOpen,
-                        onRecipeOpened = { recipeToOpen = null }// Przekazujemy wybraną datę z kalendarza
+                        onRecipeOpened = { recipeToOpen = null }
                     )
-
                     "Shopping" -> ShoppingListScreen(
                         viewModel = shoppingListViewModel,
                         selectedDate = selectedDate,
-                        isUserPremium = isPremium, // <-- Przekazanie statusu Premium
-                        onNavigateToPremium = {
-                            selectedTab = "Premium" // <-- Przekierowanie do zakładki Premium
-                        }
+                        isUserPremium = isPremium,
+                        onNavigateToPremium = { selectedTab = "Premium" }
                     )
                     "Profile" -> ProfileScreen(
                         viewModel = profileViewModel,
@@ -330,10 +332,9 @@ fun MainView(
                                     selectedProduct = product
                                     isEditMode = false
                                 },
-                                // DODAJEMY OBSŁUGĘ Add Meal -> Przełącz na Recipes
                                 onAddMealClick = {
                                     selectedTab = "Recipes"
-                                    recipesViewModel.setScreen("Discover") // Lub "My recipes" zależnie co wolisz
+                                    recipesViewModel.setScreen("Discover")
                                     authToken?.let { token -> recipesViewModel.loadAllRecipes(token) }
                                 }
                             )
@@ -441,7 +442,7 @@ fun UserResponse.toUser(): User {
         email = this.email,
         imageUrl = this.imageUrl,
         premiumExpiration = this.premiumExpiration,
-        status = Status.valueOf(this.status), // zakładając, że masz enum Status
+        status = Status.valueOf(this.status),
         streak = this.streak
     )
 }

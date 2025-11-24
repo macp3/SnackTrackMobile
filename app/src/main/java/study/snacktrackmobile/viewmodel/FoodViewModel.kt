@@ -160,20 +160,48 @@ sealed class FoodUiItem {
     abstract val name: String
     abstract val kcal: Float
     abstract val description: String
+    abstract val quantityLabel: String
 
     data class Local(val data: EssentialFoodResponse) : FoodUiItem() {
         override val name: String = data.name ?: "Unknown"
-        // Your local DB JSON shows "calories": 2.0
-        override val kcal: Float = data.calories ?: 0f
         override val description: String = data.description ?: "User Database"
+
+        // Logic: If defaultWeight exists, calculate for 1 piece. Else 100g.
+        private val hasDefaultWeight = (data.defaultWeight != null && data.defaultWeight > 0)
+
+        override val kcal: Float = if (hasDefaultWeight) {
+            // Formula: (kcal per 100g / 100) * weight of 1 piece
+            ((data.calories ?: 0f) / 100f) * data.defaultWeight!!
+        } else {
+            data.calories ?: 0f
+        }
+
+        override val quantityLabel: String = if (hasDefaultWeight) {
+            "1 piece (${data.defaultWeight!!.toInt()} ${data.servingSizeUnit ?: "g"})"
+        } else {
+            "100 ${data.servingSizeUnit ?: "g"}"
+        }
     }
 
     data class Api(val data: ApiFoodResponseDetailed) : FoodUiItem() {
         override val name: String = data.name ?: "Unknown"
-
-        // Ensure ApiFoodResponseDetailed has a field @SerializedName("calorie") val calorie: Float?
-        override val kcal: Float = (data.calorie ?: 0).toFloat()
-
         override val description: String = "${data.brandName ?: "Generic"} (Global DB)"
+
+        // Check if API explicitly says "piece" or if we have a weight to convert
+        private val isPieceDefinedInApi = data.quantity?.contains("piece", ignoreCase = true) == true
+        private val hasDefaultWeight = (data.defaultWeight != null && data.defaultWeight > 0f)
+        private val baseCalorie = (data.calorie ?: 0).toFloat()
+
+        override val kcal: Float = when {
+            isPieceDefinedInApi -> baseCalorie // API already gave kcal for 1 piece
+            hasDefaultWeight -> (baseCalorie / 100f) * data.defaultWeight!! // Convert 100g to 1 piece
+            else -> baseCalorie // Fallback (usually 100g)
+        }
+
+        override val quantityLabel: String = when {
+            isPieceDefinedInApi -> "1 piece"
+            hasDefaultWeight -> "1 piece (${data.defaultWeight!!.toInt()} ${data.servingSizeUnit ?: "g"})"
+            else -> data.quantity?.replace("Per ", "", ignoreCase = true) ?: "100 g"
+        }
     }
 }

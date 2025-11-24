@@ -89,16 +89,21 @@ class RecipeRepository(private val api: RecipeApi) {
 
     suspend fun uploadImage(token: String, recipeId: Int, file: File): Boolean {
         return try {
-            // Tworzenie RequestBody z pliku
             val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            // "image" to nazwa parametru w @RequestParam("image") na backendzie
             val body = MultipartBody.Part.createFormData("image", file.name, requestFile)
 
-            val res = api.uploadImage("Bearer $token", recipeId, body)
-            res.isSuccessful
+            // Wywołujemy API
+            val response = api.uploadImage("Bearer $token", recipeId, body)
+
+            // Sprawdzamy czy kod to 200-299. Nie parsujemy body, bo nie jest nam potrzebne
+            response.isSuccessful
         } catch (e: Exception) {
             e.printStackTrace()
             false
         }
+    }
+
+    suspend fun searchRecipes(token: String, query: String): List<RecipeResponse> {
+        return api.searchMeals("Bearer $token", query)
     }
 }

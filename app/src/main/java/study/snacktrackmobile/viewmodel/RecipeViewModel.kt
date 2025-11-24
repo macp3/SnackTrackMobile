@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -208,5 +210,26 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
                     return RecipeViewModel(repo) as T
                 }
             }
+    }
+
+    private var searchJob: Job? = null
+
+    fun searchRecipes(token: String, query: String) {
+        searchJob?.cancel()
+        if (query.isBlank()) {
+            loadAllRecipes(token) // Jeśli puste, ładuj "Discover" (wszystkie)
+            return
+        }
+
+        searchJob = viewModelScope.launch {
+            delay(500) // Debounce 500ms
+            try {
+                val results = repository.searchRecipes(token, query)
+                _recipes.value = results
+                refreshFavouriteIds(token) // Żeby serduszka działały
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            }
+        }
     }
 }

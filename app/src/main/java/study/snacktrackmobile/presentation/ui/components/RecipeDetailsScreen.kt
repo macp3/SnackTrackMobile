@@ -10,19 +10,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.presentation.ui.views.montserratFont
+import study.snacktrackmobile.viewmodel.CommentViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
@@ -35,7 +39,8 @@ fun RecipeDetailsScreen(
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onToggleFavourite: () -> Unit
+    onToggleFavourite: () -> Unit,
+    commentViewModel: CommentViewModel
 ) {
     val context = LocalContext.current
     var showMealDialog by remember { mutableStateOf(false) }
@@ -48,23 +53,56 @@ fun RecipeDetailsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 80.dp)
         ) {
-            // --- IMAGE PLACEHOLDER ---
+            // --- IMAGE HEADER ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .background(Color.LightGray),
+                    .height(250.dp) // Zwiększyłem trochę wysokość dla lepszego efektu
+                    .background(Color(0xFFEEEEEE)),
                 contentAlignment = Alignment.Center
             ) {
-                // Back Button
+                // 1. Logika wyświetlania obrazka
+                if (!recipe.imageUrl.isNullOrBlank()) {
+                    // Backend zwraca np. "/images/meals/meal_5.jpg", musimy dokleić domenę
+                    // Upewnij się, że ApiConfig.BASE_URL nie ma slasha na końcu lub obsłuż to
+                    // Tutaj zakładam bezpieczne łączenie
+                    val fullUrl = if (recipe.imageUrl.startsWith("http")) {
+                        recipe.imageUrl
+                    } else {
+                        // Usuwamy ewentualny dublujący się slash
+                        val baseUrl = study.snacktrackmobile.data.network.ApiConfig.BASE_URL.removeSuffix("/")
+                        val relativeUrl = recipe.imageUrl.removePrefix("/")
+                        "$baseUrl/$relativeUrl"
+                    }
+
+                    AsyncImage(
+                        model = fullUrl,
+                        contentDescription = "Recipe Image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Placeholder gdy brak zdjęcia
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Restaurant, // Lub inna ikona
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Text("No image", color = Color.Gray, fontSize = 12.sp)
+                    }
+                }
+
+                // Przycisk Wstecz (zawsze na wierzchu)
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(8.dp)
-                        .background(Color.White.copy(alpha = 0.7f), CircleShape)
+                        .padding(16.dp) // Większy padding od krawędzi
+                        .background(Color.Black.copy(alpha = 0.4f), CircleShape) // Ciemniejsze tło dla lepszego kontrastu
                 ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                 }
             }
 
@@ -80,7 +118,7 @@ fun RecipeDetailsScreen(
                         onClick = onToggleFavourite,
                         modifier = Modifier.weight(1f).height(50.dp),
                         fontSize = 12,
-                        containerColor = if(isFavourite) Color(0xFFFF9999) else Color(0xFFB7F999)
+                        containerColor = if(isFavourite) Color(0xFFFF9999) else Color(0xFFB7F999),
                     )
 
                     if (isAuthor) {
@@ -89,7 +127,7 @@ fun RecipeDetailsScreen(
                             onClick = onEdit,
                             modifier = Modifier.weight(1f).height(50.dp),
                             fontSize = 12,
-                            containerColor = Color(0xFFB7F999)
+                            containerColor = Color(0xFFE0E0E0), // Neutralny kolor dla edycji
                         )
 
                         DisplayButton(
@@ -97,7 +135,7 @@ fun RecipeDetailsScreen(
                             onClick = onDelete,
                             modifier = Modifier.weight(1f).height(50.dp),
                             fontSize = 12,
-                            containerColor = Color(0xFFFF9999)
+                            containerColor = Color(0xFFFF9999),
                         )
                     }
                 }
@@ -106,6 +144,7 @@ fun RecipeDetailsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Nazwa i Opis
                 Text(
                     text = recipe.name,
                     style = MaterialTheme.typography.headlineMedium,
@@ -117,29 +156,25 @@ fun RecipeDetailsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = recipe.description,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = Color.DarkGray
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.Black)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 🔹 LISTA SKŁADNIKÓW
+                // Lista składników
                 if (recipe.ingredients.isEmpty()) {
-                    Text("No ingredients", color = Color.Gray)
+                    Text("No ingredients listed.", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
                 } else {
                     recipe.ingredients.forEach { ingredient ->
-                        // Sprawdzamy, czy któryś ze składników istnieje
                         if (ingredient.essentialFood != null || ingredient.essentialApi != null) {
-
                             val dummy = RegisteredAlimentationResponse(
                                 id = ingredient.id,
                                 userId = 0,
-                                // 1. Mapujemy lokalne jedzenie
                                 essentialFood = ingredient.essentialFood,
-                                // 2. Mapujemy jedzenie z API (To tutaj był problem!)
                                 mealApi = ingredient.essentialApi,
                                 meal = null,
                                 timestamp = "",
@@ -147,25 +182,36 @@ fun RecipeDetailsScreen(
                                 pieces = ingredient.pieces ?: 0f,
                                 mealName = ""
                             )
-
                             RecipeDetailIngredientRow(dummy)
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+// Sekcja komentarzy
+                CommentSection(
+                    mealId = recipe.id,
+                    viewModel = commentViewModel,
+                    modifier = Modifier.padding(bottom = 80.dp) // Odstęp od FAB
+                )
+
             }
         }
 
+        // FAB (Add to Diary)
         FloatingActionButton(
             onClick = { showMealDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             containerColor = Color(0xFF2E7D32),
             contentColor = Color.White,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
@@ -173,6 +219,7 @@ fun RecipeDetailsScreen(
                 Text(
                     "Add to Diary",
                     fontFamily = montserratFont,
+                    fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             }
@@ -185,21 +232,25 @@ fun RecipeDetailsScreen(
 
         AlertDialog(
             onDismissRequest = { showMealDialog = false },
-            title = { Text("Select Meal", fontFamily = montserratFont) },
+            title = { Text("Add to Diary", fontFamily = montserratFont, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("How many servings did you eat?", fontSize = 14.sp)
+
                     TextInput(
                         value = servingsInput,
                         onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() || it == '.' }) {
+                            if (newValue.all { it.isDigit() || it == '.' } && newValue.length <= 5) {
                                 servingsInput = newValue
                             }
                         },
-                        label = "Servings",
+                        label = "Servings (e.g. 1.5)",
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                         isError = false
                     )
+
+                    Text("Select meal time:", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top=8.dp))
 
                     val meals = listOf("Breakfast", "Lunch", "Dinner", "Supper", "Snack")
                     meals.forEach { meal ->
@@ -219,18 +270,21 @@ fun RecipeDetailsScreen(
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2F1)),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(meal, color = Color(0xFF00695C), fontFamily = montserratFont)
                                 Text(
-                                    text = "(${String.format("%.1f", servings)} servings)",
+                                    text = "+ ${String.format("%.1f", servings)} portion(s)",
                                     color = Color(0xFF00695C),
                                     fontFamily = montserratFont,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
@@ -240,7 +294,7 @@ fun RecipeDetailsScreen(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showMealDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = Color.Gray)
                 }
             }
         )

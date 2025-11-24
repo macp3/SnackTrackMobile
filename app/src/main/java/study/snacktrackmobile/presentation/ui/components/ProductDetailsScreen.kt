@@ -1,7 +1,14 @@
 package study.snacktrackmobile.presentation.ui.components
 
 import DropdownField
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -9,10 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
@@ -28,8 +39,7 @@ fun ProductDetailsScreen(
 ) {
     val context = LocalContext.current
 
-    // 🔹 1. BEZPIECZNE POBIERANIE DANYCH (Lokalne vs API)
-    // Jeśli essentialFood jest null (produkt z API), bierzemy dane z mealApi
+    // 🔹 1. DANE BAZOWE (Na 100g)
     val name = alimentation.essentialFood?.name
         ?: alimentation.mealApi?.name
         ?: "Unknown Product"
@@ -37,33 +47,77 @@ fun ProductDetailsScreen(
     val rawUnit = alimentation.essentialFood?.servingSizeUnit
         ?: alimentation.mealApi?.servingSizeUnit
 
-    val defaultWeight = alimentation.essentialFood?.defaultWeight
-        ?: alimentation.mealApi?.defaultWeight
-        ?: 100f // Domyślna waga dla API jeśli brak danych
-
-    // 🔹 2. Normalizacja jednostki
-    val unitRawString = rawUnit?.lowercase()?.trim()
-    val normalizedUnit = when (unitRawString) {
-        "gram" -> "g"
-        "milliliter" -> "ml"
-        null, "" -> "g" // Domyślnie gramy, jeśli API nie podało jednostki
-        else -> unitRawString
+    fun extractWeight(quantityStr: String?): Float? {
+        if (quantityStr == null) return null
+        val regex = Regex("(\\d+(?:\\.\\d+)?)\\s*(?:g|ml)", RegexOption.IGNORE_CASE)
+        val match = regex.find(quantityStr)
+        return match?.groupValues?.get(1)?.toFloatOrNull()
     }
 
-    // 🔹 3. Dropdown: zawsze "piece" + jednostka produktu
+    val determinedWeight = alimentation.essentialFood?.defaultWeight
+        ?: alimentation.mealApi?.defaultWeight
+        ?: extractWeight(alimentation.mealApi?.quantity)
+        ?: 100f
+
+    val defaultWeight = if (determinedWeight > 0f) determinedWeight else 100f
+
+    val rawKcal = alimentation.essentialFood?.calories
+        ?: alimentation.mealApi?.calorie?.toFloat()
+        ?: 0f
+
+    val rawP = alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein ?: 0f
+    val rawF = alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat ?: 0f
+    val rawC = alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates ?: 0f
+
+    // Normalizacja do 100g
+    val isApi = alimentation.mealApi != null
+    val needsNormalization = isApi && defaultWeight != 100f
+
+    val baseKcal = if (needsNormalization) (rawKcal * 100f) / defaultWeight else rawKcal
+    val baseP = if (needsNormalization) (rawP * 100f) / defaultWeight else rawP
+    val baseF = if (needsNormalization) (rawF * 100f) / defaultWeight else rawF
+    val baseC = if (needsNormalization) (rawC * 100f) / defaultWeight else rawC
+
+    // 🔹 2. UI SETUP
+    val unitRawString = rawUnit?.lowercase()?.trim()
+    val normalizedUnit = when {
+        unitRawString == "gram" -> "g"
+        unitRawString == "milliliter" -> "ml"
+        (unitRawString.isNullOrEmpty()) -> "g"
+        else -> unitRawString!!
+    }
+
     val options: List<String> = listOf("piece", normalizedUnit).distinct()
     var selectedOption by remember { mutableStateOf(options.first()) }
 
-    // 🔹 4. Prefill quantity
     var inputValue by remember {
         mutableStateOf(
-            if (selectedOption == "piece") "1"
-            else (defaultWeight.toInt().toString())
+            if (alimentation.pieces != null && alimentation.pieces > 0) alimentation.pieces.toString()
+            else if (selectedOption == "piece") "1"
+            else defaultWeight.toInt().toString()
         )
     }
     var isError by remember { mutableStateOf(false) }
 
-    // 🔹 5. UI
+    // 🔹 3. KALKULATOR NA ŻYWO
+    val liveSummary = remember(inputValue, selectedOption) {
+        val qty = inputValue.toFloatOrNull() ?: 0f
+        val totalGrams = if (selectedOption == "piece") {
+            qty * defaultWeight
+        } else {
+            qty
+        }
+        val ratio = totalGrams / 100f
+
+        MacroSummaryUi(
+            kcal = baseKcal * ratio,
+            p = baseP * ratio,
+            f = baseF * ratio,
+            c = baseC * ratio,
+            weight = totalGrams
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -71,10 +125,15 @@ fun ProductDetailsScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Text("Name: $name", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-        Text("Serving size unit: $normalizedUnit", color = Color.Black)
+        Text(name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black, fontFamily = montserratFont)
+        Text(
+            "One piece weights: ${defaultWeight.toInt()} g",
+            color = Color.Gray,
+            fontFamily = montserratFont,
+            fontSize = 14.sp
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         DropdownField(
             label = "Serving unit",
@@ -82,7 +141,6 @@ fun ProductDetailsScreen(
             options = options,
             onSelected = { new ->
                 selectedOption = new
-                // Reset wartości przy zmianie typu
                 inputValue = if (selectedOption == "piece") "1" else defaultWeight.toInt().toString()
             }
         )
@@ -91,12 +149,69 @@ fun ProductDetailsScreen(
 
         TextInput(
             value = inputValue,
-            onValueChange = { inputValue = it },
+            onValueChange = { newValue ->
+                if (newValue.length <= 8) {
+                    inputValue = newValue
+                }
+            },
             label = "Quantity ($selectedOption)",
-            isError = isError
+            isError = isError,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 🔹 4. KARTA PODSUMOWANIA (Zabezpieczona przed rozjeżdżaniem)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "Summary (${String.format("%.0f", liveSummary.weight)} g)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontFamily = montserratFont,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    maxLines = 1, // Zabezpieczenie tytułu
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider(color = Color.LightGray)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Używamy wag (weight) aby każda kolumna miała tyle samo miejsca
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween // To teraz działa jako fallback, bo używamy weight
+                ) {
+                    MacroItem(
+                        value = liveSummary.kcal,
+                        label = "Kcal",
+                        color = Color(0xFF2E7D32),
+                        modifier = Modifier.weight(1f) // Równy podział (25%)
+                    )
+                    MacroItem(
+                        value = liveSummary.p,
+                        label = "Protein",
+                        modifier = Modifier.weight(1f)
+                    )
+                    MacroItem(
+                        value = liveSummary.f,
+                        label = "Fat",
+                        modifier = Modifier.weight(1f)
+                    )
+                    MacroItem(
+                        value = liveSummary.c,
+                        label = "Carbs",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
 
         DisplayButton(
             text = if (onYieldResult != null) "Add to Recipe" else (if (isEditMode) "Save" else "Add"),
@@ -106,32 +221,24 @@ fun ProductDetailsScreen(
                     return@DisplayButton
                 }
 
-                // 6) Wylicz amount/pieces
-                val amount: Float? = if (selectedOption == "piece") null else inputValue.toFloatOrNull()
-                val pieces: Float? = if (selectedOption == "piece") inputValue.toFloatOrNull() else null
-
-                // Walidacja
-                if (selectedOption == "piece" && pieces == null) {
-                    isError = true; return@DisplayButton
-                }
-                if (selectedOption != "piece" && amount == null) {
-                    isError = true; return@DisplayButton
+                val inputFloat = inputValue.toFloatOrNull()
+                if (inputFloat == null || inputFloat <= 0) {
+                    isError = true
+                    return@DisplayButton
                 }
 
-                // 🔹 LOGIKA ZAPISU
+                val amount: Float? = if (selectedOption == "piece") null else inputFloat
+                val pieces: Float? = if (selectedOption == "piece") inputFloat else null
+
                 if (onYieldResult != null) {
-                    // Tryb przepisu (tylko zwracamy dane)
                     onYieldResult(amount, pieces)
                 } else {
-                    // Przygotowanie requestu (DTO)
-                    // Musimy sprawdzić, które ID wysłać (lokalne czy API)
                     val essentialId = alimentation.essentialFood?.id
                     val mealApiId = alimentation.mealApi?.id
 
-                    // Tworzymy obiekt requestu
                     val dto = RegisteredAlimentationRequest(
-                        essentialId = essentialId, // Może być null dla produktu z API
-                        mealApiId = mealApiId,     // Może być null dla produktu lokalnego
+                        essentialId = essentialId,
+                        mealApiId = mealApiId,
                         mealId = alimentation.meal?.id,
                         timestamp = selectedDate,
                         mealName = selectedMeal.lowercase(),
@@ -147,23 +254,10 @@ fun ProductDetailsScreen(
                             date = selectedDate
                         )
                     } else {
-                        // UWAGA: Tutaj używamy generycznej metody addMealProduct
-                        // Jeśli Twoja metoda w ViewModelu przyjmuje 'essentialId' jako nie-nullowy Int,
-                        // musisz ją zaktualizować w ViewModelu, aby przyjmowała DTO lub nullable ID.
-                        // Zakładam, że ViewModel ma metodę obsługującą oba przypadki,
-                        // lub użyjemy tutaj DTO jeśli ViewModel na to pozwala.
-
-                        // Jeśli ViewModel wymaga osobnych parametrów, a essentialId jest null,
-                        // to prawdopodobnie masz tam metodę obsługującą mealApiId lub musisz ją dodać.
-
-                        // Bezpieczniejsza wersja (przekazanie DTO do ViewModelu, jeśli obsługuje):
-                        // registeredAlimentationViewModel.addMealProductFromDto(context, dto)
-
-                        // Wersja dopasowana do Twojego starego kodu (z poprawką na nulle):
                         registeredAlimentationViewModel.addMealProduct(
                             context = context,
                             essentialId = essentialId,
-                            mealApiId = mealApiId, // <--- UPEWNIJ SIĘ, ŻE VIEWMODEL TO PRZYJMUJE
+                            mealApiId = mealApiId,
                             mealName = selectedMeal,
                             date = selectedDate,
                             amount = amount,
@@ -173,8 +267,8 @@ fun ProductDetailsScreen(
                     onBack()
                 }
             },
-            modifier = Modifier.size(width = 160.dp, height = 50.dp),
-            fontSize = 14
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            fontSize = 16
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -182,8 +276,49 @@ fun ProductDetailsScreen(
         DisplayButton(
             text = "Back",
             onClick = onBack,
-            modifier = Modifier.size(width = 160.dp, height = 50.dp),
-            fontSize = 14
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            containerColor = Color.LightGray,
+            fontSize = 16
+        )
+    }
+}
+
+// Pomocnicza klasa do UI
+data class MacroSummaryUi(
+    val kcal: Float,
+    val p: Float,
+    val f: Float,
+    val c: Float,
+    val weight: Float
+)
+
+@Composable
+fun MacroItem(
+    value: Float,
+    label: String,
+    color: Color = Color.Black,
+    modifier: Modifier = Modifier // Dodano modifier
+) {
+    Column(
+        modifier = modifier, // Użycie modifiera (wagi)
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = if (value >= 10000) "9999+" else String.format("%.0f", value), // Opcjonalne zabezpieczenie przed milionami
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            fontFamily = montserratFont,
+            color = color,
+            maxLines = 1, // Zabezpieczenie przed łamaniem linii
+            overflow = TextOverflow.Ellipsis // Kropki jeśli za długie
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = montserratFont,
+            color = Color.Gray,
+            maxLines = 1,
+            overflow = TextOverflow.Visible
         )
     }
 }

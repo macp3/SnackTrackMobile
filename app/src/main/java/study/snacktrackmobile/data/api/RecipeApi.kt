@@ -59,16 +59,22 @@ interface RecipeApi {
     ): List<RecipeResponse>
 
     @Multipart
-    @POST("meals/{mealId}/image") // Upewnij się, że ścieżka pasuje do Twojego Controller RequestMapping
+    @POST("meals/{id}/image")
     suspend fun uploadImage(
         @Header("Authorization") token: String,
-        @Path("mealId") mealId: Int,
+        @Path("id") id: Int,
         @Part image: MultipartBody.Part
-    ): Response<String>
+    ): Response<ResponseBody>
 
     @GET("meals/{id}/details")
     suspend fun getRecipeDetails(
         @Header("Authorization") token: String,
         @Path("id") id: Int
     ): RecipeResponse
+
+    @GET("meals/search")
+    suspend fun searchMeals(
+        @Header("Authorization") token: String,
+        @Query("name") query: String
+    ): List<RecipeResponse>
 }

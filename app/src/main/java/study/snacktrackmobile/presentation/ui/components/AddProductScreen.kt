@@ -35,11 +35,9 @@ fun AddProductScreen(
     var searchQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    // Obserwujemy połączone wyniki
     val combinedResults by foodViewModel.combinedResults.collectAsState()
     val isLoading by foodViewModel.isLoading.collectAsState()
 
-    // Pobieramy token
     var token by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         token = TokenStorage.getToken(context)
@@ -50,7 +48,6 @@ fun AddProductScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Nagłówek
         Text(
             text = if(isRecipeMode) "Add to Recipe" else selectedMeal,
             modifier = Modifier.padding(16.dp),
@@ -61,7 +58,6 @@ fun AddProductScreen(
             fontWeight = FontWeight.Bold
         )
 
-        // Pasek wyszukiwania
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -83,7 +79,6 @@ fun AddProductScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Lista wyników
         Box(modifier = Modifier.weight(1f)) {
             if (isLoading) {
                 CircularProgressIndicator(
@@ -101,30 +96,32 @@ fun AddProductScreen(
                         FoodResultRow(
                             name = item.name,
                             description = item.description,
-                            kcal = item.kcal
+                            kcal = item.kcal,
+                            quantityLabel = item.quantityLabel,
                         ) {
-                            // Logika kliknięcia - rozpoznajemy typ i tworzymy odpowiedni obiekt
                             val alimentation = when (item) {
                                 is FoodUiItem.Local -> RegisteredAlimentationResponse(
                                     id = -1,
                                     userId = 0,
-                                    essentialFood = item.data, // Lokalny obiekt
+                                    essentialFood = item.data,
                                     mealApi = null,
                                     meal = null,
                                     timestamp = selectedDate,
-                                    amount = item.data.defaultWeight ?: 100f,
-                                    pieces = 0f,
+                                    // Logic: If the list showed 1 piece, we pre-fill pieces. Else we pre-fill default weight.
+                                    amount = if(item.quantityLabel.contains("piece")) 0f else (item.data.defaultWeight ?: 100f),
+                                    pieces = if(item.quantityLabel.contains("piece")) 1f else 0f,
                                     mealName = selectedMeal
                                 )
                                 is FoodUiItem.Api -> RegisteredAlimentationResponse(
                                     id = -1,
                                     userId = 0,
                                     essentialFood = null,
-                                    mealApi = item.data, // Obiekt API
+                                    mealApi = item.data,
                                     meal = null,
                                     timestamp = selectedDate,
-                                    amount = 100f, // API zwykle podaje na 100g lub porcję, tu zakładamy standard
-                                    pieces = 0f,
+                                    // Logic: If API is "piece" based OR we converted it to piece
+                                    amount = if(item.quantityLabel.contains("piece")) 0f else 100f,
+                                    pieces = if(item.quantityLabel.contains("piece")) 1f else 0f,
                                     mealName = selectedMeal
                                 )
                             }
@@ -132,7 +129,6 @@ fun AddProductScreen(
                         }
                     }
 
-                    // Empty State
                     if (!isLoading && searchQuery.isNotEmpty() && combinedResults.isEmpty()) {
                         item {
                             Text(
@@ -148,7 +144,6 @@ fun AddProductScreen(
             }
         }
 
-        // Przyciski na dole (tylko jeśli nie tryb przepisu)
         if (!isRecipeMode) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -162,10 +157,9 @@ fun AddProductScreen(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // TUTAJ ZMIANA:
                 DisplayButton(
                     "Add meal",
-                    onClick = onAddMealClick, // <--- Wywołujemy callback
+                    onClick = onAddMealClick,
                     modifier = Modifier.size(width = 120.dp, height = 60.dp),
                     fontSize = 14
                 )
@@ -179,6 +173,7 @@ fun FoodResultRow(
     name: String,
     description: String,
     kcal: Float,
+    quantityLabel: String,
     onClick: () -> Unit
 ) {
     Card(
@@ -193,7 +188,8 @@ fun FoodResultRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -213,12 +209,21 @@ fun FoodResultRow(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            Text(
-                text = "${kcal.toInt()} kcal",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                fontFamily = montserratFont,
-                color = Color(0xFF2E7D32)
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${kcal.toInt()} kcal",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    fontFamily = montserratFont,
+                    color = Color(0xFF2E7D32)
+                )
+                Text(
+                    text = quantityLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = montserratFont,
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }

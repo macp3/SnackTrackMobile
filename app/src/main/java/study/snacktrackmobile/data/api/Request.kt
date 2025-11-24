@@ -60,4 +60,6 @@ object Request {
     val foodApi: FoodApi = retrofit.create(FoodApi::class.java)
     val recipeApi: RecipeApi = retrofit.create(RecipeApi::class.java)
     val userApi: UserApi = retrofit.create(UserApi::class.java)
+
+    val commentApi: CommentApi = retrofit.create(CommentApi::class.java)
 }
