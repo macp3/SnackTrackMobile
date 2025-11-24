@@ -20,12 +20,14 @@ import study.snacktrackmobile.data.model.enums.Sex
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.*
 import io.ktor.client.*
+import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import study.snacktrackmobile.data.model.LoginResponse
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.presentation.ui.components.montserratFont
 
@@ -241,10 +243,15 @@ fun InitialSurveyView(navController: NavController) {
                         if (token != null) {
                             val result = sendBodyParameters(token, request)
                             if (result.isSuccess) {
-                                navController.navigate("MainView") {
-                                    popUpTo("InitialSurveyView") { inclusive = true }
+                                val refresh = refreshSurvey(token)
+                                if (refresh.isSuccess) {
+                                    val loginResponse = refresh.getOrNull()
+                                    if (loginResponse != null && !loginResponse.showSurvey) {
+                                        navController.navigate("MainView") {
+                                            popUpTo("InitialSurveyView") { inclusive = true }
+                                        }
+                                    }
                                 }
-
                             } else {
                                 backendMessage = result.exceptionOrNull()?.message
                             }
@@ -300,6 +307,29 @@ suspend fun sendBodyParameters(
             setBody(request)
         }
         Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    } finally {
+        client.close()
+    }
+}
+
+suspend fun refreshSurvey(token: String): Result<LoginResponse> {
+    val client = HttpClient(OkHttp) {
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+                prettyPrint = true
+                isLenient = true
+            })
+        }
+    }
+
+    return try {
+        val response: LoginResponse = client.get("${ApiConfig.BASE_URL}/users/refreshSurvey") {
+            headers { append("Authorization", "Bearer $token") }
+        }.body()
+        Result.success(response)
     } catch (e: Exception) {
         Result.failure(e)
     } finally {

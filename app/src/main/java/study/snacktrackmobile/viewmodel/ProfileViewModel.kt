@@ -32,27 +32,48 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
     private val _bodyParameters = MutableStateFlow<BodyParametersResponse?>(null)
     val bodyParameters: StateFlow<BodyParametersResponse?> = _bodyParameters.asStateFlow()
 
+    private val _unauthorized = MutableStateFlow(false)
+    val unauthorized: StateFlow<Boolean> = _unauthorized.asStateFlow()
+
     // ---------------------------
     // LOAD PROFILE
     // ---------------------------
     fun loadProfile(token: String) {
         viewModelScope.launch {
             _loading.value = true
+            _unauthorized.value = false // Resetujemy stan
             try {
                 val response = api.getProfile("Bearer $token")
-                if (response.isSuccessful) {
-                    val userData = response.body()
-                    userData?.imageUrl = buildImageUrl(userData?.imageUrl)
-                    _user.value = userData
-                } else {
-                    _error.value = "Failed to load profile"
+
+                when {
+                    response.code() == 401 || response.code() == 403 -> {
+                        _error.value = "unauthorized"
+                        _user.value = null
+                        // 🚨 KLUCZOWA ZMIANA: Ustawiamy flagę braku autoryzacji
+                        _unauthorized.value = true
+                    }
+
+                    response.isSuccessful -> {
+                        val userData = response.body()
+                        userData?.imageUrl = buildImageUrl(userData?.imageUrl)
+                        _user.value = userData
+                        _error.value = null
+                    }
+
+                    else -> {
+                        _error.value = "other_error"
+                        _user.value = null
+                    }
                 }
             } catch (e: Exception) {
-                _error.value = e.message
+                e.printStackTrace()
+                _error.value = "network_error"
+                _user.value = null
             }
             _loading.value = false
         }
     }
+
 
     // Convert backend path → full URL
     private fun buildImageUrl(path: String?): String? {
@@ -130,7 +151,17 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
 
     fun getBodyParameters(token: String) {
         viewModelScope.launch {
-            try { _bodyParameters.value = api.getBodyParameters("Bearer $token") }
+            try {
+                val bodyParamsResponse = api.getBodyParameters("Bearer $token")
+                _bodyParameters.value = bodyParamsResponse
+
+                SummaryBarState.setLimits(
+                    kcal = bodyParamsResponse.calorieLimit,
+                    protein = bodyParamsResponse.proteinLimit,
+                    fat = bodyParamsResponse.fatLimit,
+                    carbs = bodyParamsResponse.carbohydratesLimit
+                )
+            }
             catch (e: Exception) { e.printStackTrace() }
         }
     }

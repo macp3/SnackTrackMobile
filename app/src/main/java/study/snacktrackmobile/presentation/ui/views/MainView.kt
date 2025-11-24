@@ -53,6 +53,7 @@ import study.snacktrackmobile.presentation.ui.components.RecipesScreen
 import study.snacktrackmobile.viewmodel.*
 import study.snacktrackmobile.data.services.AiApiService
 import study.snacktrackmobile.data.database.AppDatabase // Odkomentuj jeśli używasz Room
+import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 import kotlin.jvm.java
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,6 +82,7 @@ fun MainView(
 
     var authToken by remember { mutableStateOf<String?>(null) }
 
+
     // Inicjalizacja profilu
     val userApi = remember {
         Retrofit.Builder()
@@ -91,6 +93,7 @@ fun MainView(
     }
     val profileViewModel = remember { ProfileViewModel(userApi) }
     val userResponse by profileViewModel.user.collectAsState()
+    val isUnauthorized by profileViewModel.unauthorized.collectAsState()
 
     LaunchedEffect(Unit) {
         authToken = TokenStorage.getToken(context)
@@ -101,6 +104,21 @@ fun MainView(
     LaunchedEffect(authToken) {
         authToken?.let { token ->
             profileViewModel.loadProfile(token)
+            profileViewModel.getBodyParameters(token)
+        }
+    }
+
+    LaunchedEffect(isUnauthorized) {
+        if (isUnauthorized) {
+            // Sprawdzamy, czy w pamięci jest token (authToken != null)
+            // Jeśli tak, ale serwer go odrzucił (isUnauthorized == true), to oznacza, że jest nieważny.
+            // Wyczyść token i przejdź do StartView.
+
+            TokenStorage.clearToken(context)
+            navController.navigate("StartView") {
+                // Wyczyść stos nawigacji, aby użytkownik nie mógł wrócić
+                popUpTo("MainView") { inclusive = true }
+            }
         }
     }
 

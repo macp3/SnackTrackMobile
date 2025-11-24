@@ -6,6 +6,7 @@ import retrofit2.Response
 import retrofit2.http.*
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.dto.BodyParametersResponse
+import study.snacktrackmobile.data.model.dto.LoginResponse
 import study.snacktrackmobile.data.model.dto.UserResponse
 
 interface UserApi {
@@ -26,6 +27,12 @@ interface UserApi {
         @Header("Authorization") token: String,
         @Body body: BodyParametersRequest
     ): Response<BodyParametersResponse>
+
+    @GET("/users/refreshSurvey")
+    suspend fun refreshSurvey(
+        @Header("Authorization") token: String
+    ): Response<LoginResponse>
+
 
     @Multipart
     @POST("/users/image")

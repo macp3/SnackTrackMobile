@@ -97,5 +97,13 @@ object SummaryBarState {
         totalFat = fatSum.toFloat()
         totalCarbs = carbsSum.toFloat()
     }
+
+    fun setLimits(kcal: Float?, protein: Float?, fat: Float?, carbs: Float?) {
+        // Ustawiamy limit, jeśli jest null lub 0 to dajemy 1f żeby uniknąć dzielenia przez zero
+        limitKcal = if (kcal != null && kcal > 0) kcal else 1f
+        limitProtein = if (protein != null && protein > 0) protein else 1f
+        limitFat = if (fat != null && fat > 0) fat else 1f
+        limitCarbs = if (carbs != null && carbs > 0) carbs else 1f
+    }
 }
 

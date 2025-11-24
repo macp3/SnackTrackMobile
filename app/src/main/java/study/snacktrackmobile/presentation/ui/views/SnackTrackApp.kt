@@ -21,22 +21,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import study.snacktrackmobile.data.api.FoodApi
+import kotlinx.coroutines.withTimeout
+import retrofit2.HttpException
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import study.snacktrackmobile.data.api.Request
-import study.snacktrackmobile.data.database.AppDatabase
-import study.snacktrackmobile.data.model.Product
-import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
+import study.snacktrackmobile.data.api.UserApi
+import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.data.repository.RecipeRepository
-import study.snacktrackmobile.presentation.ui.components.MealsDailyView
-import study.snacktrackmobile.viewmodel.ShoppingListViewModel
-import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
-import study.snacktrackmobile.viewmodel.UserViewModel
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
 import study.snacktrackmobile.data.storage.TokenStorage
-import study.snacktrackmobile.presentation.ui.components.AddProductToDatabaseScreen
-import study.snacktrackmobile.presentation.ui.components.ProductDetailsScreen
+import study.snacktrackmobile.presentation.ui.components.MealsDailyView
 import study.snacktrackmobile.viewmodel.FoodViewModel
 import study.snacktrackmobile.viewmodel.RecipeViewModel
+import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
+import study.snacktrackmobile.viewmodel.UserViewModel
 import java.time.LocalDate
 
 @Composable
@@ -45,12 +44,14 @@ fun SnackTrackApp() {
     val navController = rememberNavController()
     var startDestination by remember { mutableStateOf<String?>(null) }
 
+
     val recipeRepository = RecipeRepository(Request.recipeApi)
     val recipesViewModel: RecipeViewModel = viewModel(
         factory = RecipeViewModel.provideFactory(recipeRepository)
     )
 
     val userViewModel: UserViewModel = viewModel()
+    var requiresSurvey by remember { mutableStateOf<Boolean?>(null) }
 
     val foodViewModel: FoodViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -60,34 +61,84 @@ fun SnackTrackApp() {
         }
     )
 
-    // RegisteredAlimentationRepository + ViewModel
     val api = Request.api
     val repo = RegisteredAlimentationRepository(api)
     val registeredAlimentationViewModel: RegisteredAlimentationViewModel =
         viewModel(factory = RegisteredAlimentationViewModel.provideFactory(repo))
 
+    // --- LOGIKA SPRAWDZANIA TOKENA ---
     LaunchedEffect(Unit) {
-        val existingToken = TokenStorage.getToken(context) // To jest funkcja suspend, tu zadziała!
-        startDestination = if (existingToken != null) "MainView" else "StartView"
+        val existingToken = TokenStorage.getToken(context)
+        if (existingToken == null) {
+            startDestination = "StartView"
+        } else {
+            // Mamy token, sprawdzamy czy jest ważny w API (max 2 sekundy)
+            val isValidUser = try {
+                withTimeout(2000L) {
+                    val userApiCheck = Request.userApi
+
+                    try {
+                        val tokenWithBearer = if (existingToken.startsWith("Bearer ")) {
+                            existingToken
+                        } else {
+                            "Bearer $existingToken"
+                        }
+
+                        val response = userApiCheck.getProfile(tokenWithBearer)
+
+                        if (response != null) {
+                            true
+                        } else {
+                            false
+                        }
+                    } catch (e: HttpException) {
+                        false
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+            } catch (e: Exception) {
+                false
+            }
+
+            if (!isValidUser) {
+                // 🚨 Token jest w pamięci, ale backend go nie zna → reset
+                TokenStorage.clearToken(context)
+                startDestination = "StartView"
+            } else {
+                val refresh = refreshSurvey(existingToken) // wywołaj endpoint /refreshSurvey
+                if (refresh.isSuccess) {
+                    val loginResponse = refresh.getOrNull()
+                    if (loginResponse != null) {
+                        startDestination = if (loginResponse.showSurvey) {
+                            "InitialSurveyView"
+                        } else {
+                            "MainView"
+                        }
+                    } else {
+                        startDestination = "StartView"
+                    }
+                } else {
+                    startDestination = "StartView"
+                }
+            }
+        }
     }
 
-
-    // --- 4. LOGIKA WYŚWIETLANIA ---
+    // --- 4. WYŚWIETLANIE ---
     if (startDestination == null) {
-        // A. POKAZUJEMY EKRAN ŁADOWANIA dopóki sprawdzamy token
+        // LOADER (Max 2 sekundy, potem withTimeout wyrzuci wyjątek i przejdzie do StartView)
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator() // Kręciołek ładowania
+            CircularProgressIndicator()
         }
     } else {
-        // B. GDY MAMY JUŻ EKRAN STARTOWY -> POKAZUJEMY NAVHOST
         NavHost(
             navController = navController,
-            startDestination = startDestination!! // Wykrzyknik jest bezpieczny, bo jesteśmy w bloku else
+            startDestination = startDestination!!
         ) {
-
             composable("StartView") {
                 StartView(navController)
             }
@@ -118,12 +169,7 @@ fun SnackTrackApp() {
                 )
             ) { backStackEntry ->
                 val viewModelEmail by userViewModel.currentUserEmail.collectAsState()
-
-                val finalEmail = if (!viewModelEmail.isNullOrBlank()) {
-                    viewModelEmail!!
-                } else {
-                    ""
-                }
+                val finalEmail = viewModelEmail ?: ""
 
                 val initialTab = backStackEntry.arguments?.getString("tab") ?: "Meals"
                 val initialMeal = backStackEntry.arguments?.getString("meal") ?: "Breakfast"
@@ -151,7 +197,7 @@ fun SnackTrackApp() {
                     selectedDate = selectedDate,
                     viewModel = registeredAlimentationViewModel,
                     navController = navController,
-                    onEditProduct = { alimentation ->
+                    onEditProduct = { _ ->
                         navController.navigate("MainView?tab=AddProduct")
                     }
                 )
