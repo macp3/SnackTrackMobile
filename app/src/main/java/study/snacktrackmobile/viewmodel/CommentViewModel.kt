@@ -25,6 +25,10 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
     private val _currentUserId = MutableStateFlow<Int?>(null)
     val currentUserId: StateFlow<Int?> = _currentUserId
 
+    private val _authorNames = MutableStateFlow<Map<Int, String>>(emptyMap())
+    val authorNames: StateFlow<Map<Int, String>> = _authorNames
+
+
     fun setCurrentUserId(id: Int) {
         _currentUserId.value = id
     }

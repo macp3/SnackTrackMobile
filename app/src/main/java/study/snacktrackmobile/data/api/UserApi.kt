@@ -4,9 +4,9 @@ import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
+import study.snacktrackmobile.data.model.LoginResponse
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.dto.BodyParametersResponse
-import study.snacktrackmobile.data.model.dto.LoginResponse
 import study.snacktrackmobile.data.model.dto.UserResponse
 
 interface UserApi {

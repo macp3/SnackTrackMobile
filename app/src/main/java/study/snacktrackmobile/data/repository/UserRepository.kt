@@ -121,5 +121,4 @@ class UserRepository {
             Result.failure(e)
         }
     }
-
 }
