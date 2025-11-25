@@ -82,8 +82,10 @@ fun RegisterView(
     /** ✅ Nawigacja po success */
     LaunchedEffect(registerState) {
         if (registerState is UiState.Success) {
+            viewModel.clearRegisterState()
             navController.navigate("LoginView") {
-                popUpTo("RegisterView") { inclusive = true }
+                launchSingleTop = true
+                restoreState = true
             }
         }
     }

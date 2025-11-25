@@ -41,6 +41,10 @@ class FoodViewModel(
         }
     }
 
+    fun resetSuccess() {
+        success.value = false
+    }
+
     fun setError(message: String?) {
         errorMessage.value = message
     }
@@ -81,6 +85,7 @@ class FoodViewModel(
      * Wspólna wewnętrzna funkcja robiąca wywołanie sieciowe — wywoływana tylko z korutyny
      */
     private suspend fun callAddFood(bearerToken: String, request: EssentialFoodRequest) {
+        success.value = false
         try {
             val response = api.addFood(bearerToken, request)
 

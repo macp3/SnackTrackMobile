@@ -4,9 +4,9 @@ import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
+import study.snacktrackmobile.data.model.LoginResponse
 import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.dto.BodyParametersResponse
-import study.snacktrackmobile.data.model.dto.LoginResponse
 import study.snacktrackmobile.data.model.dto.UserResponse
 
 interface UserApi {
@@ -28,11 +28,16 @@ interface UserApi {
         @Body body: BodyParametersRequest
     ): Response<BodyParametersResponse>
 
+    @POST("/users/addParameters")
+    suspend fun addParameters(
+        @Header("Authorization") token: String,
+        @Body body: BodyParametersRequest
+    ): Response<ResponseBody>
+
     @GET("/users/refreshSurvey")
     suspend fun refreshSurvey(
         @Header("Authorization") token: String
     ): Response<LoginResponse>
-
 
     @Multipart
     @POST("/users/image")

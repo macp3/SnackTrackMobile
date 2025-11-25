@@ -188,6 +188,7 @@ fun AddProductToDatabaseScreen(
 
     if (success) {
         wasSubmitted = false
+        foodViewModel.resetSuccess()
         navController.popBackStack()
     }
 }
