@@ -33,22 +33,19 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
         _currentUserId.value = id
     }
 
-    // 🔹 ZMIANA: Dodano parametr context, aby pobrać token
     fun loadComments(context: Context, mealId: Int) = viewModelScope.launch {
         val token = TokenStorage.getToken(context) ?: return@launch
 
         _isLoading.value = true
-        val result = repository.getCommentsForMeal(token, mealId) // Zakładam, że repo też przyjmuje token
+        // Przekazujemy token do repozytorium
+        val result = repository.getCommentsForMeal(token, mealId)
 
-        result.onSuccess { list ->
-            Log.d("CommentsDebug", "Success! Received ${list.size} comments")
-            list.forEach { Log.d("CommentsDebug", " -> Comment: ${it.content} (ID: ${it.id})") }
-            _comments.value = list
-        }.onFailure { e ->
-            Log.e("CommentsDebug", "FAILED to load comments. Reason: ${e.message}", e)
+        result.onSuccess {
+            _comments.value = it
+        }.onFailure {
+            // Obsługa błędu
             _comments.value = emptyList()
         }
-
         _isLoading.value = false
     }
 

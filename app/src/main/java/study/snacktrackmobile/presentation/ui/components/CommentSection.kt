@@ -1,7 +1,9 @@
 package study.snacktrackmobile.presentation.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -12,12 +14,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import study.snacktrackmobile.data.model.dto.CommentResponse
+import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.CommentViewModel
 
@@ -33,7 +40,7 @@ fun CommentSection(
 
     var newCommentText by remember { mutableStateOf("") }
 
-    // Dialogi
+    // Dialogs
     var showReportDialog by remember { mutableStateOf<CommentResponse?>(null) }
     var showEditDialog by remember { mutableStateOf<CommentResponse?>(null) }
 
@@ -50,7 +57,7 @@ fun CommentSection(
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
-        // Lista komentarzy
+        // Comment List
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             comments.forEach { comment ->
                 CommentItem(
@@ -59,7 +66,8 @@ fun CommentSection(
                     onDelete = { viewModel.deleteComment(context, comment.mealId) },
                     onEdit = { showEditDialog = comment },
                     onReport = { showReportDialog = comment },
-                    onLike = { viewModel.toggleLike(context, comment.id) } // 🔹 Podpięcie lajkowania
+                    // Hooking up the like action to the ViewModel
+                    onLike = { viewModel.toggleLike(context, comment.id) }
                 )
             }
 
@@ -70,14 +78,16 @@ fun CommentSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Input do dodawania
+        // Add Comment Input
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = newCommentText,
-                onValueChange = { newCommentText = it },
+                onValueChange = {
+                    if (it.length <= 255) newCommentText = it // 🔹 LIMIT ZNAKÓW
+                },
                 placeholder = { Text("Add a comment...") },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(24.dp),
@@ -100,7 +110,7 @@ fun CommentSection(
         }
     }
 
-    // --- DIALOG ZGŁASZANIA ---
+    // --- REPORT DIALOG ---
     if (showReportDialog != null) {
         var reason by remember { mutableStateOf("") }
         AlertDialog(
@@ -130,7 +140,7 @@ fun CommentSection(
         )
     }
 
-    // --- DIALOG EDYCJI ---
+    // --- EDIT DIALOG ---
     if (showEditDialog != null) {
         var editText by remember { mutableStateOf(showEditDialog!!.content ?: "") }
         AlertDialog(
@@ -166,7 +176,7 @@ fun CommentItem(
     onDelete: () -> Unit,
     onEdit: () -> Unit,
     onReport: () -> Unit,
-    onLike: () -> Unit // 🔹 Nowy callback
+    onLike: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -176,19 +186,44 @@ fun CommentItem(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Header (User + Menu)
+
+            // --- HEADER (Avatar + Imię + Menu) ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "User #${comment.authorId}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.Gray,
-                    fontWeight = FontWeight.Bold
-                )
+                // LEWA STRONA: Avatar + Imię
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val imageUrl = comment.authorImageUrl
+                    val fullUrl = if (!imageUrl.isNullOrBlank()) {
+                        if (imageUrl.startsWith("http")) imageUrl
+                        else "${ApiConfig.BASE_URL.removeSuffix("/")}/${imageUrl.removePrefix("/")}"
+                    } else {
+                        "${ApiConfig.BASE_URL}/images/profiles/default_profile_picture.png"
+                    }
 
+                    AsyncImage(
+                        model = fullUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color.LightGray),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = comment.authorName,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // PRAWA STRONA: Menu
                 Box {
                     IconButton(
                         onClick = { showMenu = true },
@@ -220,25 +255,27 @@ fun CommentItem(
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Treść komentarza
+            // --- CONTENT (Treść komentarza) ---
             comment.content?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black
+                    color = Color.Black,
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 🔹 SEKCJA LAJKÓW
+            // --- LIKE SECTION ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .clickable { onLike() } // Klikalne całe serduszko z liczbą
-                    .padding(4.dp) // Trochę paddingu dla łatwiejszego kliknięcia
+                    .clickable { onLike() }
+                    .padding(4.dp)
             ) {
                 Icon(
                     imageVector = if (comment.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,

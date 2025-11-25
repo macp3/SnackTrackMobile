@@ -11,7 +11,7 @@ interface CommentApi {
 
     @GET("comments/meal/{mealId}")
     suspend fun getCommentsForMeal(
-        @Header("Authorization") token: String, // <--- DODAJ TO
+        @Header("Authorization") token: String, // Authorization is required to check 'isLiked'
         @Path("mealId") mealId: Int
     ): List<CommentResponse>
 
@@ -31,15 +31,14 @@ interface CommentApi {
     suspend fun deleteComment(
         @Header("Authorization") token: String,
         @Query("mealId") mealId: Int
-    ): Response<ResponseBody> // Backend zwraca String w body, ale DELETE często jest void
+    ): Response<ResponseBody>
 
     @POST("comments/reports/add")
     suspend fun reportComment(
         @Header("Authorization") token: String,
         @Body request: ReportedCommentRequest
-    ): Response<ResponseBody> // Backend zwraca ReportedCommentResponse, ale wystarczy nam kod 200
+    ): Response<ResponseBody>
 
-    // Nowy endpoint
     @POST("comments/{commentId}/like")
     suspend fun likeComment(
         @Header("Authorization") token: String,

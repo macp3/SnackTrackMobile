@@ -68,7 +68,7 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
 
         // Stopka
         Text(
-            text = "Version 1.0. Developed by the SnackTrack Team.",
+            text = "Version 1.0. Developed by Bartosz Piłka & Maciej Pietras",
             style = MaterialTheme.typography.bodySmall,
             color = Color.Gray,
             fontFamily = montserratFont,

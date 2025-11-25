@@ -95,6 +95,7 @@ dependencies {
     // Room (Zaktualizowane do użycia aliasów i KSP)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.foundation)
     // Zamiast kapt używamy ksp
     ksp(libs.androidx.room.compiler)
 
