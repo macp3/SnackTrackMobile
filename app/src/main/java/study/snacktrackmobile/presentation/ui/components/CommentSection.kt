@@ -1,8 +1,11 @@
 package study.snacktrackmobile.presentation.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
@@ -35,7 +38,6 @@ fun CommentSection(
     var showEditDialog by remember { mutableStateOf<CommentResponse?>(null) }
 
     LaunchedEffect(mealId) {
-        // 🔹 ZMIANA: Przekazujemy context
         viewModel.loadComments(context, mealId)
     }
 
@@ -56,7 +58,8 @@ fun CommentSection(
                     isAuthor = (currentUserId != null && currentUserId == comment.authorId),
                     onDelete = { viewModel.deleteComment(context, comment.mealId) },
                     onEdit = { showEditDialog = comment },
-                    onReport = { showReportDialog = comment }
+                    onReport = { showReportDialog = comment },
+                    onLike = { viewModel.toggleLike(context, comment.id) } // 🔹 Podpięcie lajkowania
                 )
             }
 
@@ -129,9 +132,7 @@ fun CommentSection(
 
     // --- DIALOG EDYCJI ---
     if (showEditDialog != null) {
-        // Używamy "orEmpty" żeby uniknąć problemów z nullem
         var editText by remember { mutableStateOf(showEditDialog!!.content ?: "") }
-
         AlertDialog(
             onDismissRequest = { showEditDialog = null },
             title = { Text("Edit Comment") },
@@ -146,7 +147,6 @@ fun CommentSection(
             confirmButton = {
                 TextButton(onClick = {
                     if (editText.isNotBlank()) {
-                        // 🔹 ZMIANA: Przekazujemy tylko jeśli niepuste
                         viewModel.editComment(context, showEditDialog!!.mealId, editText)
                         showEditDialog = null
                     }
@@ -165,7 +165,8 @@ fun CommentItem(
     isAuthor: Boolean,
     onDelete: () -> Unit,
     onEdit: () -> Unit,
-    onReport: () -> Unit
+    onReport: () -> Unit,
+    onLike: () -> Unit // 🔹 Nowy callback
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -175,6 +176,7 @@ fun CommentItem(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
+            // Header (User + Menu)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -220,11 +222,35 @@ fun CommentItem(
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            // Treść komentarza
             comment.content?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🔹 SEKCJA LAJKÓW
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable { onLike() } // Klikalne całe serduszko z liczbą
+                    .padding(4.dp) // Trochę paddingu dla łatwiejszego kliknięcia
+            ) {
+                Icon(
+                    imageVector = if (comment.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Like",
+                    tint = if (comment.isLiked) Color.Red else Color.Gray,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "${comment.likesCount}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (comment.isLiked) Color.Red else Color.Gray
                 )
             }
         }

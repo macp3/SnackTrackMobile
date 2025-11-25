@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.CommentViewModel
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
@@ -36,14 +38,20 @@ fun RecipeDetailsScreen(
     isFavourite: Boolean,
     selectedDate: String,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
+    commentViewModel: CommentViewModel, // 🔹 ViewModel do komentarzy
+    onReportRecipe: (String) -> Unit,   // 🔹 Callback zgłaszania
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onToggleFavourite: () -> Unit,
-    commentViewModel: CommentViewModel
+    onToggleFavourite: () -> Unit
 ) {
     val context = LocalContext.current
     var showMealDialog by remember { mutableStateOf(false) }
+
+    // Stany dla menu opcji i zgłaszania
+    var showOptionsMenu by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var reportReason by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -51,26 +59,22 @@ fun RecipeDetailsScreen(
                 .fillMaxSize()
                 .background(Color.White)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp)
+                .padding(bottom = 80.dp) // Padding na dole, żeby FloatingButton nie zasłaniał treści
         ) {
             // --- IMAGE HEADER ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(250.dp) // Zwiększyłem trochę wysokość dla lepszego efektu
+                    .height(250.dp)
                     .background(Color(0xFFEEEEEE)),
                 contentAlignment = Alignment.Center
             ) {
-                // 1. Logika wyświetlania obrazka
+                // Wyświetlanie obrazka
                 if (!recipe.imageUrl.isNullOrBlank()) {
-                    // Backend zwraca np. "/images/meals/meal_5.jpg", musimy dokleić domenę
-                    // Upewnij się, że ApiConfig.BASE_URL nie ma slasha na końcu lub obsłuż to
-                    // Tutaj zakładam bezpieczne łączenie
                     val fullUrl = if (recipe.imageUrl.startsWith("http")) {
                         recipe.imageUrl
                     } else {
-                        // Usuwamy ewentualny dublujący się slash
-                        val baseUrl = study.snacktrackmobile.data.network.ApiConfig.BASE_URL.removeSuffix("/")
+                        val baseUrl = ApiConfig.BASE_URL.removeSuffix("/")
                         val relativeUrl = recipe.imageUrl.removePrefix("/")
                         "$baseUrl/$relativeUrl"
                     }
@@ -84,31 +88,51 @@ fun RecipeDetailsScreen(
                 } else {
                     // Placeholder gdy brak zdjęcia
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Restaurant, // Lub inna ikona
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(64.dp)
-                        )
+                        Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(64.dp))
                         Text("No image", color = Color.Gray, fontSize = 12.sp)
                     }
                 }
 
-                // Przycisk Wstecz (zawsze na wierzchu)
+                // Back Button (Lewy górny róg)
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(16.dp) // Większy padding od krawędzi
-                        .background(Color.Black.copy(alpha = 0.4f), CircleShape) // Ciemniejsze tło dla lepszego kontrastu
+                        .padding(16.dp)
+                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
                 ) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                }
+
+                // 🔹 Przycisk Opcji (Prawy górny róg) - Zgłaszanie
+                Box(modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                ) {
+                    IconButton(
+                        onClick = { showOptionsMenu = true },
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Options", tint = Color.White)
+                    }
+
+                    DropdownMenu(
+                        expanded = showOptionsMenu,
+                        onDismissRequest = { showOptionsMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Report Recipe") },
+                            onClick = {
+                                showOptionsMenu = false
+                                showReportDialog = true
+                            }
+                        )
+                    }
                 }
             }
 
             Column(modifier = Modifier.padding(16.dp)) {
-
-                // --- PRZYCISKI AKCJI ---
+                // --- PRZYCISKI AKCJI (Ulubione, Edycja, Usuwanie) ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -127,7 +151,7 @@ fun RecipeDetailsScreen(
                             onClick = onEdit,
                             modifier = Modifier.weight(1f).height(50.dp),
                             fontSize = 12,
-                            containerColor = Color(0xFFE0E0E0), // Neutralny kolor dla edycji
+                            containerColor = Color(0xFFE0E0E0),
                         )
 
                         DisplayButton(
@@ -170,6 +194,7 @@ fun RecipeDetailsScreen(
                     Text("No ingredients listed.", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
                 } else {
                     recipe.ingredients.forEach { ingredient ->
+                        // Wyświetlamy tylko poprawne składniki (lokalne lub API)
                         if (ingredient.essentialFood != null || ingredient.essentialApi != null) {
                             val dummy = RegisteredAlimentationResponse(
                                 id = ingredient.id,
@@ -186,17 +211,17 @@ fun RecipeDetailsScreen(
                         }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
 
-// Sekcja komentarzy
+                // 🔹 SEKCJA KOMENTARZY
                 CommentSection(
                     mealId = recipe.id,
                     viewModel = commentViewModel,
-                    modifier = Modifier.padding(bottom = 80.dp) // Odstęp od FAB
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
-
             }
         }
 
@@ -226,7 +251,7 @@ fun RecipeDetailsScreen(
         }
     }
 
-    // --- DIALOG WYBORU POSIŁKU ---
+    // --- DIALOG DODAWANIA DO DZIENNIKA ---
     if (showMealDialog) {
         var servingsInput by remember { mutableStateOf("1") }
 
@@ -299,39 +324,64 @@ fun RecipeDetailsScreen(
             }
         )
     }
+
+    // 🔹 DIALOG ZGŁASZANIA PRZEPISU
+    if (showReportDialog) {
+        AlertDialog(
+            onDismissRequest = { showReportDialog = false },
+            title = { Text("Report Recipe") },
+            text = {
+                Column {
+                    Text("Why are you reporting this recipe?")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = reportReason,
+                        onValueChange = { reportReason = it },
+                        label = { Text("Reason") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onReportRecipe(reportReason) // Wywołanie callbacka
+                        showReportDialog = false
+                        reportReason = ""
+                    },
+                    enabled = reportReason.isNotBlank()
+                ) {
+                    Text("Report", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReportDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
 }
 
 @Composable
 fun RecipeDetailIngredientRow(
     alimentation: RegisteredAlimentationResponse
 ) {
+    // Pobieranie nazwy
     val name = alimentation.essentialFood?.name
         ?: alimentation.mealApi?.name
         ?: "Unknown Ingredient"
 
-    // --- DEBUGOWANIE ---
-    // Jeśli nazwa jest nieznana, wyświetlimy co siedzi w obiekcie
-    if (name == "Unknown Ingredient") {
-        val apiDebug = alimentation.mealApi
-        val id = apiDebug?.id ?: "null"
-        val rawName = apiDebug?.name ?: "null"
-        Text(
-            text = "DEBUG ERROR: API ID=$id, Name=$rawName",
-            color = Color.Red,
-            fontSize = 10.sp
-        )
-    }
-    // -------------------
-
+    // Pobieranie bazowych wartości makro
     val baseKcal = alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toFloat() ?: 0f
     val baseP = alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein ?: 0f
     val baseF = alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat ?: 0f
     val baseC = alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates ?: 0f
 
+    // Pobieranie wagi domyślnej
     val defaultWeight = alimentation.essentialFood?.defaultWeight
         ?: alimentation.mealApi?.defaultWeight
         ?: 100f
 
+    // Tekst ilości
     val amountText = when {
         alimentation.pieces != null && alimentation.pieces > 0 ->
             "${alimentation.pieces} piece${if (alimentation.pieces > 1) "s" else ""}"
@@ -340,6 +390,7 @@ fun RecipeDetailIngredientRow(
         else -> "-"
     }
 
+    // Obliczanie
     fun calculateTotal(baseVal: Float): Double {
         val pieces = alimentation.pieces ?: 0f
         val grams = alimentation.amount ?: 0f

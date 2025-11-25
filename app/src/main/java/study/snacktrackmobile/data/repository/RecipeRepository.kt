@@ -6,6 +6,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import study.snacktrackmobile.data.api.RecipeApi
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
+import study.snacktrackmobile.data.model.dto.ReportedMealRequest
 import java.io.File
 
 class RecipeRepository(private val api: RecipeApi) {
@@ -105,5 +106,15 @@ class RecipeRepository(private val api: RecipeApi) {
 
     suspend fun searchRecipes(token: String, query: String): List<RecipeResponse> {
         return api.searchMeals("Bearer $token", query)
+    }
+
+    suspend fun reportRecipe(token: String, recipeId: Int, reason: String): Result<Unit> {
+        return try {
+            val response = api.reportMeal("Bearer $token", ReportedMealRequest(recipeId, reason))
+            if (response.isSuccessful) Result.success(Unit)
+            else Result.failure(Exception("Report failed: ${response.code()}"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

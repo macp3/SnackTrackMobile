@@ -49,7 +49,17 @@ class CommentRepository {
         return try {
             val response = api.reportComment("Bearer $token", ReportedCommentRequest(commentId, reason))
             if (response.isSuccessful) Result.success(Unit)
-            else Result.failure(Exception("Report failed"))
+            else Result.failure(Exception("Report failed: ${response.code()}"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun toggleLike(token: String, commentId: Int): Result<Unit> {
+        return try {
+            val response = api.likeComment("Bearer $token", commentId)
+            if (response.isSuccessful) Result.success(Unit)
+            else Result.failure(Exception("Like failed"))
         } catch (e: Exception) {
             Result.failure(e)
         }

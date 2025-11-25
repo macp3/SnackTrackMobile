@@ -38,4 +38,11 @@ interface CommentApi {
         @Header("Authorization") token: String,
         @Body request: ReportedCommentRequest
     ): Response<ResponseBody> // Backend zwraca ReportedCommentResponse, ale wystarczy nam kod 200
+
+    // Nowy endpoint
+    @POST("comments/{commentId}/like")
+    suspend fun likeComment(
+        @Header("Authorization") token: String,
+        @Path("commentId") commentId: Int
+    ): Response<ResponseBody>
 }

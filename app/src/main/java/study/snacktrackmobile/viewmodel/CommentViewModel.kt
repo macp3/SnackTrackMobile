@@ -112,4 +112,33 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
             }
         }
     }
+
+    fun toggleLike(context: Context, commentId: Int) = viewModelScope.launch {
+        val token = TokenStorage.getToken(context) ?: return@launch
+
+        // 1. Optymistyczna aktualizacja lokalnej listy
+        val currentList = _comments.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == commentId }
+
+        if (index != -1) {
+            val oldItem = currentList[index]
+            // Odwracamy stan
+            val newIsLiked = !oldItem.isLiked
+            val newCount = if (newIsLiked) oldItem.likesCount + 1 else oldItem.likesCount - 1
+
+            currentList[index] = oldItem.copy(isLiked = newIsLiked, likesCount = newCount)
+            _comments.value = currentList
+        }
+
+        // 2. Wysłanie requestu do serwera
+        val result = repository.toggleLike(token, commentId)
+
+        // 3. Jeśli się nie uda, cofamy zmianę (rollback)
+        result.onFailure {
+            Toast.makeText(context, "Failed to like", Toast.LENGTH_SHORT).show()
+            // Przeładuj prawdziwe dane z serwera, żeby naprawić stan
+            val oldItem = _comments.value.find { it.id == commentId }
+            if (oldItem != null) loadComments(context, oldItem.mealId)
+        }
+    }
 }

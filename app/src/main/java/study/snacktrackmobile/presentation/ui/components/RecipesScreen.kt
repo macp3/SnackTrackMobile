@@ -45,7 +45,7 @@ enum class AddRecipeStep {
     DETAILS
 }
 
-// Stała dla trybu dodawania (wewnętrzna)
+// Constant for the internal add mode
 const val MODE_ADD_RECIPE = "Add recipe_INTERNAL"
 
 @Composable
@@ -62,7 +62,7 @@ fun RecipesScreen(
     val context = LocalContext.current
     val userRepository: UserRepository by lazy { UserRepository() }
 
-    // Obserwujemy tryb ekranu
+    // Observing screen state
     val selectedMode by viewModel.screen.collectAsState()
 
     val recipes by viewModel.recipes.collectAsState()
@@ -76,7 +76,7 @@ fun RecipesScreen(
 
     var token by remember { mutableStateOf("") }
 
-    // --- WYSZUKIWARKA (Discover) ---
+    // --- SEARCH (Discover) ---
     var searchQuery by remember { mutableStateOf("") }
 
     // --- Form States ---
@@ -102,9 +102,9 @@ fun RecipesScreen(
             token = t
             userRepository.getUserId(t).onSuccess { id ->
                 viewModel.setCurrentUserId(id)       // RecipeViewModel
-                commentViewModel.setCurrentUserId(id) // CommentViewModel (NOWE)
+                commentViewModel.setCurrentUserId(id) // CommentViewModel
             }
-            // Domyślnie ładuj "My recipes" przy starcie, jeśli taki jest stan
+            // Default load "My recipes" on start if that is the state
             if (selectedMode == "My recipes") viewModel.loadMyRecipes(t)
         }
     }
@@ -112,11 +112,17 @@ fun RecipesScreen(
     LaunchedEffect(recipeToOpen) {
         if (recipeToOpen != null && token.isNotEmpty()) {
             isLoadingDetails = true
-            viewModel.openRecipeDetails(token, recipeToOpen.id) { fullRecipe ->
-                selectedRecipeDetails = fullRecipe
-                isLoadingDetails = false
-                onRecipeOpened()
-            }
+            viewModel.openRecipeDetails(token, recipeToOpen.id,
+                onSuccess = { fullRecipe ->
+                    selectedRecipeDetails = fullRecipe
+                    isLoadingDetails = false
+                    onRecipeOpened()
+                },
+                onError = {
+                    isLoadingDetails = false
+                    Toast.makeText(context, "Failed to open recipe", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 
@@ -143,7 +149,7 @@ fun RecipesScreen(
         isNameError = false; isDescError = false
     }
 
-    // Obsługa przycisku Wstecz
+    // Back Handler logic
     BackHandler(enabled = (selectedRecipeDetails != null || selectedMode == MODE_ADD_RECIPE)) {
         if (selectedRecipeDetails != null) {
             selectedRecipeDetails = null
@@ -151,7 +157,7 @@ fun RecipesScreen(
             if (currentStep != AddRecipeStep.FORM) {
                 currentStep = AddRecipeStep.FORM
             } else {
-                // Wychodzimy z trybu dodawania -> wracamy do "My recipes"
+                // Exit add mode -> go back to "My recipes"
                 clearForm()
                 viewModel.setScreen("My recipes")
                 viewModel.loadMyRecipes(token)
@@ -192,7 +198,7 @@ fun RecipesScreen(
                 onSuccess = { newId ->
                     uploadImageIfSelected(newId)
                     clearForm()
-                    viewModel.setScreen("My recipes") // Wracamy do listy
+                    viewModel.setScreen("My recipes") // Return to list
                 },
                 onError = { serverErrorMessage = it }
             )
@@ -204,7 +210,7 @@ fun RecipesScreen(
                 onSuccess = {
                     uploadImageIfSelected(editingRecipeId!!)
                     clearForm()
-                    viewModel.setScreen("My recipes") // Wracamy do listy
+                    viewModel.setScreen("My recipes") // Return to list
                 },
                 onError = { serverErrorMessage = it }
             )
@@ -229,22 +235,28 @@ fun RecipesScreen(
             ingredientsForms.add(entry)
         }
 
-        viewModel.setScreen(MODE_ADD_RECIPE) // Przełączamy na tryb dodawania
+        viewModel.setScreen(MODE_ADD_RECIPE)
         currentStep = AddRecipeStep.FORM
     }
 
     fun onRecipeClick(simpleRecipe: RecipeResponse) {
         isLoadingDetails = true
-        viewModel.openRecipeDetails(token, simpleRecipe.id) { fullRecipe ->
-            selectedRecipeDetails = fullRecipe
-            isLoadingDetails = false
-        }
+        viewModel.openRecipeDetails(token, simpleRecipe.id,
+            onSuccess = { fullRecipe ->
+                selectedRecipeDetails = fullRecipe
+                isLoadingDetails = false
+            },
+            onError = {
+                isLoadingDetails = false
+                Toast.makeText(context, "Error loading details", Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     // --- UI RENDER ---
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. SZCZEGÓŁY PRZEPISU (Pełny ekran)
+        // 1. RECIPE DETAILS (Full Screen)
         if (selectedRecipeDetails != null) {
             val r = selectedRecipeDetails!!
             RecipeDetailsScreen(
@@ -261,20 +273,23 @@ fun RecipesScreen(
                     Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
                 },
                 onToggleFavourite = { viewModel.toggleFavourite(token, r) },
-                commentViewModel = commentViewModel
+                commentViewModel = commentViewModel,
+                onReportRecipe = { reason ->
+                    viewModel.reportRecipe(token, r.id, reason)
+                    Toast.makeText(context, "Report sent", Toast.LENGTH_SHORT).show()
+                }
             )
         }
-        // 2. LISTA / FORMULARZ
+        // 2. LIST / FORM
         else {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // --- Pasek Trybów (Ukryty w trybie dodawania) ---
+                // --- Mode Bar (Hidden in Add Mode) ---
                 if (selectedMode != MODE_ADD_RECIPE) {
                     Column {
                         DropdownField(
                             label = "View",
                             selected = selectedMode,
-                            // Usunięto "Add recipe" z listy
                             options = listOf("My recipes", "Favourites", "Discover"),
                             onSelected = { mode ->
                                 viewModel.setScreen(mode)
@@ -283,7 +298,7 @@ fun RecipesScreen(
                                         "My recipes" -> viewModel.loadMyRecipes(token)
                                         "Favourites" -> viewModel.loadMyFavourites(token)
                                         "Discover" -> {
-                                            searchQuery = "" // Reset szukania
+                                            searchQuery = "" // Reset search
                                             viewModel.loadAllRecipes(token)
                                         }
                                     }
@@ -292,13 +307,13 @@ fun RecipesScreen(
                             modifier = Modifier.fillMaxWidth().padding(16.dp)
                         )
 
-                        // --- Wyszukiwarka dla DISCOVER ---
+                        // --- Search Bar for DISCOVER ---
                         if (selectedMode == "Discover") {
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = {
                                     searchQuery = it
-                                    viewModel.searchRecipes(token, it) // Wywołanie szukania w VM
+                                    viewModel.searchRecipes(token, it)
                                 },
                                 label = { Text("Search recipes...", fontFamily = montserratFont) },
                                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -316,7 +331,7 @@ fun RecipesScreen(
                         }
                     }
                 } else if (currentStep == AddRecipeStep.FORM) {
-                    // Nagłówek formularza
+                    // Form Header
                     Text(
                         text = if(editingRecipeId != null) "Edit Recipe" else "New Recipe",
                         style = MaterialTheme.typography.headlineSmall,
@@ -326,7 +341,7 @@ fun RecipesScreen(
                     )
                 }
 
-                // --- ZAWARTOŚĆ GŁÓWNA ---
+                // --- MAIN CONTENT ---
                 Box(modifier = Modifier.weight(1f)) {
                     when (selectedMode) {
                         "My recipes", "Favourites", "Discover" -> {
@@ -402,7 +417,6 @@ fun RecipesScreen(
                                     )
                                 }
                                 AddRecipeStep.DETAILS -> {
-                                    // ... (To samo co wcześniej, bez zmian) ...
                                     val productWrapper = tempSelectedProduct
                                     if (productWrapper != null) {
                                         if (productWrapper.essentialFood != null || productWrapper.mealApi != null) {
@@ -447,7 +461,7 @@ fun RecipesScreen(
                 }
             }
 
-            // --- FAB (Tylko w "My recipes") ---
+            // --- FAB (Only in "My recipes") ---
             if (selectedMode == "My recipes") {
                 FloatingActionButton(
                     onClick = {
@@ -482,10 +496,8 @@ fun RecipesScreen(
     }
 }
 
-// ... (AddRecipeForm pozostaje bez zmian, tak samo jak wcześniej) ...
 @Composable
 fun AddRecipeForm(
-    // ... (argumenty te same co wcześniej) ...
     name: String,
     desc: String,
     imageUrl: String?,
@@ -504,10 +516,6 @@ fun AddRecipeForm(
     onDeleteIngredient: (Int) -> Unit,
     onSubmit: () -> Unit
 ) {
-    // ... (Treść funkcji AddRecipeForm dokładnie taka jak w poprzedniej odpowiedzi z 1024 znakami) ...
-    // Skopiuj ją z poprzedniej wiadomości, nie zmieniała się logicznie, tylko kontekst użycia.
-
-    // Dla kompletności wklejam skróconą wersję:
     val maxNameLength = 100
     val maxDescLength = 1024
 
@@ -522,15 +530,17 @@ fun AddRecipeForm(
             ImagePicker(selectedImageUri, imageUrl, onImageSelected)
         }
         item {
-            TextInput(value = name, onValueChange = { if (it.length <= maxNameLength) onNameChange(it) }, label = "Recipe Name", isError = isNameError, errorMessage = nameErrorMessage)
+            TextInput(value = name, onValueChange = { if (it.length <= maxNameLength) onNameChange(it) }, label = "Recipe Name", isError = isNameError, errorMessage = nameErrorMessage, singleLine = true)
         }
         item {
             Column {
                 OutlinedTextField(
                     value = desc,
                     onValueChange = { if (it.length <= maxDescLength) onDescChange(it) },
-                    label = { Text("Describe how to make...", fontFamily = montserratFont) },
+                    label = { Text("Describe how to make...", fontFamily = montserratFont, color = if (isDescError) Color.Red else Color.Black) },
                     modifier = Modifier.fillMaxWidth().height(250.dp),
+                    isError = isDescError,
+                    singleLine = false,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF2E7D32),
@@ -539,18 +549,20 @@ fun AddRecipeForm(
                         focusedLabelColor = Color(0xFF2E7D32)
                     )
                 )
-                Text("${desc.length} / $maxDescLength", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.End, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                if (isDescError && !descErrorMessage.isNullOrBlank()) {
+                    Text(text = descErrorMessage, color = Color.Red, fontSize = 12.sp, fontFamily = montserratFont, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
+                }
+                Text("${desc.length} / $maxDescLength", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.End, style = MaterialTheme.typography.bodySmall, color = if (desc.length >= maxDescLength) Color.Red else Color.Gray, fontFamily = montserratFont)
             }
         }
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, fontFamily = montserratFont)
                 IconButton(onClick = onStartAddIngredient) { Icon(Icons.Default.Add, contentDescription = "Add", tint = Color(0xFF2E7D32)) }
             }
         }
-        // ... Wyświetlanie składników i przycisk Save (tak jak wcześniej) ...
         if (ingredients.isEmpty()) {
-            item { Text("No ingredients added.", color = Color.Gray) }
+            item { Text("No ingredients added.", color = Color.Gray, fontFamily = montserratFont) }
         } else {
             itemsIndexed(ingredients) { index, ingredient ->
                 val itemName = ingredient.essentialFood?.name ?: ingredient.essentialApi?.name ?: "Unknown"
@@ -559,8 +571,8 @@ fun AddRecipeForm(
                 Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))) {
                     Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f).clickable { onSelectIngredient(index) }) {
-                            Text(itemName, fontWeight = FontWeight.SemiBold)
-                            Text(amountText, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Text(itemName, fontWeight = FontWeight.SemiBold, fontFamily = montserratFont)
+                            Text(amountText, style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontFamily = montserratFont)
                         }
                         IconButton(onClick = { onDeleteIngredient(index) }) { Icon(Icons.Default.Delete, contentDescription = "Remove", tint = Color.Red) }
                     }
@@ -568,7 +580,7 @@ fun AddRecipeForm(
             }
         }
         item {
-            if (serverErrorMessage != null) Text(serverErrorMessage, color = Color.Red)
+            if (serverErrorMessage != null) Text(serverErrorMessage, color = Color.Red, fontFamily = montserratFont)
             Spacer(modifier = Modifier.height(16.dp))
             DisplayButton(text = "Save Recipe", onClick = onSubmit, modifier = Modifier.fillMaxWidth().height(50.dp))
         }

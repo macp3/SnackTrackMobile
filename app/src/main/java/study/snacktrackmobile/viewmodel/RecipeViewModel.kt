@@ -190,14 +190,22 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
 
     // Dodaj w RecipeViewModel
 
-    // Nowa funkcja do pobierania pełnych danych
-    fun openRecipeDetails(token: String, recipeId: Int, onLoaded: (RecipeResponse) -> Unit) {
+    // W RecipeViewModel.kt
+
+    fun openRecipeDetails(
+        token: String,
+        recipeId: Int,
+        onSuccess: (RecipeResponse) -> Unit,
+        onError: (String) -> Unit // <--- NOWY PARAMETR
+    ) {
         viewModelScope.launch {
             val result = repository.getRecipeDetails(token, recipeId)
+
             result.onSuccess { fullRecipe ->
-                onLoaded(fullRecipe)
-            }.onFailure {
-                _errorMessage.value = "Failed to load details: ${it.message}"
+                onSuccess(fullRecipe)
+            }.onFailure { e ->
+                _errorMessage.value = "Failed to load details: ${e.message}"
+                onError(e.message ?: "Unknown error") // <--- Wywołujemy błąd
             }
         }
     }
@@ -230,6 +238,16 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }
+        }
+    }
+
+    fun reportRecipe(token: String, recipeId: Int, reason: String) = viewModelScope.launch {
+        val result = repository.reportRecipe(token, recipeId, reason)
+        result.onSuccess {
+            // Możesz tu dodać np. _toastMessage.value = "Reported" jeśli masz taki mechanizm
+            // Lub po prostu nic nie robić, UI obsłuży sukces zamknięciem dialogu
+        }.onFailure {
+            _errorMessage.value = "Failed to report recipe: ${it.message}"
         }
     }
 }

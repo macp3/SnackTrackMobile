@@ -9,6 +9,7 @@ import retrofit2.http.*
 import study.snacktrackmobile.data.model.Recipe
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
+import study.snacktrackmobile.data.model.dto.ReportedMealRequest
 
 interface RecipeApi {
 
@@ -77,4 +78,10 @@ interface RecipeApi {
         @Header("Authorization") token: String,
         @Query("name") query: String
     ): List<RecipeResponse>
+
+    @POST("meals/reports/add")
+    suspend fun reportMeal(
+        @Header("Authorization") token: String,
+        @Body request: ReportedMealRequest
+    ): Response<ResponseBody>
 }
