@@ -44,14 +44,7 @@ fun SnackTrackApp() {
     val navController = rememberNavController()
     var startDestination by remember { mutableStateOf<String?>(null) }
 
-
-    val recipeRepository = RecipeRepository(Request.recipeApi)
-    val recipesViewModel: RecipeViewModel = viewModel(
-        factory = RecipeViewModel.provideFactory(recipeRepository)
-    )
-
     val userViewModel: UserViewModel = viewModel()
-    var requiresSurvey by remember { mutableStateOf<Boolean?>(null) }
 
     val foodViewModel: FoodViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -69,65 +62,44 @@ fun SnackTrackApp() {
     // --- LOGIKA SPRAWDZANIA TOKENA ---
     LaunchedEffect(Unit) {
         val existingToken = TokenStorage.getToken(context)
-        if (existingToken == null) {
+        if (existingToken.isNullOrEmpty()) {
             startDestination = "StartView"
+            return@LaunchedEffect
+        }
+
+        val bearer = if (existingToken.startsWith("Bearer ")) existingToken else "Bearer $existingToken"
+        val userApi = Request.userApi
+
+        // 1) Weryfikacja profilu
+        val profileRes = try {
+            userApi.getProfile(bearer)
+        } catch (e: Exception) {
+            null
+        }
+
+        val profileOk = profileRes?.isSuccessful == true && profileRes.body() != null
+        if (!profileOk) {
+            TokenStorage.clearToken(context)
+            startDestination = "StartView"
+            return@LaunchedEffect
+        }
+
+        // 2) refreshSurvey → decyduje o InitialSurveyView vs MainView
+        val refreshRes = try {
+            userApi.refreshSurvey(bearer)
+        } catch (e: Exception) {
+            null
+        }
+
+        startDestination = if (refreshRes?.isSuccessful == true && refreshRes.body()?.showSurvey == true) {
+            "InitialSurveyView"
         } else {
-            // Mamy token, sprawdzamy czy jest ważny w API (max 2 sekundy)
-            val isValidUser = try {
-                withTimeout(2000L) {
-                    val userApiCheck = Request.userApi
-
-                    try {
-                        val tokenWithBearer = if (existingToken.startsWith("Bearer ")) {
-                            existingToken
-                        } else {
-                            "Bearer $existingToken"
-                        }
-
-                        val response = userApiCheck.getProfile(tokenWithBearer)
-
-                        if (response != null) {
-                            true
-                        } else {
-                            false
-                        }
-                    } catch (e: HttpException) {
-                        false
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-            } catch (e: Exception) {
-                false
-            }
-
-            if (!isValidUser) {
-                // 🚨 Token jest w pamięci, ale backend go nie zna → reset
-                TokenStorage.clearToken(context)
-                startDestination = "StartView"
-            } else {
-                val refresh = refreshSurvey(existingToken) // wywołaj endpoint /refreshSurvey
-                if (refresh.isSuccess) {
-                    val loginResponse = refresh.getOrNull()
-                    if (loginResponse != null) {
-                        startDestination = if (loginResponse.showSurvey) {
-                            "InitialSurveyView"
-                        } else {
-                            "MainView"
-                        }
-                    } else {
-                        startDestination = "StartView"
-                    }
-                } else {
-                    startDestination = "StartView"
-                }
-            }
+            "MainView"
         }
     }
 
-    // --- 4. WYŚWIETLANIE ---
+    // --- WYŚWIETLANIE ---
     if (startDestination == null) {
-        // LOADER (Max 2 sekundy, potem withTimeout wyrzuci wyjątek i przejdzie do StartView)
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center

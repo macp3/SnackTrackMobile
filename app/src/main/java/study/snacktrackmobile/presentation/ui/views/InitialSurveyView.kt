@@ -27,6 +27,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import study.snacktrackmobile.data.api.Request
 import study.snacktrackmobile.data.model.LoginResponse
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.presentation.ui.components.montserratFont
@@ -239,24 +240,26 @@ fun InitialSurveyView(navController: NavController) {
 
                     scope.launch {
                         val token = TokenStorage.getToken(context)
-
                         if (token != null) {
-                            val result = sendBodyParameters(token, request)
-                            if (result.isSuccess) {
-                                val refresh = refreshSurvey(token)
-                                if (refresh.isSuccess) {
-                                    val loginResponse = refresh.getOrNull()
+                            val bearer = "Bearer $token"
+                            val addRes = Request.userApi.addParameters(bearer, request)
+                            if (addRes.isSuccessful) {
+                                val refreshRes = Request.userApi.refreshSurvey(bearer)
+                                if (refreshRes.isSuccessful) {
+                                    val loginResponse = refreshRes.body()
                                     if (loginResponse != null && !loginResponse.showSurvey) {
                                         navController.navigate("MainView") {
                                             popUpTo("InitialSurveyView") { inclusive = true }
                                         }
+                                    } else {
+                                        backendMessage = "Survey still required"
                                     }
+                                } else {
+                                    backendMessage = "RefreshSurvey failed: ${refreshRes.code()}"
                                 }
                             } else {
-                                backendMessage = result.exceptionOrNull()?.message
+                                backendMessage = addRes.errorBody()?.string() ?: "AddParameters failed"
                             }
-                        } else {
-                            backendMessage = "No authorization token"
                         }
                     }
                 }
@@ -283,56 +286,4 @@ fun mapLevelToFloatTraining(level: String): Float = when (level) {
     "Intense" -> 0.8f
     "Professional" -> 0.95f
     else -> 0.7f
-}
-
-// 🔹 Send request
-suspend fun sendBodyParameters(
-    token: String,
-    request: BodyParametersRequest
-): Result<Unit> {
-    val client = HttpClient(OkHttp) {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                prettyPrint = true
-                isLenient = true
-            })
-        }
-    }
-
-    return try {
-        client.post("${ApiConfig.BASE_URL}/users/addParameters") {
-            headers { append("Authorization", "Bearer $token") }
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Result.failure(e)
-    } finally {
-        client.close()
-    }
-}
-
-suspend fun refreshSurvey(token: String): Result<LoginResponse> {
-    val client = HttpClient(OkHttp) {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                prettyPrint = true
-                isLenient = true
-            })
-        }
-    }
-
-    return try {
-        val response: LoginResponse = client.get("${ApiConfig.BASE_URL}/users/refreshSurvey") {
-            headers { append("Authorization", "Bearer $token") }
-        }.body()
-        Result.success(response)
-    } catch (e: Exception) {
-        Result.failure(e)
-    } finally {
-        client.close()
-    }
 }

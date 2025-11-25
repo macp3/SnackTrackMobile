@@ -28,11 +28,16 @@ interface UserApi {
         @Body body: BodyParametersRequest
     ): Response<BodyParametersResponse>
 
+    @POST("/users/addParameters")
+    suspend fun addParameters(
+        @Header("Authorization") token: String,
+        @Body body: BodyParametersRequest
+    ): Response<ResponseBody>
+
     @GET("/users/refreshSurvey")
     suspend fun refreshSurvey(
         @Header("Authorization") token: String
     ): Response<LoginResponse>
-
 
     @Multipart
     @POST("/users/image")
