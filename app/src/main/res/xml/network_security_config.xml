@@ -4,13 +4,7 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.33.4</domain>
-        <domain includeSubdomains="true">192.168.33.101</domain>
-    </domain-config>
-
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.0.0</domain>
-        <domain includeSubdomains="true">192.168.1.0</domain>
-        <domain includeSubdomains="true">192.168.33.0</domain>
+        <domain includeSubdomains="true">projekt-inzynierski-production.up.railway.app</domain>
+        <domain includeSubdomains="true">66.33.22.164</domain>
     </domain-config>
 </network-security-config>

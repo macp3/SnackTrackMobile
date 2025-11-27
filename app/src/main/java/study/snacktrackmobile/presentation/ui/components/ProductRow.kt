@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,10 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+import study.snacktrackmobile.data.model.dto.getDisplayName
 import study.snacktrackmobile.presentation.ui.views.montserratFont
-import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
 @Composable
 fun ProductRow(
@@ -47,34 +44,41 @@ fun ProductRow(
     // 1. PRZYPADEK: TO JEST PRZEPIS (Backend: Meal)
     if (alimentation.meal != null) {
         val recipe = alimentation.meal // To jest obiekt MealResponse
-        name = recipe.name // Nazwa przepisu, np. "Pancakes"
+        name = recipe.name ?: "Unknown Meal" // Nazwa przepisu, np. "Pancakes"
 
         // Ilość porcji (zapisana w registered alimentation jako pieces)
-        val servings = alimentation.pieces ?: 1f
-        amountText = if (servings == 1f) "1 serving" else "$servings servings"
+        // Rzutujemy na Double, bo pieces w DTO jest Float?
+        val servings = (alimentation.pieces ?: 1f).toDouble()
+        amountText = if (servings == 1.0) "1 serving" else "$servings servings"
 
         // Iterujemy po składnikach przepisu, aby obliczyć makro
         recipe.ingredients.forEach { ing ->
             val ef = ing.essentialFood
             val api = ing.essentialApi
 
-            val baseWeight = (ef?.defaultWeight ?: 100f).toDouble()
+            // defaultWeight w EssentialFoodResponse jest Float?, rzutujemy na Double
+            val baseWeight = (ef?.defaultWeight ?: api?.defaultWeight ?: 100f).toDouble()
 
-            // Ile tego składnika jest w przepisie
-            val iAmount = ing.amount ?: 0f
-            val iPieces = ing.pieces ?: 0f
+            // Ile tego składnika jest w przepisie (Float -> Double)
+            val iAmount = (ing.amount ?: 0f).toDouble()
+            val iPieces = (ing.pieces ?: 0f).toDouble()
 
             val ratio = when {
-                iPieces > 0 -> (iPieces * baseWeight) / 100.0
-                iAmount > 0 -> iAmount.toDouble() / 100.0
+                iPieces > 0.0 -> (iPieces * baseWeight) / 100.0
+                iAmount > 0.0 -> iAmount / 100.0
                 else -> 0.0
             }
 
-            // Pobieramy wartości (z EF lub API) i sumujemy
-            kcal += (ef?.calories ?: api?.calorie?.toFloat() ?: 0f) * ratio
-            protein += (ef?.protein ?: api?.protein ?: 0f) * ratio
-            fat += (ef?.fat ?: api?.fat ?: 0f) * ratio
-            carbs += (ef?.carbohydrates ?: api?.carbohydrates ?: 0f) * ratio
+            // Pobieramy wartości (z EF lub API) - TERAZ SĄ TO DOUBLE? (zgodnie z poprawką DTO)
+            val itemCal = (ef?.calories ?: api?.calorie?.toDouble() ?: 0.0)
+            val itemP = (ef?.protein ?: api?.protein?.toDouble() ?: 0.0)
+            val itemF = (ef?.fat ?: api?.fat?.toDouble() ?: 0.0)
+            val itemC = (ef?.carbohydrates ?: api?.carbohydrates?.toDouble() ?: 0.0)
+
+            kcal += itemCal * ratio
+            protein += itemP * ratio
+            fat += itemF * ratio
+            carbs += itemC * ratio
         }
 
         // Mnożymy sumę składników przez liczbę zjedzonych porcji
@@ -86,39 +90,40 @@ fun ProductRow(
     }
     // 2. PRZYPADEK: TO JEST POJEDYNCZY PRODUKT
     else {
-        val food = alimentation.essentialFood ?: alimentation.mealApi
-        if (food != null) {
-            name = if (alimentation.essentialFood != null) alimentation.essentialFood.name?:"-" else (alimentation.mealApi?.name?: "-")
+        val foodName = alimentation.getDisplayName()
+        name = foodName
 
-            amountText = when {
-                alimentation.pieces != null && alimentation.pieces > 0 ->
-                    "${alimentation.pieces} piece${if (alimentation.pieces > 1) "s" else ""}"
-                alimentation.amount != null && alimentation.amount > 0f ->
-                    "${String.format("%.1f", alimentation.amount)} g"
-                else -> "-"
-            }
+        val userPieces = (alimentation.pieces ?: 0f).toDouble()
+        val userAmount = (alimentation.amount ?: 0f).toDouble()
 
-            // Helper do obliczania (możesz użyć funkcji calcNutrient lub przenieść logikę tutaj)
-            val baseWeight = (alimentation.essentialFood?.defaultWeight ?: 100f).toDouble()
-            val userAmount = alimentation.amount ?: 0f
-            val userPieces = alimentation.pieces ?: 0f
-
-            val ratio = when {
-                userPieces > 0 -> (userPieces * baseWeight) / 100.0
-                userAmount > 0 -> userAmount.toDouble() / 100.0
-                else -> 0.0
-            }
-
-            val baseKcal = (alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toFloat() ?: 0f).toDouble()
-            val baseP = (alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein ?: 0f).toDouble()
-            val baseF = (alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat ?: 0f).toDouble()
-            val baseC = (alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates ?: 0f).toDouble()
-
-            kcal = baseKcal * ratio
-            protein = baseP * ratio
-            fat = baseF * ratio
-            carbs = baseC * ratio
+        amountText = when {
+            userPieces > 0.0 ->
+                "${userPieces.toFloat()} piece${if (userPieces > 1.0) "s" else ""}" // Wyświetlamy jako Float, żeby nie było 1.0 piece
+            userAmount > 0.0 ->
+                "${String.format("%.1f", userAmount)} g"
+            else -> "-"
         }
+
+        // Helper do obliczania
+        // defaultWeight w DTO jest Float?, konwertujemy na Double
+        val baseWeight = (alimentation.essentialFood?.defaultWeight ?: alimentation.mealApi?.defaultWeight ?: 100f).toDouble()
+
+        val ratio = when {
+            userPieces > 0.0 -> (userPieces * baseWeight) / 100.0
+            userAmount > 0.0 -> userAmount / 100.0
+            else -> 0.0
+        }
+
+        // Pobieramy wartości (są Double? lub konwertujemy z API)
+        val baseKcal = (alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toDouble() ?: 0.0)
+        val baseP = (alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein?.toDouble() ?: 0.0)
+        val baseF = (alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat?.toDouble() ?: 0.0)
+        val baseC = (alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates?.toDouble() ?: 0.0)
+
+        kcal = baseKcal * ratio
+        protein = baseP * ratio
+        fat = baseF * ratio
+        carbs = baseC * ratio
     }
 
     // WIDOK KARTY

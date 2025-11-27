@@ -39,7 +39,8 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
             fontSize = 28.sp,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = 24.dp),
+            color = Color.Black
         )
 
         // Karta z misją
@@ -68,7 +69,7 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
 
         // Stopka
         Text(
-            text = "Version 1.0. Developed by Bartosz Piłka & Maciej Pietras",
+            text = "Version 1.0. Developed by\nBartosz Piłka & Maciej Pietras",
             style = MaterialTheme.typography.bodySmall,
             color = Color.Gray,
             fontFamily = montserratFont,

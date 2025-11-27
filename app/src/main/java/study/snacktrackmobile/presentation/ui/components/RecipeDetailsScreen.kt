@@ -26,6 +26,12 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
+import study.snacktrackmobile.data.model.dto.getBaseCalories
+import study.snacktrackmobile.data.model.dto.getBaseCarbs
+import study.snacktrackmobile.data.model.dto.getBaseFat
+import study.snacktrackmobile.data.model.dto.getBaseProtein
+import study.snacktrackmobile.data.model.dto.getDefaultWeight
+import study.snacktrackmobile.data.model.dto.getDisplayName
 import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.CommentViewModel
@@ -390,18 +396,14 @@ fun RecipeDetailsScreen(
 fun RecipeDetailIngredientRow(
     alimentation: RegisteredAlimentationResponse
 ) {
-    val name = alimentation.essentialFood?.name
-        ?: alimentation.mealApi?.name
-        ?: "Unknown Ingredient"
+    val name = alimentation.getDisplayName()
 
-    val baseKcal = alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toFloat() ?: 0f
-    val baseP = alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein ?: 0f
-    val baseF = alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat ?: 0f
-    val baseC = alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates ?: 0f
+    val baseKcal = alimentation.getBaseCalories()
+    val baseP = alimentation.getBaseProtein()
+    val baseF = alimentation.getBaseFat()
+    val baseC = alimentation.getBaseCarbs()
 
-    val defaultWeight = alimentation.essentialFood?.defaultWeight
-        ?: alimentation.mealApi?.defaultWeight
-        ?: 100f
+    val defaultWeight = alimentation.getDefaultWeight()
 
     val amountText = when {
         alimentation.pieces != null && alimentation.pieces > 0 ->
@@ -411,11 +413,12 @@ fun RecipeDetailIngredientRow(
         else -> "-"
     }
 
-    fun calculateTotal(baseVal: Float): Double {
+    // Funkcja obliczająca sumę dla składnika (teraz działa na Float, bo tak zwracają gettery)
+    fun calculateTotal(baseVal: Float): Float {
         val pieces = alimentation.pieces ?: 0f
         val grams = alimentation.amount ?: 0f
         val totalGrams = if (pieces > 0) pieces * defaultWeight else grams
-        return baseVal * (totalGrams / 100.0)
+        return baseVal * (totalGrams / 100f) // 100f, bo defaultWeight to waga w gramach, a baseVal to na 100g
     }
 
     val kcal = calculateTotal(baseKcal)

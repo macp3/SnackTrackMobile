@@ -5,13 +5,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class EssentialFoodResponse(
     val id: Int,
-    val name: String?,
-    val description: String?,
-    val calories: Float?,
-    val protein: Float?,
-    val fat: Float?,
-    val carbohydrates: Float?,
-    val brandName: String?,
-    val defaultWeight: Float?,
-    val servingSizeUnit: String?
+    val name: String? = null,
+    val description: String? = null,
+    val calories: Double? = null,
+    val protein: Double? = null,
+    val fat: Double? = null,
+    val carbohydrates: Double? = null,
+    val brandName: String? = null,
+    val defaultWeight: Float? = null, // To pole może zostać Float, bo jest używane do wagi.
+    val servingSizeUnit: String? = null
 )

@@ -60,22 +60,23 @@ fun ProductDetailsScreen(
 
     val defaultWeight = if (determinedWeight > 0f) determinedWeight else 100f
 
-    val rawKcal = alimentation.essentialFood?.calories
-        ?: alimentation.mealApi?.calorie?.toFloat()
-        ?: 0f
+    // Używamy Double dla precyzji, konwertując z DTO (które teraz ma Double?)
+    val rawKcal = (alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toDouble() ?: 0.0)
+    val rawP = (alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein?.toDouble() ?: 0.0)
+    val rawF = (alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat?.toDouble() ?: 0.0)
+    val rawC = (alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates?.toDouble() ?: 0.0)
 
-    val rawP = alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein ?: 0f
-    val rawF = alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat ?: 0f
-    val rawC = alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates ?: 0f
-
-    // Normalizacja do 100g
+    // Normalizacja do 100g (wszystko na Double)
     val isApi = alimentation.mealApi != null
-    val needsNormalization = isApi && defaultWeight != 100f
+    // defaultWeight jest Float, rzutujemy na Double do obliczeń
+    val defaultWeightD = defaultWeight.toDouble()
+    val needsNormalization = isApi && defaultWeightD != 100.0
 
-    val baseKcal = if (needsNormalization) (rawKcal * 100f) / defaultWeight else rawKcal
-    val baseP = if (needsNormalization) (rawP * 100f) / defaultWeight else rawP
-    val baseF = if (needsNormalization) (rawF * 100f) / defaultWeight else rawF
-    val baseC = if (needsNormalization) (rawC * 100f) / defaultWeight else rawC
+    // Obliczenia na Double
+    val baseKcal = if (needsNormalization) (rawKcal * 100.0) / defaultWeightD else rawKcal
+    val baseP = if (needsNormalization) (rawP * 100.0) / defaultWeightD else rawP
+    val baseF = if (needsNormalization) (rawF * 100.0) / defaultWeightD else rawF
+    val baseC = if (needsNormalization) (rawC * 100.0) / defaultWeightD else rawC
 
     // 🔹 2. UI SETUP
     val unitRawString = rawUnit?.lowercase()?.trim()
@@ -91,7 +92,7 @@ fun ProductDetailsScreen(
 
     var inputValue by remember {
         mutableStateOf(
-            if (alimentation.pieces != null && alimentation.pieces > 0) alimentation.pieces.toString()
+            if (alimentation.pieces != null && alimentation.pieces > 0f) alimentation.pieces.toString()
             else if (selectedOption == "piece") "1"
             else defaultWeight.toInt().toString()
         )
@@ -101,19 +102,22 @@ fun ProductDetailsScreen(
     // 🔹 3. KALKULATOR NA ŻYWO
     val liveSummary = remember(inputValue, selectedOption) {
         val qty = inputValue.toFloatOrNull() ?: 0f
-        val totalGrams = if (selectedOption == "piece") {
-            qty * defaultWeight
-        } else {
-            qty
-        }
-        val ratio = totalGrams / 100f
+        val qtyD = qty.toDouble() // Konwersja inputu na Double
 
+        val totalGramsD = if (selectedOption == "piece") {
+            qtyD * defaultWeightD
+        } else {
+            qtyD
+        }
+        val ratio = totalGramsD / 100.0
+
+        // Wynik konwertujemy na Float dopiero dla UI (MacroItem oczekuje Float)
         MacroSummaryUi(
-            kcal = baseKcal * ratio,
-            p = baseP * ratio,
-            f = baseF * ratio,
-            c = baseC * ratio,
-            weight = totalGrams
+            kcal = (baseKcal * ratio).toFloat(),
+            p = (baseP * ratio).toFloat(),
+            f = (baseF * ratio).toFloat(),
+            c = (baseC * ratio).toFloat(),
+            weight = totalGramsD.toFloat()
         )
     }
 
@@ -173,23 +177,22 @@ fun ProductDetailsScreen(
                     fontFamily = montserratFont,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
-                    maxLines = 1, // Zabezpieczenie tytułu
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Divider(color = Color.LightGray)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Używamy wag (weight) aby każda kolumna miała tyle samo miejsca
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween // To teraz działa jako fallback, bo używamy weight
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     MacroItem(
                         value = liveSummary.kcal,
                         label = "Kcal",
                         color = Color(0xFF2E7D32),
-                        modifier = Modifier.weight(1f) // Równy podział (25%)
+                        modifier = Modifier.weight(1f)
                     )
                     MacroItem(
                         value = liveSummary.p,
@@ -296,20 +299,20 @@ fun MacroItem(
     value: Float,
     label: String,
     color: Color = Color.Black,
-    modifier: Modifier = Modifier // Dodano modifier
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier, // Użycie modifiera (wagi)
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = if (value >= 10000) "9999+" else String.format("%.0f", value), // Opcjonalne zabezpieczenie przed milionami
+            text = if (value >= 10000) "9999+" else String.format("%.0f", value),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFont,
             color = color,
-            maxLines = 1, // Zabezpieczenie przed łamaniem linii
-            overflow = TextOverflow.Ellipsis // Kropki jeśli za długie
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Text(
             text = label,

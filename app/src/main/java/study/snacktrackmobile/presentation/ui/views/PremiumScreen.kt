@@ -144,7 +144,8 @@ fun PremiumScreen(
                 fontSize = 20.sp,
                 fontFamily = montserratFont,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Start
+                textAlign = TextAlign.Start,
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(16.dp))

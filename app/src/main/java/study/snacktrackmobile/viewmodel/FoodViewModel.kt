@@ -216,10 +216,10 @@ class FoodViewModel(
     }
 }
 
-// ... (Sealed class FoodUiItem pozostaje BEZ ZMIAN z poprzedniej odpowiedzi, bo działa dobrze)
+// 🔹 Klasy pomocnicze do wyświetlania na liście wyszukiwania
 sealed class FoodUiItem {
     abstract val name: String
-    abstract val kcal: Float
+    abstract val kcal: Float // UI oczekuje Float, więc musimy rzutować
     abstract val description: String
     abstract val quantityLabel: String
     abstract val defaultWeight: Float?
@@ -240,16 +240,22 @@ sealed class FoodUiItem {
         override val name: String = data.name ?: "Unknown"
         override val description: String = data.description ?: "User Database"
 
+        // defaultWeight w EssentialFoodResponse jest Float?, więc tu bez zmian
         override val defaultWeight: Float? = data.defaultWeight
             ?: extractWeight(data.servingSizeUnit)
             ?: extractWeight(data.name)
 
         private val isPiece = (defaultWeight != null && defaultWeight > 0)
 
+        // 🔹 FIX: Poprawne rzutowanie z Double (DTO) na Float (UI)
         override val kcal: Float = if (isPiece) {
-            ((data.calories ?: 0f) / 100f) * defaultWeight!!
+            // data.calories to teraz Double?, defaultWeight to Float
+            val cal = data.calories ?: 0.0
+            val weight = defaultWeight!!.toDouble()
+            val result = (cal / 100.0) * weight
+            result.toFloat()
         } else {
-            data.calories ?: 0f
+            (data.calories ?: 0.0).toFloat()
         }
 
         override val quantityLabel: String = if (isPiece) {

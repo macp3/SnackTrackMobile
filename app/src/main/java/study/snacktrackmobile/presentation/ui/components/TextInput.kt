@@ -41,8 +41,8 @@ fun TextInput(
     label: String,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
-    errorMessage: String? = null, // 🔹 Nowy parametr do wyświetlania błędu
-    singleLine: Boolean = true,   // 🔹 Nowy parametr do sterowania wielowierszowością
+    errorMessage: String? = null,
+    singleLine: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     Column(modifier = modifier) {
@@ -71,9 +71,11 @@ fun TextInput(
                 unfocusedTextColor = Color.Black,
                 errorTextColor = Color.Red,
 
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent,
+                // --- KLUCZOWA ZMIANA: JAWNE USTAWIENIE BIAŁEGO TŁA KONTENERA ---
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                errorContainerColor = Color.White,
+                // -----------------------------------------------------------------
             ),
             keyboardOptions = keyboardOptions,
             shape = RoundedCornerShape(12.dp),
