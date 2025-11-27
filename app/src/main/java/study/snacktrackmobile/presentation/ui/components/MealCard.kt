@@ -34,22 +34,19 @@ import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 import study.snacktrackmobile.viewmodel.RegisteredAlimentationViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MealCard(
     meal: Meal,
     viewModel: RegisteredAlimentationViewModel,
     onEditProduct: (RegisteredAlimentationResponse) -> Unit,
-    navController: NavController,
+    onAddProductClick: (String) -> Unit,
     selectedDate: String
 ) {
     var expanded by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-
     var showCopyDialog by remember { mutableStateOf(false) }
-    val mealOptions = listOf("breakfast", "lunch", "dinner", "supper", "snack")
-
+    val mealOptions = listOf("Breakfast", "Lunch", "Dinner", "Supper", "Snack")
     val summary = meal.calculateTotalMacros()
 
     Card(
@@ -68,24 +65,13 @@ fun MealCard(
                     fontFamily = montserratFont,
                     color = Color.Black
                 )
-
                 Row {
                     IconButton(onClick = { showCopyDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy meal",
-                            tint = Color.Black
-                        )
+                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy meal", tint = Color.Black)
                     }
-
-                    IconButton(onClick = {
-                        navController.navigate("MainView?tab=AddProduct&meal=${meal.name}&date=$selectedDate") {
-                            popUpTo("MainView") { inclusive = true }
-                        }
-                    }) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = "Add product", tint = Color.Black)
+                    IconButton(onClick = { onAddProductClick(meal.name) }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add product", tint = Color.Black)
                     }
-
                     IconButton(onClick = { expanded = !expanded }) {
                         Icon(
                             imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -96,23 +82,19 @@ fun MealCard(
                 }
             }
 
-            // 🔹 dialog kopiowania – identycznie jak w ShoppingListScreen
             if (showCopyDialog) {
                 CopyMealDialog(
-                    // ➡️ DODANE ARGUMENTY WYMAGANE PRZEZ NOWY DIALOG:
                     title = "Copy meal",
                     mealOptions = mealOptions,
-                    // ----------------------------------------------------
-
                     onDismiss = { showCopyDialog = false },
                     onConfirm = { fromDate, fromMealName ->
                         coroutineScope.launch {
                             viewModel.copyMeal(
                                 context = context,
                                 fromDate = fromDate,
-                                fromMealName = fromMealName.lowercase(),
+                                fromMealName = fromMealName,
                                 toDate = selectedDate,
-                                toMealName = meal.name.lowercase()
+                                toMealName = meal.name
                             )
                         }
                         showCopyDialog = false
@@ -127,16 +109,13 @@ fun MealCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    // Użycie obiektu summary
                     "${String.format("%.0f", summary.kcal)} kcal",
                     style = MaterialTheme.typography.bodyMedium,
                     fontFamily = montserratFont,
                     textAlign = TextAlign.Start,
                     color = Color.Black
                 )
-
                 Text(
-                    // Użycie obiektu summary
                     "${String.format("%.1f", summary.protein)}P ${String.format("%.1f", summary.fat)}F ${String.format("%.1f", summary.carbs)}C",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = montserratFont,
@@ -150,7 +129,8 @@ fun MealCard(
                     Text(
                         "No products added yet",
                         style = MaterialTheme.typography.bodySmall,
-                        fontFamily = montserratFont
+                        fontFamily = montserratFont,
+                        color = Color.Gray
                     )
                 } else {
                     Column {
@@ -163,9 +143,7 @@ fun MealCard(
                                         viewModel.deleteEntry(token, id)
                                     }
                                 },
-                                onEdit = { selectedProduct ->
-                                    onEditProduct(selectedProduct)
-                                }
+                                onEdit = { selectedProduct -> onEditProduct(selectedProduct) }
                             )
                         }
                     }
@@ -174,7 +152,6 @@ fun MealCard(
         }
     }
 }
-
 fun calcNutrient(
     entry: RegisteredAlimentationResponse,
     baseValue: Float? // Ten parametr jest używany tylko dla essentialFood, dla meal jest ignorowany

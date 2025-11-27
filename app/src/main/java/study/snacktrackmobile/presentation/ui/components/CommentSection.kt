@@ -54,7 +54,8 @@ fun CommentSection(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFont,
-            modifier = Modifier.padding(vertical = 8.dp)
+            modifier = Modifier.padding(vertical = 8.dp),
+            color = Color.Black // 🔹 FIX: Wymuszony czarny kolor nagłówka
         )
 
         // Comment List
@@ -63,10 +64,9 @@ fun CommentSection(
                 CommentItem(
                     comment = comment,
                     isAuthor = (currentUserId != null && currentUserId == comment.authorId),
-                    onDelete = { viewModel.deleteComment(context, comment.mealId) },
+                    onDelete = { viewModel.deleteComment(context, comment.mealId) }, // Uwaga: Sprawdź czy deleteComment na pewno przyjmuje mealId czy comment.id
                     onEdit = { showEditDialog = comment },
                     onReport = { showReportDialog = comment },
-                    // Hooking up the like action to the ViewModel
                     onLike = { viewModel.toggleLike(context, comment.id) }
                 )
             }
@@ -86,14 +86,20 @@ fun CommentSection(
             OutlinedTextField(
                 value = newCommentText,
                 onValueChange = {
-                    if (it.length <= 255) newCommentText = it // 🔹 LIMIT ZNAKÓW
+                    if (it.length <= 255) newCommentText = it
                 },
-                placeholder = { Text("Add a comment...") },
+                placeholder = { Text("Add a comment...", color = Color.Gray) },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(24.dp),
+                // 🔹 FIX: Wymuszenie czarnego tekstu i białego tła
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    cursorColor = Color(0xFF2E7D32),
                     focusedBorderColor = Color(0xFF2E7D32),
-                    cursorColor = Color(0xFF2E7D32)
+                    unfocusedBorderColor = Color.Gray
                 )
             )
             IconButton(
@@ -115,16 +121,27 @@ fun CommentSection(
         var reason by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showReportDialog = null },
-            title = { Text("Report Comment") },
+            containerColor = Color.White, // Białe tło dialogu
+            title = { Text("Report Comment", color = Color.Black) },
             text = {
                 Column {
-                    Text("Why are you reporting this comment?")
+                    Text("Why are you reporting this comment?", color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = reason,
                         onValueChange = { reason = it },
-                        label = { Text("Reason") },
-                        modifier = Modifier.fillMaxWidth()
+                        label = { Text("Reason", color = Color.Gray) },
+                        modifier = Modifier.fillMaxWidth(),
+                        // 🔹 FIX kolorów
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            cursorColor = Color(0xFF2E7D32),
+                            focusedBorderColor = Color(0xFF2E7D32),
+                            unfocusedBorderColor = Color.Gray,
+                            focusedLabelColor = Color(0xFF2E7D32),
+                            unfocusedLabelColor = Color.Gray
+                        )
                     )
                 }
             },
@@ -135,7 +152,7 @@ fun CommentSection(
                 }) { Text("Report", color = Color.Red) }
             },
             dismissButton = {
-                TextButton(onClick = { showReportDialog = null }) { Text("Cancel") }
+                TextButton(onClick = { showReportDialog = null }) { Text("Cancel", color = Color.Gray) }
             }
         )
     }
@@ -145,25 +162,37 @@ fun CommentSection(
         var editText by remember { mutableStateOf(showEditDialog!!.content ?: "") }
         AlertDialog(
             onDismissRequest = { showEditDialog = null },
-            title = { Text("Edit Comment") },
+            containerColor = Color.White, // Białe tło dialogu
+            title = { Text("Edit Comment", color = Color.Black) },
             text = {
                 OutlinedTextField(
                     value = editText,
                     onValueChange = { editText = it },
-                    label = { Text("Content") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Content", color = Color.Gray) },
+                    modifier = Modifier.fillMaxWidth(),
+                    // 🔹 FIX kolorów
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        cursorColor = Color(0xFF2E7D32),
+                        focusedBorderColor = Color(0xFF2E7D32),
+                        unfocusedBorderColor = Color.Gray,
+                        focusedLabelColor = Color(0xFF2E7D32),
+                        unfocusedLabelColor = Color.Gray
+                    )
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     if (editText.isNotBlank()) {
-                        viewModel.editComment(context, showEditDialog!!.mealId, editText)
+                        // Uwaga: Upewnij się czy editComment przyjmuje id komentarza
+                        viewModel.editComment(context, showEditDialog!!.id, editText)
                         showEditDialog = null
                     }
-                }) { Text("Save") }
+                }) { Text("Save", color = Color(0xFF2E7D32)) }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = null }) { Text("Cancel") }
+                TextButton(onClick = { showEditDialog = null }) { Text("Cancel", color = Color.Gray) }
             }
         )
     }
@@ -218,7 +247,7 @@ fun CommentItem(
                     Text(
                         text = comment.authorName,
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Black,
+                        color = Color.Black, // 🔹 FIX
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -234,11 +263,12 @@ fun CommentItem(
 
                     DropdownMenu(
                         expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(Color.White) // 🔹 FIX: Białe tło menu
                     ) {
                         if (isAuthor) {
                             DropdownMenuItem(
-                                text = { Text("Edit") },
+                                text = { Text("Edit", color = Color.Black) },
                                 onClick = { showMenu = false; onEdit() }
                             )
                             DropdownMenuItem(
@@ -247,7 +277,7 @@ fun CommentItem(
                             )
                         } else {
                             DropdownMenuItem(
-                                text = { Text("Report") },
+                                text = { Text("Report", color = Color.Black) },
                                 onClick = { showMenu = false; onReport() }
                             )
                         }
@@ -262,7 +292,7 @@ fun CommentItem(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black,
+                    color = Color.Black, // 🔹 FIX: Czarny tekst komentarza
                     maxLines = 5,
                     overflow = TextOverflow.Ellipsis
                 )

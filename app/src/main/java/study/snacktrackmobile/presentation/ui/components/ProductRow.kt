@@ -143,7 +143,8 @@ fun ProductRow(
                     text = name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontFamily = montserratFont,
-                    fontWeight = FontWeight.Normal
+                    fontWeight = FontWeight.Normal,
+                    color = Color.Black
                 )
                 Text(
                     text = amountText,
@@ -160,7 +161,8 @@ fun ProductRow(
                         text = "${String.format("%.0f", kcal)} kcal",
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = montserratFont,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
                     Text(
                         text = "${String.format("%.1f", protein)}P ${String.format("%.1f", fat)}F ${String.format("%.1f", carbs)}C",

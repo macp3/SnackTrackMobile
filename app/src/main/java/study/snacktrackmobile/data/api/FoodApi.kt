@@ -6,7 +6,9 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
+import study.snacktrackmobile.data.model.dto.ApiFoodResponseDetailed
 import study.snacktrackmobile.data.model.dto.EssentialFoodRequest
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
 import study.snacktrackmobile.data.model.dto.UnifiedSearchResponse
@@ -28,4 +30,10 @@ interface FoodApi {
         @Header("Authorization") token: String,
         @Query("query") query: String
     ): UnifiedSearchResponse
+
+    @GET("food/api/{id}")
+    suspend fun getFoodFromApiById(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int
+    ): Response<ApiFoodResponseDetailed>
 }

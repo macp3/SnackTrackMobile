@@ -99,33 +99,15 @@ fun AddProductScreen(
                             kcal = item.kcal,
                             quantityLabel = item.quantityLabel,
                         ) {
-                            val alimentation = when (item) {
-                                is FoodUiItem.Local -> RegisteredAlimentationResponse(
-                                    id = -1,
-                                    userId = 0,
-                                    essentialFood = item.data,
-                                    mealApi = null,
-                                    meal = null,
-                                    timestamp = selectedDate,
-                                    // Logic: If the list showed 1 piece, we pre-fill pieces. Else we pre-fill default weight.
-                                    amount = if(item.quantityLabel.contains("piece")) 0f else (item.data.defaultWeight ?: 100f),
-                                    pieces = if(item.quantityLabel.contains("piece")) 1f else 0f,
-                                    mealName = selectedMeal
-                                )
-                                is FoodUiItem.Api -> RegisteredAlimentationResponse(
-                                    id = -1,
-                                    userId = 0,
-                                    essentialFood = null,
-                                    mealApi = item.data,
-                                    meal = null,
-                                    timestamp = selectedDate,
-                                    // Logic: If API is "piece" based OR we converted it to piece
-                                    amount = if(item.quantityLabel.contains("piece")) 0f else 100f,
-                                    pieces = if(item.quantityLabel.contains("piece")) 1f else 0f,
-                                    mealName = selectedMeal
-                                )
-                            }
-                            onProductClick(alimentation)
+                            // 🔹 ZMIANA: Zamiast tworzyć obiekt tutaj, zlecamy pobranie szczegółów ViewModelowi
+                            foodViewModel.fetchProductDetailsAndNavigate(
+                                item = item,
+                                selectedDate = selectedDate,
+                                selectedMeal = selectedMeal,
+                                onSuccess = { fullProduct ->
+                                    onProductClick(fullProduct) // Dopiero jak mamy full dane, nawigujemy
+                                }
+                            )
                         }
                     }
 

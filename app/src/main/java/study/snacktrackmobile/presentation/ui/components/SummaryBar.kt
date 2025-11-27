@@ -1,6 +1,8 @@
 package study.snacktrackmobile.presentation.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -9,8 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -24,25 +24,30 @@ import study.snacktrackmobile.presentation.ui.views.montserratFont
 import kotlin.math.min
 
 @Composable
-fun SummaryBar() {
-    Surface(
-        modifier = Modifier
+fun SummaryBar(
+    modifier: Modifier = Modifier
+) {
+    // 🔹 BEZPIECZNE TŁO ("Flat Style")
+    // Zamiast cienia (shadow), używamy tła o wysokiej nieprzezroczystości i ramki.
+    // To zapewnia czytelność nad przewijaną listą, ale nie psuje renderowania na telefonach.
+
+    val shape = RoundedCornerShape(24.dp) // Mocno zaokrąglone rogi (pigułka)
+    val backgroundColor = Color(0xB3FFFFFF).copy(alpha = 0.95f) // Lekko przeźroczysta zieleń
+    val borderColor = Color(0xFFC5E1A5) // Ciemniejsza obwódka dla kontrastu
+
+    Box(
+        modifier = modifier
             .fillMaxWidth()
-            .wrapContentHeight() // 🔹 ZMIANA: Dopasuj wysokość do zawartości
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        shadowElevation = 6.dp,
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF1F8E9)
+            .padding(horizontal = 12.dp, vertical = 8.dp) // Margines od krawędzi ekranu
+            .background(color = backgroundColor, shape = shape) // Tło
+            .border(width = 1.dp, color = borderColor, shape = shape) // Ramka zamiast cienia
+            .padding(vertical = 10.dp) // Wewnętrzny odstęp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp), // 🔹 ZMIANA: Większy oddech góra/dół
-            horizontalArrangement = Arrangement.SpaceBetween, // Rozłożenie przestrzeni
-            verticalAlignment = Alignment.Top // Wyrównanie do góry, żeby teksty na dole były w linii
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
         ) {
-            // Używamy weight(1f) aby każdy element miał dokładnie 25% szerokości
-            // Zapobiegnie to nachodzeniu na siebie
             val itemModifier = Modifier.weight(1f)
 
             NutrientIndicator(
@@ -86,8 +91,8 @@ fun NutrientIndicator(
     current: Float,
     limit: Float,
     unit: String,
-    modifier: Modifier = Modifier, // 🔹 Dodano modifier
-    size: Dp = 60.dp, // 🔹 Lekko mniejsze kółko dla bezpieczeństwa
+    modifier: Modifier = Modifier,
+    size: Dp = 55.dp, // Lekko mniejsze, żeby pasowało do paska
     strokeWidth: Dp = 5.dp
 ) {
     val progress = if (limit > 0) current / limit else 0f
@@ -99,11 +104,11 @@ fun NutrientIndicator(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier // 🔹 Użycie modifiera z wagi (weight)
+        modifier = modifier
     ) {
         Box(contentAlignment = Alignment.Center) {
             Canvas(modifier = Modifier.size(size)) {
-                // Tło
+                // Tło paska (szare kółko)
                 drawArc(
                     color = trackColor,
                     startAngle = 0f,
@@ -144,10 +149,10 @@ fun NutrientIndicator(
                     fontFamily = montserratFont,
                     fontWeight = FontWeight.Bold,
                     color = if (isOverLimit) exceedColor else Color.Black,
-                    fontSize = 12.sp // Lekko mniejsza czcionka
+                    fontSize = 11.sp
                 )
                 Surface(
-                    modifier = Modifier.width(16.dp).height(1.dp),
+                    modifier = Modifier.width(14.dp).height(1.dp),
                     color = Color.Gray
                 ) {}
                 Text(
@@ -162,16 +167,16 @@ fun NutrientIndicator(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Etykieta pod spodem
+        // Etykieta pod kółkiem
         Text(
             text = "$label${if(unit.isNotEmpty()) " ($unit)" else ""}",
             style = MaterialTheme.typography.labelMedium,
             fontFamily = montserratFont,
-            color = Color.Black,
+            color = Color.Black, // Czarny tekst na jasnym tle paska
             fontWeight = FontWeight.Medium,
             fontSize = 11.sp,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis // Utnij tekst jeśli się nie mieści w kolumnie
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

@@ -1,10 +1,8 @@
 package study.snacktrackmobile.data.repository
 
-import androidx.compose.ui.text.toLowerCase
 import study.snacktrackmobile.data.api.ApiService
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
-import java.time.LocalDate
 
 class RegisteredAlimentationRepository(private val api: ApiService) {
 
@@ -19,13 +17,11 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         }
     }
 
-    // W RegisteredAlimentationRepository.kt
-
     suspend fun addEntry(
         token: String,
-        essentialId: Int? = null, // Zmiana na Nullable
-        mealApiId: Int? = null,   // Dodanie nowego parametru
-        mealId: Int? = null,      // Opcjonalnie dla przepisów
+        essentialId: Int? = null,
+        mealApiId: Int? = null,
+        mealId: Int? = null,
         mealName: String,
         date: String,
         amount: Float?,
@@ -33,7 +29,7 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
     ): Boolean {
         val body = RegisteredAlimentationRequest(
             essentialId = essentialId,
-            mealApiId = mealApiId, // Mapowanie do DTO
+            mealApiId = mealApiId,
             mealId = mealId,
             timestamp = date,
             mealName = mealName.lowercase(),
@@ -49,7 +45,8 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         return api.updateEntry("Bearer $token", id, dto)
     }
 
-
+    // 🔹 CAŁKOWICIE PRZEPISANA METODA KOPIOWANIA
+    // Teraz używa dedykowanego endpointu backendu, który robi to poprawnie (kopiuje wszystko)
     suspend fun copyMeal(
         token: String,
         fromDate: String,
@@ -57,25 +54,19 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         toDate: String,
         toMealName: String
     ) {
-        // pobierz wszystkie wpisy dla dnia źródłowego
-        val allEntries = api.getMyEntries("Bearer $token", fromDate)
+        val authToken = if (token.startsWith("Bearer ")) token else "Bearer $token"
 
-        // przefiltruj tylko te z wybranego posiłku
-        val sourceEntries = allEntries.filter { it.mealName.equals(fromMealName, ignoreCase = true) }
+        val response = api.copyMeal(
+            token = authToken,
+            fromDate = fromDate,
+            fromMealName = fromMealName,
+            toDate = toDate,
+            toMealName = toMealName
+        )
 
-        sourceEntries.forEach { entry ->
-            val essentialId = entry.essentialFood?.id ?: return@forEach
-            val dto = RegisteredAlimentationRequest(
-                essentialId = essentialId,
-                mealApiId = entry.mealApi?.id,
-                mealId = entry.meal?.id,
-                timestamp = toDate,
-                mealName = toMealName,
-                amount = entry.amount,
-                pieces = entry.pieces
-            )
-            api.addEntry("Bearer $token", dto, toDate)
+        // Nie parsujemy body, tylko sprawdzamy kod sukcesu (200 OK)
+        if (!response.isSuccessful) {
+            throw Exception("Copy failed: ${response.code()} ${response.message()}")
         }
     }
 }
-

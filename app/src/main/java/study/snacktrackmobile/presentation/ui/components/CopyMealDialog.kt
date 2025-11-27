@@ -1,7 +1,7 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import DropdownField
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,11 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import study.snacktrackmobile.presentation.ui.views.montserratFont // Upewnij się, że to jest poprawne
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +31,7 @@ fun CopyMealDialog(
     var fromMealName by remember { mutableStateOf(initialMeal) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Ustawienie początkowej daty na dzisiaj (lub wartość domyślną)
+    // Ustawienie początkowej daty na dzisiaj
     val initialDateMillis = remember { Calendar.getInstance().timeInMillis }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDateMillis)
 
@@ -43,7 +42,7 @@ fun CopyMealDialog(
             Instant.ofEpochMilli(millis)
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate()
-                .format(DateTimeFormatter.ISO_LOCAL_DATE) // Format: 2025-01-25
+                .format(DateTimeFormatter.ISO_LOCAL_DATE)
         }
     }
 
@@ -64,12 +63,13 @@ fun CopyMealDialog(
         onDismiss()
     }
 
+    // InteractionSource jest potrzebny, aby wyłączyć efekt "ripple" przy kliknięciu,
+    // jeśli przeszkadza, ale przede wszystkim pomaga obsłużyć kliknięcie na readOnly TextField
+    val interactionSource = remember { MutableInteractionSource() }
 
-    // 1. GŁÓWNE OKNO DIALOGOWE (Zawiera pole daty, dropdown i przyciski)
+    // 1. GŁÓWNE OKNO DIALOGOWE
     Dialog(onDismissRequest = { onDismiss() }) {
         Card(
-            // Używamy Modifier.wrapContentSize(), aby Card dostosował się do zawartości
-            // (w tym do DatePicker, jeśli ma minimalną szerokość)
             modifier = Modifier.wrapContentSize(),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -88,26 +88,47 @@ fun CopyMealDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // 🔹 POLE TEKSTOWE DATY (clickable)
-                OutlinedTextField(
-                    value = formattedDate,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Select Date") },
-                    trailingIcon = {
-                        IconButton(onClick = { showDatePicker = true }) {
-                            Icon(
-                                imageVector = Icons.Default.CalendarToday,
-                                contentDescription = "Select date"
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // Umożliwia kliknięcie na całym polu, by otworzyć kalendarz
-                        .clickable { showDatePicker = true }
-                )
+                // 🔹 POLE TEKSTOWE DATY
+                // Box pozwala na przechwycenie kliknięcia nad polem tekstowym
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = formattedDate,
+                        onValueChange = {},
+                        readOnly = true, // Ważne: użytkownik nie może wpisywać z klawiatury
+                        label = { Text("Select Date") },
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarToday,
+                                    contentDescription = "Select date",
+                                    tint = Color(0xFF2E7D32) // Zielona ikonka pasująca do stylu
+                                )
+                            }
+                        },
+                        // 🔹 ZMIANA KOLORÓW TUTAJ:
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,   // Czarny tekst gdy aktywne
+                            unfocusedTextColor = Color.Black, // Czarny tekst gdy nieaktywne (to naprawia Twój problem)
+                            disabledTextColor = Color.Black,
+                            focusedBorderColor = Color(0xFF2E7D32), // Zielona ramka gdy aktywne
+                            unfocusedBorderColor = Color.Gray,
+                            focusedLabelColor = Color(0xFF2E7D32),
+                            unfocusedLabelColor = Color.Gray,
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
+                    // Przezroczysta warstwa clickable na wierzchu pola tekstowego.
+                    // To gwarantuje, że kliknięcie w dowolnym miejscu pola otworzy kalendarz.
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null // Brak efektu kliknięcia wizualnego na polu
+                            ) { showDatePicker = true }
+                    )
+                }
 
                 // 🔹 DropdownField
                 DropdownField(
@@ -118,7 +139,7 @@ fun CopyMealDialog(
                     modifier = Modifier.width(300.dp)
                 )
 
-                // 🔹 Customowe Przyciski
+                // 🔹 Przyciski
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -142,7 +163,7 @@ fun CopyMealDialog(
         }
     }
 
-    // 2. OKNO DIALOGOWE KALENDARZA (Wyskakuje po kliknięciu pola daty)
+    // 2. OKNO DIALOGOWE KALENDARZA
     if (showDatePicker) {
         DatePickerDialog(
             modifier = Modifier.fillMaxSize(),
@@ -150,7 +171,7 @@ fun CopyMealDialog(
             confirmButton = {
                 DisplayButton(
                     text = "OK",
-                    onClick = { showDatePicker = false }, // Tylko zamyka dialog, data jest już wybrana
+                    onClick = { showDatePicker = false },
                     modifier = Modifier.width(120.dp),
                     fontSize = 16
                 )
@@ -162,12 +183,19 @@ fun CopyMealDialog(
                     modifier = Modifier.width(120.dp),
                     fontSize = 16
                 )
-            }
+            },
+            colors = DatePickerDefaults.colors(
+                containerColor = Color.White // Białe tło kalendarza
+            )
         ) {
-            // Ustawienia DatePicker, które mają szanse na wyświetlenie 7 dni
             DatePicker(
                 state = datePickerState,
                 modifier = Modifier.fillMaxWidth(),
+                colors = DatePickerDefaults.colors(
+                    selectedDayContainerColor = Color(0xFF2E7D32), // Zielony wybór
+                    todayDateBorderColor = Color(0xFF2E7D32),
+                    todayContentColor = Color(0xFF2E7D32)
+                )
             )
         }
     }

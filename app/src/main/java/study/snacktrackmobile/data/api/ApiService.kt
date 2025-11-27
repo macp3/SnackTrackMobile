@@ -56,5 +56,13 @@ interface ApiService {
         @Body dto: RegisteredAlimentationRequest
     ): RegisteredAlimentationResponse
 
+    @POST("registered/copy")
+    suspend fun copyMeal(
+        @Header("Authorization") token: String,
+        @Query("fromDate") fromDate: String,
+        @Query("fromMealName") fromMealName: String,
+        @Query("toDate") toDate: String,
+        @Query("toMealName") toMealName: String
+    ): Response<ResponseBody>
 }
 

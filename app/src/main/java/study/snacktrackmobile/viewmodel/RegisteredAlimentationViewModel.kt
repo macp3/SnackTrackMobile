@@ -8,22 +8,30 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import study.snacktrackmobile.data.api.FoodApi
 import study.snacktrackmobile.data.model.Meal
 import study.snacktrackmobile.data.model.Product
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationRequest
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.repository.RegisteredAlimentationRepository
+import study.snacktrackmobile.data.services.AiApiService
+import study.snacktrackmobile.data.services.AiShoppingRequest
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.state.SummaryBarState
 
-class RegisteredAlimentationViewModel(private val repository: RegisteredAlimentationRepository) :
-    ViewModel() {
+class RegisteredAlimentationViewModel(
+    private val repository: RegisteredAlimentationRepository,
+    private val foodApi: FoodApi,
+    private val aiService: AiApiService
+) : ViewModel() {
 
     private val _raw = MutableStateFlow<List<RegisteredAlimentationResponse>>(emptyList())
     val raw: StateFlow<List<RegisteredAlimentationResponse>> = _raw
@@ -40,14 +48,89 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
     private val _errorMessage = mutableStateOf<String?>(null)
     val errorMessage: State<String?> = _errorMessage
 
-    // Lista tymczasowa do wyszukiwania lokalnego (jeśli używane)
-    private val allProducts = listOf(
-        Product(1, "Bread", "100 g", 247, 13f, 4.2f, 41f),
-        Product(2, "Milk", "200 ml", 60, 3.2f, 3.3f, 5f),
-        Product(3, "Cheese", "30 g", 402, 25f, 33f, 1.3f),
-        Product(4, "Tomato", "100 g", 18, 0.9f, 0.2f, 3.9f),
-        Product(5, "Yogurt", "150 g", 59, 10f, 0.4f, 3.6f)
-    )
+    private var loadMealsJob: Job? = null
+
+    // 🔹 POMOCNICZA FUNKCJA: Wyciąganie wagi ze stringa (np. "330ml" -> 330.0)
+    // To ta sama logika co w FoodViewModel i ProductDetailsScreen
+    private fun extractWeight(quantityStr: String?): Float? {
+        if (quantityStr == null) return null
+        val regex = Regex("(\\d+(?:\\.\\d+)?)\\s*(g|ml|l|kg)", RegexOption.IGNORE_CASE)
+        val match = regex.find(quantityStr)
+
+        val valueStr = match?.groupValues?.get(1)
+        val unitStr = match?.groupValues?.get(2)?.lowercase()
+
+        var value = valueStr?.toFloatOrNull() ?: return null
+
+        if (unitStr == "l" || unitStr == "kg") {
+            value *= 1000
+        }
+        return value
+    }
+
+    fun generateAiDiet(context: Context, date: String, prompt: String = "") {
+        viewModelScope.launch {
+            val token = TokenStorage.getToken(context) ?: return@launch
+            _isLoading.value = true
+
+            try {
+                Toast.makeText(context, "Asking AI for a plan...", Toast.LENGTH_SHORT).show()
+
+                val requestBody = AiShoppingRequest(
+                    prompt = prompt,
+                    productContext = emptyList()
+                )
+
+                val dietPlan = aiService.generateDiet("Bearer $token", requestBody)
+                var addedCount = 0
+
+                dietPlan.forEach { item ->
+                    try {
+                        val searchResult = foodApi.searchFood("Bearer $token", item.productName)
+                        val bestLocal = searchResult.localResults.firstOrNull()
+                        val bestApi = searchResult.apiResults.firstOrNull()
+                        val isPiece = item.unit.contains("piece", true) || item.unit.contains("szt", true)
+
+                        if (bestLocal != null) {
+                            repository.addEntry(
+                                token = token,
+                                essentialId = bestLocal.id,
+                                mealApiId = null,
+                                mealName = item.meal,
+                                date = date,
+                                amount = if (!isPiece) item.amount else null,
+                                pieces = if (isPiece) item.amount else null
+                            )
+                            addedCount++
+                        } else if (bestApi != null) {
+                            repository.addEntry(
+                                token = token,
+                                essentialId = null,
+                                mealApiId = bestApi.id,
+                                mealName = item.meal,
+                                date = date,
+                                amount = if (!isPiece) item.amount else null,
+                                pieces = if (isPiece) item.amount else null
+                            )
+                            addedCount++
+                        } else {
+                            Log.w("AI_DIET", "Product not found for: ${item.productName}")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AI_DIET", "Failed to add item: ${item.productName}", e)
+                    }
+                }
+                loadMeals(token, date)
+                Toast.makeText(context, "Diet generated! Added $addedCount items.", Toast.LENGTH_SHORT).show()
+
+            } catch (e: Exception) {
+                Log.e("AI_DIET", "Error generating diet", e)
+                Toast.makeText(context, "AI Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 
     private fun normalizeMealName(name: String): String =
         when (name.lowercase()) {
@@ -60,31 +143,16 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         }
 
     fun loadMeals(token: String, date: String) {
-        viewModelScope.launch {
+        loadMealsJob?.cancel()
+
+        loadMealsJob = viewModelScope.launch {
+            delay(400)
             _isLoading.value = true
             try {
                 val list = repository.getMealsForDate(token, date)
-
-                // --- LOGOWANIE DIAGNOSTYCZNE ---
-                Log.d("SnackTrack", "Loaded ${list.size} entries for $date")
-                list.forEach { entry ->
-                    if (entry.meal != null) {
-                        Log.d("SnackTrack", "[RECIPE] Entry ${entry.id}: ${entry.meal.name}. Ingredients: ${entry.meal.ingredients.size}")
-                        entry.meal.ingredients.forEach { ing ->
-                            val hasApi = ing.essentialApi != null
-                            val hasLocal = ing.essentialFood != null
-                            Log.d("SnackTrack", " -> Ingredient ${ing.id}: HasApi=$hasApi, HasLocal=$hasLocal")
-                        }
-                    } else {
-                        Log.d("SnackTrack", "[PRODUCT] Entry ${entry.id}")
-                    }
-                }
-                // -------------------------------
-
                 _raw.value = list
                 _meals.value = mapToUi(list)
                 SummaryBarState.update(_meals.value)
-
             } catch (e: Exception) {
                 Log.e("SnackTrack", "Error loading meals", e)
                 _raw.value = emptyList()
@@ -96,65 +164,68 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         }
     }
 
+    // 🔹 FIX: Zaktualizowana logika mapowania z parsowaniem wagi
     private fun mapToUi(input: List<RegisteredAlimentationResponse>): List<Meal> {
         return input
             .groupBy { normalizeMealName(it.mealName ?: "Other") }
             .map { (dailyMealName, entries) ->
-
                 var kcalSum = 0.0
 
                 val recalculatedEntries = entries.map { entry ->
-                    // 1. PRZYPADEK: PRZEPIS (RECIPE)
                     if (entry.meal != null) {
+                        // --- PRZEPIS (RECIPE) ---
                         val recipeData = entry.meal
-
-                        // Sumujemy kalorie składników przepisu
                         val totalRecipeKcal = recipeData.ingredients.sumOf { ing ->
                             val ef = ing.essentialFood
                             val api = ing.essentialApi
 
-                            // Pobieramy bazowe kalorie (zabezpieczenie przed null)
                             val baseCal = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
 
-                            // Pobieramy wagę bazową (dla API domyślnie 100g)
-                            val baseWeight = (ef?.defaultWeight ?: api?.defaultWeight ?: 100f).toDouble()
+                            // 🔹 FIX: Parsowanie wagi składnika przepisu
+                            val determinedWeight = ef?.defaultWeight
+                                ?: api?.defaultWeight
+                                ?: extractWeight(api?.quantity)
+                                ?: extractWeight(api?.servingSizeUnit)
+                                ?: 100f
+
+                            val baseWeight = (if(determinedWeight > 0) determinedWeight else 100f).toDouble()
 
                             val iAmount = ing.amount ?: 0f
                             val iPieces = ing.pieces ?: 0f
 
-                            // Obliczamy stosunek ilości składnika
                             val ratio = when {
                                 iPieces > 0 -> (iPieces * baseWeight) / 100.0
                                 iAmount > 0 -> iAmount.toDouble() / 100.0
                                 else -> 0.0
                             }
-
                             baseCal * ratio
                         }
-
-                        // Mnożymy kalorie przepisu przez ilość porcji zjedzonych przez usera
                         val servings = entry.pieces ?: 1f
-                        val finalKcal = totalRecipeKcal * servings
-
-                        kcalSum += finalKcal
+                        kcalSum += (totalRecipeKcal * servings)
                         entry
-                    }
-                    // 2. PRZYPADEK: POJEDYNCZY PRODUKT
-                    else {
+                    } else {
+                        // --- POJEDYNCZY PRODUKT ---
                         val ef = entry.essentialFood
                         val api = entry.mealApi
 
                         val baseCal = (ef?.calories ?: api?.calorie?.toFloat() ?: 0f).toDouble()
-                        val baseWeight = (ef?.defaultWeight ?: api?.defaultWeight ?: 100f).toDouble()
+
+                        // 🔹 FIX: Parsowanie wagi dla pojedynczego produktu
+                        // Teraz szukamy w quantity ("330ml") i servingSizeUnit, zanim użyjemy fallbacku 100f
+                        val determinedWeight = ef?.defaultWeight
+                            ?: api?.defaultWeight
+                            ?: extractWeight(api?.quantity)
+                            ?: extractWeight(api?.servingSizeUnit)
+                            ?: 100f
+
+                        val baseWeight = (if(determinedWeight > 0) determinedWeight else 100f).toDouble()
 
                         val ratio = when {
                             (entry.pieces ?: 0f) > 0 -> ((entry.pieces!!.toDouble()) * baseWeight) / 100.0
                             (entry.amount ?: 0f) > 0 -> (entry.amount!!.toDouble()) / 100.0
                             else -> 0.0
                         }
-
-                        val prodTotal = baseCal * ratio
-                        kcalSum += prodTotal
+                        kcalSum += (baseCal * ratio)
                         entry
                     }
                 }
@@ -167,21 +238,14 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
             }
     }
 
-    fun updateMealProduct(
-        context: Context,
-        productId: Int,
-        dto: RegisteredAlimentationRequest,
-        date: String
-    ) {
+    fun updateMealProduct(context: Context, productId: Int, dto: RegisteredAlimentationRequest, date: String) {
         viewModelScope.launch {
-            val token = TokenStorage.getToken(context)
-            if (token != null) {
-                try {
-                    repository.updateEntry(token, productId, dto)
-                    loadMeals(token, date)
-                } catch (e: Exception) {
-                    _errorMessage.value = e.message
-                }
+            val token = TokenStorage.getToken(context) ?: return@launch
+            try {
+                repository.updateEntry(token, productId, dto)
+                loadMeals(token, date)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
             }
         }
     }
@@ -190,7 +254,6 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         viewModelScope.launch {
             try {
                 repository.deleteEntry(token, id)
-                // Aktualizacja lokalna dla płynności
                 val updatedRaw = _raw.value.filterNot { it.id == id }
                 _raw.value = updatedRaw
                 _meals.value = mapToUi(updatedRaw)
@@ -201,32 +264,11 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         }
     }
 
-    fun searchProducts(query: String) {
-        _products.value = if (query.isBlank()) allProducts
-        else allProducts.filter { it.name.contains(query, ignoreCase = true) }
-    }
-
-    fun addMealProduct(
-        context: Context,
-        essentialId: Int? = null,
-        mealApiId: Int? = null,
-        mealName: String,
-        date: String,
-        amount: Float? = null,
-        pieces: Float? = null
-    ) {
+    fun addMealProduct(context: Context, essentialId: Int? = null, mealApiId: Int? = null, mealName: String, date: String, amount: Float? = null, pieces: Float? = null) {
         viewModelScope.launch {
             val token = TokenStorage.getToken(context) ?: return@launch
             try {
-                repository.addEntry(
-                    token = token,
-                    essentialId = essentialId,
-                    mealApiId = mealApiId,
-                    mealName = mealName,
-                    date = date,
-                    amount = amount,
-                    pieces = pieces
-                )
+                repository.addEntry(token, essentialId, mealApiId, null, mealName, date, amount, pieces)
                 loadMeals(token, date)
             } catch (e: Exception) {
                 _errorMessage.value = "Error adding product: ${e.message}"
@@ -235,60 +277,29 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
         }
     }
 
-    fun copyMeal(
-        context: Context,
-        fromDate: String,
-        fromMealName: String,
-        toDate: String,
-        toMealName: String
-    ) {
+    fun copyMeal(context: Context, fromDate: String, fromMealName: String, toDate: String, toMealName: String) {
         viewModelScope.launch {
             val token = TokenStorage.getToken(context) ?: return@launch
             try {
-                repository.copyMeal(
-                    token,
-                    fromDate,
-                    fromMealName.lowercase(),
-                    toDate,
-                    toMealName.lowercase()
-                )
+                repository.copyMeal(token, fromDate, fromMealName.lowercase(), toDate, toMealName.lowercase())
                 loadMeals(token, toDate)
+                Toast.makeText(context, "Meal copied!", Toast.LENGTH_SHORT).show()
             } catch (e: HttpException) {
-                Log.e("CopyMeal", "HTTP error: ${e.code()} ${e.message()}")
                 Toast.makeText(context, "Copy failed: ${e.code()}", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Log.e("CopyMeal", "Unexpected error: ${e.message}")
                 Toast.makeText(context, "Unexpected error", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    fun addRecipeToMeal(
-        context: Context,
-        recipe: RecipeResponse,
-        date: String,
-        mealName: String,
-        servings: Float
-    ) {
+    fun addRecipeToMeal(context: Context, recipe: RecipeResponse, date: String, mealName: String, servings: Float) {
         viewModelScope.launch {
             val token = TokenStorage.getToken(context) ?: return@launch
-
             try {
-                val success = repository.addEntry(
-                    token = token,
-                    mealId = recipe.id,
-                    essentialId = null,
-                    mealApiId = null,
-                    mealName = mealName,
-                    date = date,
-                    pieces = servings,
-                    amount = null
-                )
-
+                val success = repository.addEntry(token, null, null, recipe.id, mealName, date, null, servings)
                 if (success) {
                     loadMeals(token, date)
-                    Toast.makeText(context, "Recipe added to $mealName", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(context, "Recipe added to $mealName", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(context, "Failed to add recipe", Toast.LENGTH_SHORT).show()
                 }
@@ -299,12 +310,16 @@ class RegisteredAlimentationViewModel(private val repository: RegisteredAlimenta
     }
 
     companion object {
-        fun provideFactory(repository: RegisteredAlimentationRepository): ViewModelProvider.Factory {
+        fun provideFactory(
+            repository: RegisteredAlimentationRepository,
+            foodApi: FoodApi,
+            aiService: AiApiService
+        ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(RegisteredAlimentationViewModel::class.java)) {
                         @Suppress("UNCHECKED_CAST")
-                        return RegisteredAlimentationViewModel(repository) as T
+                        return RegisteredAlimentationViewModel(repository, foodApi, aiService) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class")
                 }

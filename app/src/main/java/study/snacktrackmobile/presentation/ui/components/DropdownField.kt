@@ -1,21 +1,15 @@
+package study.snacktrackmobile.presentation.ui.components
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
-import study.snacktrackmobile.presentation.ui.components.montserratFont
+import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,14 +19,14 @@ fun DropdownField(
     options: List<String>,
     isError: Boolean = false,
     onSelected: (String) -> Unit,
-    modifier: Modifier = Modifier // ✅ dodany parametr
+    modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded },
-        modifier = modifier // ✅ użycie parametru
+        modifier = modifier
     ) {
         OutlinedTextField(
             value = selected,
@@ -40,21 +34,32 @@ fun DropdownField(
             readOnly = true,
             label = { Text(label, fontFamily = montserratFont) },
             trailingIcon = {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                    contentDescription = null
-                )
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            textStyle = LocalTextStyle.current.copy(fontFamily = montserratFont),
+            textStyle = TextStyle(
+                fontFamily = montserratFont,
+                color = Color.Black // ✅ Wymuszony czarny kolor tekstu
+            ),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (isError) Color.Red else Color.Black,
-                unfocusedBorderColor = if (isError) Color.Red else Color.Gray,
+                // ✅ Kolory tekstu
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black,
+
+                // Obramowania
+                focusedBorderColor = if (isError) Color.Red else Color(0xFF2E7D32), // Zielony jak w reszcie apki
+                unfocusedBorderColor = if (isError) Color.Red else Color.Black,
                 errorBorderColor = Color.Red,
-                focusedLabelColor = if (isError) Color.Red else Color.Black,
+
+                // Etykiety
+                focusedLabelColor = if (isError) Color.Red else Color(0xFF2E7D32),
                 unfocusedLabelColor = if (isError) Color.Red else Color.Black,
                 errorLabelColor = Color.Red,
+
+                // Tło
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent,
@@ -62,21 +67,26 @@ fun DropdownField(
             isError = isError
         )
 
-        DropdownMenu(
+        // ✅ Zmiana na ExposedDropdownMenu (lepiej działa z Boxem)
+        ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .background(Color.White, RoundedCornerShape(12.dp)),
-            properties = PopupProperties(focusable = true)
+            modifier = Modifier.background(Color.White) // ✅ Białe tło usuwa czarne rogi
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option, fontFamily = montserratFont) },
+                    text = {
+                        Text(
+                            text = option,
+                            fontFamily = montserratFont,
+                            color = Color.Black // ✅ Tekst w opcjach też czarny
+                        )
+                    },
                     onClick = {
                         onSelected(option)
                         expanded = false
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
             }
         }

@@ -3,7 +3,9 @@ package study.snacktrackmobile.presentation.ui.views
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -98,9 +100,13 @@ fun PremiumScreen(
 
     val hasPremium = isPremiumActive(user.premiumExpiration)
 
+    // 🔹 1. Tworzymy stan przewijania
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState) // 🔹 2. Włączamy przewijanie
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -227,5 +233,8 @@ fun PremiumScreen(
                 }
             )
         }
+
+        // Dodatkowy odstęp na dole, żeby ostatni element nie przylegał do krawędzi
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }

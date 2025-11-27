@@ -56,38 +56,6 @@ fun TrainingView(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // 🔝 Nagłówek
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = training.name,
-                    fontFamily = montserratFont,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Button(
-                    onClick = { viewModel.depriveTraining(authToken) },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2E7D32),
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .height(40.dp)
-                        .fillMaxWidth(0.6f)
-                ) {
-                    Text("Detach Training", fontFamily = montserratFont, fontWeight = FontWeight.Medium)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             val dayIndex = remember(selectedDate, viewModel.userTrainingAssignedDate, viewModel.trainingDetails) {
                 computeTrainingDayIndex(
                     selectedDateStr = selectedDate,
@@ -117,10 +85,44 @@ fun TrainingView(
                     }
                 } else {
                     LazyColumn(
+                        contentPadding = PaddingValues(
+                            top = 5.dp,
+                            bottom = 120.dp
+                        ),
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(bottom = 8.dp)
                     ) {
+                        item { Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = training.name,
+                                fontFamily = montserratFont,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Button(
+                                onClick = { viewModel.depriveTraining(authToken) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF2E7D32),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .fillMaxWidth(0.6f)
+                            ) {
+                                Text("Detach Training", fontFamily = montserratFont, fontWeight = FontWeight.Medium)
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                        } }
                         items(exercises) { exercise ->
                             var expanded by remember { mutableStateOf(false) }
                             val rotation by animateFloatAsState(if (expanded) 180f else 0f)
@@ -194,9 +196,14 @@ fun TrainingView(
     } ?: run {
         // 🔹 Lista dostępnych treningów
         LazyColumn(
+            contentPadding = PaddingValues(
+                top = 16.dp,
+                bottom = 120.dp
+            ),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
+
         ) {
             items(viewModel.availableTrainings) { training ->
                 Card(

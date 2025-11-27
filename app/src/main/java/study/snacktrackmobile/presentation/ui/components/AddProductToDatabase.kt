@@ -62,14 +62,14 @@ fun AddProductToDatabaseScreen(
         // SEKCJA PRZEWIJANA (FORMULARZ)
         Column(
             modifier = Modifier
-                .verticalScroll(scrollState) // ✅ Umożliwia przewijanie
+                .verticalScroll(scrollState)
                 .padding(horizontal = 10.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(modifier.height(16.dp))
 
-            Text("Add new product", fontSize = 24.sp, fontFamily = montserratFont,)
+            Text("Add new product", fontSize = 24.sp, fontFamily = montserratFont, color = Color.Black, fontWeight = FontWeight.Bold)
             // Pola formularza
             TextInput(
                 value = name,

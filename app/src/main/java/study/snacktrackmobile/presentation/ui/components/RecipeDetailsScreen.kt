@@ -38,8 +38,8 @@ fun RecipeDetailsScreen(
     isFavourite: Boolean,
     selectedDate: String,
     registeredAlimentationViewModel: RegisteredAlimentationViewModel,
-    commentViewModel: CommentViewModel, // 🔹 ViewModel do komentarzy
-    onReportRecipe: (String) -> Unit,   // 🔹 Callback zgłaszania
+    commentViewModel: CommentViewModel,
+    onReportRecipe: (String) -> Unit,
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -118,10 +118,11 @@ fun RecipeDetailsScreen(
 
                     DropdownMenu(
                         expanded = showOptionsMenu,
-                        onDismissRequest = { showOptionsMenu = false }
+                        onDismissRequest = { showOptionsMenu = false },
+                        modifier = Modifier.background(Color.White) // Wymuszenie białego tła menu
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Report Recipe") },
+                            text = { Text("Report Recipe", color = Color.Black) },
                             onClick = {
                                 showOptionsMenu = false
                                 showReportDialog = true
@@ -194,7 +195,6 @@ fun RecipeDetailsScreen(
                     Text("No ingredients listed.", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
                 } else {
                     recipe.ingredients.forEach { ingredient ->
-                        // Wyświetlamy tylko poprawne składniki (lokalne lub API)
                         if (ingredient.essentialFood != null || ingredient.essentialApi != null) {
                             val dummy = RegisteredAlimentationResponse(
                                 id = ingredient.id,
@@ -257,25 +257,38 @@ fun RecipeDetailsScreen(
 
         AlertDialog(
             onDismissRequest = { showMealDialog = false },
-            title = { Text("Add to Diary", fontFamily = montserratFont, fontWeight = FontWeight.Bold) },
+            containerColor = Color.White, // Wymuszenie białego tła dialogu
+            title = { Text("Add to Diary", fontFamily = montserratFont, fontWeight = FontWeight.Bold, color = Color.Black) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("How many servings did you eat?", fontSize = 14.sp)
+                    Text("How many servings did you eat?", fontSize = 14.sp, color = Color.Black)
 
-                    TextInput(
+                    // 🔹 ZMIANA: Zamiast TextInput używamy OutlinedTextField z wymuszonymi kolorami
+                    OutlinedTextField(
                         value = servingsInput,
                         onValueChange = { newValue ->
                             if (newValue.all { it.isDigit() || it == '.' } && newValue.length <= 5) {
                                 servingsInput = newValue
                             }
                         },
-                        label = "Servings (e.g. 1.5)",
+                        label = { Text("Servings (e.g. 1.5)", color = Color.Gray) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
-                        isError = false
+                        singleLine = true,
+                        // 🔹 FIX KOLORÓW: Wymuszamy czarny tekst i białe tło niezależnie od trybu telefonu
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            cursorColor = Color(0xFF2E7D32),
+                            focusedBorderColor = Color(0xFF2E7D32),
+                            unfocusedBorderColor = Color.Gray
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     )
 
-                    Text("Select meal time:", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top=8.dp))
+                    Text("Select meal time:", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top=8.dp), color = Color.Black)
 
                     val meals = listOf("Breakfast", "Lunch", "Dinner", "Supper", "Snack")
                     meals.forEach { meal ->
@@ -329,23 +342,35 @@ fun RecipeDetailsScreen(
     if (showReportDialog) {
         AlertDialog(
             onDismissRequest = { showReportDialog = false },
-            title = { Text("Report Recipe") },
+            containerColor = Color.White,
+            title = { Text("Report Recipe", color = Color.Black) },
             text = {
                 Column {
-                    Text("Why are you reporting this recipe?")
+                    Text("Why are you reporting this recipe?", color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
+
+                    // Tu też wymuszamy kolory dla spójności
                     OutlinedTextField(
                         value = reportReason,
                         onValueChange = { reportReason = it },
-                        label = { Text("Reason") },
-                        modifier = Modifier.fillMaxWidth()
+                        label = { Text("Reason", color = Color.Gray) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            cursorColor = Color(0xFF2E7D32),
+                            focusedBorderColor = Color(0xFF2E7D32),
+                            unfocusedBorderColor = Color.Gray
+                        )
                     )
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onReportRecipe(reportReason) // Wywołanie callbacka
+                        onReportRecipe(reportReason)
                         showReportDialog = false
                         reportReason = ""
                     },
@@ -355,7 +380,7 @@ fun RecipeDetailsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showReportDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showReportDialog = false }) { Text("Cancel", color = Color.Gray) }
             }
         )
     }
@@ -365,23 +390,19 @@ fun RecipeDetailsScreen(
 fun RecipeDetailIngredientRow(
     alimentation: RegisteredAlimentationResponse
 ) {
-    // Pobieranie nazwy
     val name = alimentation.essentialFood?.name
         ?: alimentation.mealApi?.name
         ?: "Unknown Ingredient"
 
-    // Pobieranie bazowych wartości makro
     val baseKcal = alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toFloat() ?: 0f
     val baseP = alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein ?: 0f
     val baseF = alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat ?: 0f
     val baseC = alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates ?: 0f
 
-    // Pobieranie wagi domyślnej
     val defaultWeight = alimentation.essentialFood?.defaultWeight
         ?: alimentation.mealApi?.defaultWeight
         ?: 100f
 
-    // Tekst ilości
     val amountText = when {
         alimentation.pieces != null && alimentation.pieces > 0 ->
             "${alimentation.pieces} piece${if (alimentation.pieces > 1) "s" else ""}"
@@ -390,7 +411,6 @@ fun RecipeDetailIngredientRow(
         else -> "-"
     }
 
-    // Obliczanie
     fun calculateTotal(baseVal: Float): Double {
         val pieces = alimentation.pieces ?: 0f
         val grams = alimentation.amount ?: 0f

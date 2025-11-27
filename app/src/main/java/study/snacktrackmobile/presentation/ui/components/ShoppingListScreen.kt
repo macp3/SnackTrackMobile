@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp // 🔹 Dodano import dla fontSize
 import study.snacktrackmobile.data.model.ShoppingList
 import study.snacktrackmobile.data.model.ShoppingListItem
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
@@ -29,8 +30,8 @@ import java.util.Locale
 fun ShoppingListScreen(
     viewModel: ShoppingListViewModel,
     selectedDate: String,
-    isUserPremium: Boolean,       // <--- Nowy parametr
-    onNavigateToPremium: () -> Unit // <--- Callback do przekierowania
+    isUserPremium: Boolean,
+    onNavigateToPremium: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var showCopyDialog by remember { mutableStateOf(false) }
@@ -53,6 +54,7 @@ fun ShoppingListScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
+            contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
@@ -89,31 +91,57 @@ fun ShoppingListScreen(
                     Button(
                         onClick = { showDialog = true },
                         modifier = Modifier.weight(1f),
+                        // 🔹 ZMNIEJSZENIE PADDINGU WEWNĘTRZNEGO
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFE0E0E0),
                             contentColor = Color.Black
                         )
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Black)
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                        )
                         Spacer(Modifier.width(4.dp))
-                        Text("New", fontFamily = montserratFont, color = Color.Black, maxLines = 1)
+                        Text(
+                            "New",
+                            fontFamily = montserratFont,
+                            color = Color.Black,
+                            maxLines = 1,
+                            fontSize = 12.sp // 🔹 MNIEJSZA CZCIONKA
+                        )
                     }
 
                     // 2. COPY BUTTON
                     Button(
                         onClick = { showCopyDialog = true },
                         modifier = Modifier.weight(1f),
+                        // 🔹 ZMNIEJSZENIE PADDINGU WEWNĘTRZNEGO
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFE0E0E0),
                             contentColor = Color.Black
                         )
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = Color.Black)
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                        )
                         Spacer(Modifier.width(4.dp))
-                        Text("Copy", fontFamily = montserratFont, color = Color.Black, maxLines = 1)
+                        Text(
+                            "Copy",
+                            fontFamily = montserratFont,
+                            color = Color.Black,
+                            maxLines = 1,
+                            fontSize = 12.sp // 🔹 MNIEJSZA CZCIONKA
+                        )
                     }
 
-                    // 3. AI BUTTON (Z Logicznym sprawdzaniem Premium)
+                    // 3. AI BUTTON
                     Button(
                         onClick = {
                             if (isUserPremium) {
@@ -123,20 +151,35 @@ fun ShoppingListScreen(
                             }
                         },
                         modifier = Modifier.weight(1f),
+                        // 🔹 ZMNIEJSZENIE PADDINGU WEWNĘTRZNEGO
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(
-                            // Jeśli Premium: Fioletowy, Jeśli Free: Szary z kłódką (opcjonalnie) lub taki sam
                             containerColor = if (isUserPremium) Color(0xFFD1C4E9) else Color(0xFFE0E0E0),
                             contentColor = Color.Black
                         )
                     ) {
                         if (isUserPremium) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = "AI", tint = Color.Black)
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = "AI",
+                                tint = Color.Black,
+                                modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                            )
                         } else {
-                            // Kłódka dla użytkowników bez premium
-                            Icon(Icons.Default.Lock, contentDescription = "Locked", tint = Color.Gray)
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = "Locked",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                            )
                         }
                         Spacer(Modifier.width(4.dp))
-                        Text("AI", fontFamily = montserratFont, color = Color.Black)
+                        Text(
+                            "AI",
+                            fontFamily = montserratFont,
+                            color = Color.Black,
+                            fontSize = 12.sp // 🔹 MNIEJSZA CZCIONKA
+                        )
                     }
                 }
             }
@@ -158,7 +201,7 @@ fun ShoppingListScreen(
 
     // --- DIALOGS ---
 
-    // 1. PREMIUM UPSELL DIALOG (Dla użytkowników Free)
+    // 1. PREMIUM UPSELL DIALOG
     if (showPremiumUpsellDialog) {
         AlertDialog(
             onDismissRequest = { showPremiumUpsellDialog = false },
@@ -176,7 +219,7 @@ fun ShoppingListScreen(
                 Button(
                     onClick = {
                         showPremiumUpsellDialog = false
-                        onNavigateToPremium() // Przenosi do ekranu Premium
+                        onNavigateToPremium()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                 ) {
@@ -191,7 +234,7 @@ fun ShoppingListScreen(
         )
     }
 
-    // 2. AI Dialog (Tylko dla Premium - działa jak wcześniej)
+    // 2. AI Dialog
     if (showAiDialog) {
         AlertDialog(
             onDismissRequest = { showAiDialog = false },
@@ -457,7 +500,7 @@ fun ShoppingListItemCard(
         }
     }
 
-    // --- DIALOGI ITEMÓW (Bez zmian) ---
+    // --- DIALOGI ITEMÓW ---
     if (showAddItemDialog) {
         AlertDialog(
             onDismissRequest = { showAddItemDialog = false },

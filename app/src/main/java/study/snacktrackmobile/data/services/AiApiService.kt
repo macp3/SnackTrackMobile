@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
+import study.snacktrackmobile.data.model.dto.AiDietItem
 
 data class AiShoppingRequest(
     val prompt: String,
@@ -22,4 +23,10 @@ interface AiApiService {
         @Header("Authorization") token: String,
         @Body request: AiShoppingRequest
     ): List<AiGeneratedItem>
+
+    @POST("ai/diet/generate")
+    suspend fun generateDiet(
+        @Header("Authorization") token: String,
+        @Body request: AiShoppingRequest
+    ): List<AiDietItem>
 }

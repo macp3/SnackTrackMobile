@@ -1,32 +1,37 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import DropdownField
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import study.snacktrackmobile.data.model.dto.ApiFoodResponseDetailed
-import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
+import coil.compose.AsyncImage
 import study.snacktrackmobile.data.model.dto.IngredientRequest
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
@@ -45,7 +50,6 @@ enum class AddRecipeStep {
     DETAILS
 }
 
-// Constant for the internal add mode
 const val MODE_ADD_RECIPE = "Add recipe_INTERNAL"
 
 @Composable
@@ -57,12 +61,13 @@ fun RecipesScreen(
     selectedDate: String? = null,
     recipeToOpen: RecipeResponse? = null,
     onRecipeOpened: () -> Unit = {},
-    commentViewModel: CommentViewModel
+    commentViewModel: CommentViewModel,
+    // 🔹 NOWY PARAMETR: Callback do MainView
+    onDetailsVisibilityChange: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val userRepository: UserRepository by lazy { UserRepository() }
 
-    // Observing screen state
     val selectedMode by viewModel.screen.collectAsState()
 
     val recipes by viewModel.recipes.collectAsState()
@@ -75,36 +80,36 @@ fun RecipesScreen(
     var isLoadingDetails by remember { mutableStateOf(false) }
 
     var token by remember { mutableStateOf("") }
-
-    // --- SEARCH (Discover) ---
     var searchQuery by remember { mutableStateOf("") }
 
-    // --- Form States ---
     var editingRecipeId by remember { mutableStateOf<Int?>(null) }
     var name by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
     val ingredientsForms = remember { mutableStateListOf<IngredientFormEntry>() }
 
-    // --- Validation ---
     var isNameError by remember { mutableStateOf(false) }
     var nameErrorMessage by remember { mutableStateOf<String?>(null) }
     var isDescError by remember { mutableStateOf(false) }
     var descErrorMessage by remember { mutableStateOf<String?>(null) }
     var serverErrorMessage by remember { mutableStateOf<String?>(null) }
 
-    // --- Steps Logic ---
     var currentStep by remember { mutableStateOf(AddRecipeStep.FORM) }
     var activeIngredientIndex by remember { mutableStateOf<Int?>(null) }
     var tempSelectedProduct by remember { mutableStateOf<RegisteredAlimentationResponse?>(null) }
+
+    // 🔹 SYNCHRONIZACJA Z MAINVIEW:
+    // Kiedy zmienia się selectedRecipeDetails (null = lista, !null = detale), informujemy MainView
+    LaunchedEffect(selectedRecipeDetails) {
+        onDetailsVisibilityChange(selectedRecipeDetails != null)
+    }
 
     LaunchedEffect(Unit) {
         TokenStorage.getToken(context)?.let { t ->
             token = t
             userRepository.getUserId(t).onSuccess { id ->
-                viewModel.setCurrentUserId(id)       // RecipeViewModel
-                commentViewModel.setCurrentUserId(id) // CommentViewModel
+                viewModel.setCurrentUserId(id)
+                commentViewModel.setCurrentUserId(id)
             }
-            // Default load "My recipes" on start if that is the state
             if (selectedMode == "My recipes") viewModel.loadMyRecipes(t)
         }
     }
@@ -149,7 +154,6 @@ fun RecipesScreen(
         isNameError = false; isDescError = false
     }
 
-    // Back Handler logic
     BackHandler(enabled = (selectedRecipeDetails != null || selectedMode == MODE_ADD_RECIPE)) {
         if (selectedRecipeDetails != null) {
             selectedRecipeDetails = null
@@ -157,7 +161,6 @@ fun RecipesScreen(
             if (currentStep != AddRecipeStep.FORM) {
                 currentStep = AddRecipeStep.FORM
             } else {
-                // Exit add mode -> go back to "My recipes"
                 clearForm()
                 viewModel.setScreen("My recipes")
                 viewModel.loadMyRecipes(token)
@@ -198,7 +201,7 @@ fun RecipesScreen(
                 onSuccess = { newId ->
                     uploadImageIfSelected(newId)
                     clearForm()
-                    viewModel.setScreen("My recipes") // Return to list
+                    viewModel.setScreen("My recipes")
                 },
                 onError = { serverErrorMessage = it }
             )
@@ -210,7 +213,7 @@ fun RecipesScreen(
                 onSuccess = {
                     uploadImageIfSelected(editingRecipeId!!)
                     clearForm()
-                    viewModel.setScreen("My recipes") // Return to list
+                    viewModel.setScreen("My recipes")
                 },
                 onError = { serverErrorMessage = it }
             )
@@ -253,10 +256,7 @@ fun RecipesScreen(
         )
     }
 
-    // --- UI RENDER ---
-
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. RECIPE DETAILS (Full Screen)
         if (selectedRecipeDetails != null) {
             val r = selectedRecipeDetails!!
             RecipeDetailsScreen(
@@ -280,11 +280,8 @@ fun RecipesScreen(
                 }
             )
         }
-        // 2. LIST / FORM
         else {
             Column(modifier = Modifier.fillMaxSize()) {
-
-                // --- Mode Bar (Hidden in Add Mode) ---
                 if (selectedMode != MODE_ADD_RECIPE) {
                     Column {
                         DropdownField(
@@ -298,7 +295,7 @@ fun RecipesScreen(
                                         "My recipes" -> viewModel.loadMyRecipes(token)
                                         "Favourites" -> viewModel.loadMyFavourites(token)
                                         "Discover" -> {
-                                            searchQuery = "" // Reset search
+                                            searchQuery = ""
                                             viewModel.loadAllRecipes(token)
                                         }
                                     }
@@ -307,7 +304,6 @@ fun RecipesScreen(
                             modifier = Modifier.fillMaxWidth().padding(16.dp)
                         )
 
-                        // --- Search Bar for DISCOVER ---
                         if (selectedMode == "Discover") {
                             OutlinedTextField(
                                 value = searchQuery,
@@ -315,8 +311,8 @@ fun RecipesScreen(
                                     searchQuery = it
                                     viewModel.searchRecipes(token, it)
                                 },
-                                label = { Text("Search recipes...", fontFamily = montserratFont) },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                label = { Text("Search recipes...", fontFamily = montserratFont, color = Color.Gray) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp)
@@ -325,23 +321,15 @@ fun RecipesScreen(
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = Color(0xFF2E7D32),
                                     focusedLabelColor = Color(0xFF2E7D32),
-                                    cursorColor = Color(0xFF2E7D32)
+                                    cursorColor = Color(0xFF2E7D32),
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black
                                 )
                             )
                         }
                     }
-                } else if (currentStep == AddRecipeStep.FORM) {
-                    // Form Header
-                    Text(
-                        text = if(editingRecipeId != null) "Edit Recipe" else "New Recipe",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(16.dp),
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = montserratFont
-                    )
                 }
 
-                // --- MAIN CONTENT ---
                 Box(modifier = Modifier.weight(1f)) {
                     when (selectedMode) {
                         "My recipes", "Favourites", "Discover" -> {
@@ -400,7 +388,12 @@ fun RecipesScreen(
                                             currentStep = AddRecipeStep.DETAILS
                                         },
                                         onDeleteIngredient = { idx -> ingredientsForms.removeAt(idx) },
-                                        onSubmit = ::submitRecipe
+                                        onSubmit = ::submitRecipe,
+                                        onCancel = {
+                                            clearForm()
+                                            viewModel.setScreen("My recipes")
+                                            viewModel.loadMyRecipes(token)
+                                        }
                                     )
                                 }
                                 AddRecipeStep.SEARCH -> {
@@ -447,7 +440,7 @@ fun RecipesScreen(
                                             )
                                         } else {
                                             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                                                Text("Error: Missing product data")
+                                                Text("Error: Missing product data", color = Color.Black)
                                                 Button(onClick = { currentStep = AddRecipeStep.FORM }) { Text("Back") }
                                             }
                                         }
@@ -461,7 +454,6 @@ fun RecipesScreen(
                 }
             }
 
-            // --- FAB (Only in "My recipes") ---
             if (selectedMode == "My recipes") {
                 FloatingActionButton(
                     onClick = {
@@ -481,7 +473,6 @@ fun RecipesScreen(
             }
         }
 
-        // --- GLOBAL LOADER ---
         if (isLoadingDetails) {
             Box(
                 modifier = Modifier
@@ -492,97 +483,6 @@ fun RecipesScreen(
             ) {
                 CircularProgressIndicator(color = Color(0xFF2E7D32))
             }
-        }
-    }
-}
-
-@Composable
-fun AddRecipeForm(
-    name: String,
-    desc: String,
-    imageUrl: String?,
-    selectedImageUri: Uri?,
-    ingredients: MutableList<IngredientFormEntry>,
-    isNameError: Boolean,
-    nameErrorMessage: String?,
-    isDescError: Boolean,
-    descErrorMessage: String?,
-    serverErrorMessage: String?,
-    onNameChange: (String) -> Unit,
-    onDescChange: (String) -> Unit,
-    onImageSelected: (Uri?) -> Unit,
-    onStartAddIngredient: () -> Unit,
-    onSelectIngredient: (Int) -> Unit,
-    onDeleteIngredient: (Int) -> Unit,
-    onSubmit: () -> Unit
-) {
-    val maxNameLength = 100
-    val maxDescLength = 1024
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 80.dp)
-    ) {
-        item {
-            ImagePicker(selectedImageUri, imageUrl, onImageSelected)
-        }
-        item {
-            TextInput(value = name, onValueChange = { if (it.length <= maxNameLength) onNameChange(it) }, label = "Recipe Name", isError = isNameError, errorMessage = nameErrorMessage, singleLine = true)
-        }
-        item {
-            Column {
-                OutlinedTextField(
-                    value = desc,
-                    onValueChange = { if (it.length <= maxDescLength) onDescChange(it) },
-                    label = { Text("Describe how to make...", fontFamily = montserratFont, color = if (isDescError) Color.Red else Color.Black) },
-                    modifier = Modifier.fillMaxWidth().height(250.dp),
-                    isError = isDescError,
-                    singleLine = false,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF2E7D32),
-                        unfocusedBorderColor = Color.Black,
-                        cursorColor = Color(0xFF2E7D32),
-                        focusedLabelColor = Color(0xFF2E7D32)
-                    )
-                )
-                if (isDescError && !descErrorMessage.isNullOrBlank()) {
-                    Text(text = descErrorMessage, color = Color.Red, fontSize = 12.sp, fontFamily = montserratFont, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
-                }
-                Text("${desc.length} / $maxDescLength", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.End, style = MaterialTheme.typography.bodySmall, color = if (desc.length >= maxDescLength) Color.Red else Color.Gray, fontFamily = montserratFont)
-            }
-        }
-        item {
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, fontFamily = montserratFont)
-                IconButton(onClick = onStartAddIngredient) { Icon(Icons.Default.Add, contentDescription = "Add", tint = Color(0xFF2E7D32)) }
-            }
-        }
-        if (ingredients.isEmpty()) {
-            item { Text("No ingredients added.", color = Color.Gray, fontFamily = montserratFont) }
-        } else {
-            itemsIndexed(ingredients) { index, ingredient ->
-                val itemName = ingredient.essentialFood?.name ?: ingredient.essentialApi?.name ?: "Unknown"
-                val amountText = if (ingredient.pieces != null && ingredient.pieces > 0) "${ingredient.pieces} pieces" else "${ingredient.amount} g/ml"
-
-                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))) {
-                    Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f).clickable { onSelectIngredient(index) }) {
-                            Text(itemName, fontWeight = FontWeight.SemiBold, fontFamily = montserratFont)
-                            Text(amountText, style = MaterialTheme.typography.bodySmall, color = Color.Gray, fontFamily = montserratFont)
-                        }
-                        IconButton(onClick = { onDeleteIngredient(index) }) { Icon(Icons.Default.Delete, contentDescription = "Remove", tint = Color.Red) }
-                    }
-                }
-            }
-        }
-        item {
-            if (serverErrorMessage != null) Text(serverErrorMessage, color = Color.Red, fontFamily = montserratFont)
-            Spacer(modifier = Modifier.height(16.dp))
-            DisplayButton(text = "Save Recipe", onClick = onSubmit, modifier = Modifier.fillMaxWidth().height(50.dp))
         }
     }
 }

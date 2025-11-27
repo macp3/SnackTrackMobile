@@ -7,8 +7,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Visibility
@@ -35,7 +37,6 @@ import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.R
 import androidx.compose.ui.graphics.graphicsLayer
 
-
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
@@ -53,6 +54,7 @@ fun ProfileScreen(
     var showPasswordDialog by remember { mutableStateOf(false) }
 
     val montserratFont = FontFamily(Font(R.font.montserrat))
+    val scrollState = rememberScrollState()
 
     // --------------------------
     // LAUNCH FILE PICKER
@@ -62,14 +64,13 @@ fun ProfileScreen(
     ) { uri: Uri? ->
         uri?.let { pickedUri ->
             scope.launch {
-                val token = TokenStorage.getToken(context) // ✔️ teraz coroutine OK
+                val token = TokenStorage.getToken(context)
                 if (token != null) {
                     viewModel.uploadImage(token, pickedUri, context.contentResolver)
                 }
             }
         }
     }
-
 
     // Load profile on start
     LaunchedEffect(Unit) {
@@ -103,54 +104,77 @@ fun ProfileScreen(
     // MAIN UI
     // --------------------------
     user?.let { profile ->
-
+        // Główny kontener ekranu (białe tło)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-                .background(Color(0xFFFFFF)),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(Color.White)
+                .verticalScroll(scrollState) // Umożliwia scrollowanie na mniejszych ekranach
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top // Karta zaczyna się od góry
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
 
-
+            // 🔹 ZMIANA: Szara zaokrąglona karta
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp), // Mocno zaokrąglone rogi
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF5F5F5) // Szare tło karty
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
                 Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp), // Wewnętrzny odstęp w karcie
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-
-                    // --------------------------
-                    // PROFILE AVATAR
-                    // --------------------------
                     ProfileAvatar(
                         imageUrl = profile.imageUrl,
                         imagePicker = imagePicker
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "${profile.name} ${profile.surname}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            fontFamily = montserratFont,
+                            color = Color.Black
+                        )
+                        Text(
+                            profile.email,
+                            color = Color.Gray,
+                            fontFamily = montserratFont,
+                            fontSize = 14.sp
+                        )
+                    }
 
-                    Text(
-                        "${profile.name} ${profile.surname}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        fontFamily = montserratFont,
-                        color = Color.Black
-                    )
-                    Text(profile.email, color = Color.Gray, fontFamily = montserratFont)
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
 
-                    InfoRow(label = "Status", value = profile.status, fontFamily = montserratFont, valueColor = Color.Black)
-                    InfoRow(label = "Streak", value = "${profile.streak} 🔥", fontFamily = montserratFont, valueColor = Color.Black)
-                    InfoRow(
-                        label = "Premium expires",
-                        value = profile.premiumExpiration ?: "—",
-                        fontFamily = montserratFont,
-                        valueColor = Color.Black
-                    )
+                    // Sekcja informacji
+                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        InfoRow(label = "Status", value = profile.status, fontFamily = montserratFont, valueColor = Color.Black)
+                        InfoRow(label = "Streak", value = "${profile.streak} 🔥", fontFamily = montserratFont, valueColor = Color.Black)
+                        InfoRow(
+                            label = "Premium expires",
+                            value = profile.premiumExpiration ?: "—",
+                            fontFamily = montserratFont,
+                            valueColor = Color.Black
+                        )
+                    }
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Przyciski
                     Button(
                         onClick = { showPasswordDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth(0.7f)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Change Password", color = Color.White, fontFamily = montserratFont)
                     }
@@ -159,79 +183,78 @@ fun ProfileScreen(
                         onClick = onEditBodyParameters,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth(0.7f)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Edit Body Parameters", color = Color.White, fontFamily = montserratFont)
                     }
-
                 }
             }
-        }
-
-        // --------------------------
-        // PASSWORD DIALOG
-        // --------------------------
-        if (showPasswordDialog) {
-            ChangePasswordDialog(
-                onDismiss = { showPasswordDialog = false },
-                onConfirm = { newPassword ->
-                    scope.launch {
-                        val token = TokenStorage.getToken(context)
-                        if (token != null) {
-                            val response = viewModel.changePassword(token, newPassword)
-                            if (response.isSuccessful) {
-                                showSuccessDialog = true
-                            } else {
-                                localError = response.errorBody()?.string() ?: "Unknown error"
-                            }
-                        }
-                        showPasswordDialog = false
-                    }
-                }
-            )
-        }
-
-        // --------------------------
-        // SUCCESS DIALOG
-        // --------------------------
-        if (showSuccessDialog) {
-            SuccessDialog(
-                message = "Password changed successfully!",
-                onDismiss = { showSuccessDialog = false }
-            )
-        }
-
-        // --------------------------
-        // ERROR DIALOG
-        // --------------------------
-        if (localError != null) {
-            AlertDialog(
-                onDismissRequest = { localError = null },
-                title = { Text("Error") },
-                text = { Text(localError ?: "") },
-                confirmButton = {
-                    TextButton(onClick = { localError = null }) {
-                        Text("OK")
-                    }
-                }
-            )
+            // Koniec Karty
         }
     }
 
+    // --------------------------
+    // PASSWORD DIALOG
+    // --------------------------
+    if (showPasswordDialog) {
+        ChangePasswordDialog(
+            onDismiss = { showPasswordDialog = false },
+            onConfirm = { newPassword ->
+                scope.launch {
+                    val token = TokenStorage.getToken(context)
+                    if (token != null) {
+                        val response = viewModel.changePassword(token, newPassword)
+                        if (response.isSuccessful) {
+                            showSuccessDialog = true
+                        } else {
+                            localError = response.errorBody()?.string() ?: "Unknown error"
+                        }
+                    }
+                    showPasswordDialog = false
+                }
+            }
+        )
+    }
+
+    // --------------------------
+    // SUCCESS DIALOG
+    // --------------------------
+    if (showSuccessDialog) {
+        SuccessDialog(
+            message = "Password changed successfully!",
+            onDismiss = { showSuccessDialog = false }
+        )
+    }
+
+    // --------------------------
+    // ERROR DIALOG
+    // --------------------------
+    if (localError != null) {
+        AlertDialog(
+            onDismissRequest = { localError = null },
+            title = { Text("Error") },
+            text = { Text(localError ?: "") },
+            confirmButton = {
+                TextButton(onClick = { localError = null }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
 
 @Composable
 fun InfoRow(label: String, value: String, fontFamily: FontFamily, valueColor: Color = Color.Black) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 8.dp), // Zwiększyłem lekko padding dla czytelności
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, fontWeight = FontWeight.Medium, fontFamily = fontFamily, color = Color.Black)
-        Text(value, fontWeight = FontWeight.Normal, fontFamily = fontFamily, color = valueColor)
+        Text(label, fontWeight = FontWeight.Medium, fontFamily = fontFamily, color = Color.Gray, fontSize = 14.sp)
+        Text(value, fontWeight = FontWeight.SemiBold, fontFamily = fontFamily, color = valueColor, fontSize = 14.sp)
     }
 }
-
 
 @Composable
 fun ChangePasswordDialog(
@@ -247,7 +270,8 @@ fun ChangePasswordDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Change Password") },
+        containerColor = Color.White, // Wymuszenie białego tła
+        title = { Text("Change Password", color = Color.Black) },
         text = {
             Column {
                 OutlinedTextField(
@@ -266,7 +290,14 @@ fun ChangePasswordDialog(
                         }
                     },
                     isError = newPasswordError != null,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        cursorColor = Color(0xFF2E7D32),
+                        focusedBorderColor = Color(0xFF2E7D32),
+                        focusedLabelColor = Color(0xFF2E7D32)
+                    )
                 )
 
                 if (newPasswordError != null) {
@@ -296,7 +327,14 @@ fun ChangePasswordDialog(
                         }
                     },
                     isError = confirmPasswordError != null,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        cursorColor = Color(0xFF2E7D32),
+                        focusedBorderColor = Color(0xFF2E7D32),
+                        focusedLabelColor = Color(0xFF2E7D32)
+                    )
                 )
 
                 if (confirmPasswordError != null) {
@@ -326,12 +364,12 @@ fun ChangePasswordDialog(
                 }
                 if (valid) onConfirm(newPassword)
             }) {
-                Text("Save")
+                Text("Save", color = Color(0xFF2E7D32))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = Color.Gray)
             }
         }
     )
@@ -344,11 +382,12 @@ fun SuccessDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Success") },
-        text = { Text(message) },
+        containerColor = Color.White,
+        title = { Text("Success", color = Color.Black) },
+        text = { Text(message, color = Color.Black) },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("OK")
+                Text("OK", color = Color(0xFF2E7D32))
             }
         }
     )
