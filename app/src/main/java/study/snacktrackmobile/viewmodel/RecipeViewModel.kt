@@ -1,33 +1,40 @@
 package study.snacktrackmobile.viewmodel
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.repository.RecipeRepository
-import study.snacktrackmobile.utils.FileUtils
+import java.io.File
+import java.io.FileOutputStream
 
 class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
 
     private val _recipes = MutableStateFlow<List<RecipeResponse>>(emptyList())
     val recipes: StateFlow<List<RecipeResponse>> = _recipes
 
-    // Zbiór ID ulubionych przepisów - to steruje kolorem serduszek
+    // Zbiór ID ulubionych przepisów
     private val _favouriteIds = MutableStateFlow<Set<Int>>(emptySet())
     val favouriteIds: StateFlow<Set<Int>> = _favouriteIds
 
-    // ID zalogowanego usera (do przycisku usuwania)
+    // ID zalogowanego usera
     private val _currentUserId = MutableStateFlow<Int?>(null)
     val currentUserId: StateFlow<Int?> = _currentUserId
 
@@ -41,13 +48,12 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
 
     fun setCurrentUserId(id: Int) { _currentUserId.value = id }
 
-    // 🔹 Pomocnicza funkcja: Pobiera ulubione w tle, by zaktualizować serduszka
+    // 🔹 Pomocnicza funkcja: Pobiera ulubione w tle
     private fun refreshFavouriteIds(token: String) = viewModelScope.launch {
         try {
             val favs = repository.getMyFavourites(token)
             _favouriteIds.value = favs.map { it.id }.toSet()
         } catch (e: Exception) {
-            // Błąd pobierania ulubionych nie powinien blokować UI, logujemy cicho
             e.printStackTrace()
         }
     }
@@ -55,7 +61,6 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
     fun loadAllRecipes(token: String) = viewModelScope.launch {
         try {
             _recipes.value = repository.getAllRecipes(token)
-            // 🔹 WAŻNE: Po pobraniu listy, pobierz też ulubione, żeby oznaczyć serduszka
             refreshFavouriteIds(token)
         } catch (e: Exception) {
             _errorMessage.value = e.message
@@ -65,7 +70,6 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
     fun loadMyRecipes(token: String) = viewModelScope.launch {
         try {
             _recipes.value = repository.getMyRecipes(token)
-            // 🔹 WAŻNE: Tutaj też odświeżamy stan serduszek
             refreshFavouriteIds(token)
         } catch (e: Exception) {
             _errorMessage.value = e.message
@@ -76,7 +80,6 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         try {
             val favs = repository.getMyFavourites(token)
             _recipes.value = favs
-            // Aktualizujemy listę ID
             _favouriteIds.value = favs.map { it.id }.toSet()
         } catch (e: Exception) {
             _errorMessage.value = e.message
@@ -94,11 +97,9 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         }
 
         if (success) {
-            // Aktualizujemy lokalny zbiór ID (optymistycznie lub po sukcesie)
             val currentSet = _favouriteIds.value.toMutableSet()
             if (isCurrentlyFav) {
                 currentSet.remove(recipe.id)
-                // Jeśli jesteśmy na ekranie "Favourites", usuwamy też przepis z widocznej listy
                 if (_screen.value == "Favourites") {
                     _recipes.value = _recipes.value.filter { it.id != recipe.id }
                 }
@@ -116,8 +117,8 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
             try {
                 val result = repository.addRecipe(token, request)
                 result.onSuccess { newId ->
-                    loadMyRecipes(token) // Odśwież listę
-                    onSuccess(newId)     // 👈 Przekaż ID do widoku
+                    loadMyRecipes(token)
+                    onSuccess(newId)
                 }.onFailure { error ->
                     onError(error.message ?: "Add recipe failed")
                 }
@@ -143,20 +144,22 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
     fun updateRecipe(token: String, id: Int, request: RecipeRequest, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                // Zakładam, że w repozytorium masz metodę updateRecipe zwracającą Boolean
-                // Jeśli repo zwraca Response, logika może wymagać drobnej zmiany (jak w addRecipe)
                 val success = repository.updateRecipe(token, id, request)
                 if (success) {
-                    loadMyRecipes(token) // Odśwież listę po edycji
+                    loadMyRecipes(token)
                     onSuccess()
                 } else {
-                    onError("Failed to update recipe (Server returned false)")
+                    onError("Failed to update recipe")
                 }
             } catch (e: Exception) {
                 onError(e.message ?: "Unknown error during update")
             }
         }
     }
+
+    // ==========================================
+    // 📸 UPLOAD IMAGE Z KOMPRESJĄ
+    // ==========================================
 
     fun uploadRecipeImage(
         context: Context,
@@ -167,36 +170,122 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
-            // 1. Konwersja Uri -> File (robimy to w Dispatchers.IO dla bezpieczeństwa)
-            val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                FileUtils.getFileFromUri(context, imageUri)
-            }
-
-            if (file != null) {
-                // 2. Upload
-                val success = repository.uploadImage(token, recipeId, file)
-                if (success) {
-                    // Odśwież dane, żeby pobrać nowy URL z backendu
-                    loadMyRecipes(token)
-                    onSuccess()
-                } else {
-                    onError("Failed to upload image")
+            try {
+                // 1. Kompresja na wątku IO (zwraca File < 1MB)
+                val compressedFile = withContext(Dispatchers.IO) {
+                    createCompressedFile(context, imageUri)
                 }
-            } else {
-                onError("Could not process image file")
+
+                if (compressedFile != null) {
+                    // 2. Upload skompresowanego pliku
+                    val success = repository.uploadImage(token, recipeId, compressedFile)
+                    if (success) {
+                        loadMyRecipes(token) // Odśwież widok
+                        onSuccess()
+                    } else {
+                        onError("Failed to upload image")
+                    }
+
+                    // Opcjonalnie: usuń plik tymczasowy po udanym uploadzie, żeby nie śmiecić
+                    // compressedFile.delete()
+                } else {
+                    onError("Could not process image file")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onError("Error processing image: ${e.message}")
             }
         }
     }
 
-    // Dodaj w RecipeViewModel
+    /**
+     * Tworzy skompresowany plik tymczasowy z Uri.
+     */
+    private fun createCompressedFile(context: Context, uri: Uri): File? {
+        val contentResolver = context.contentResolver
 
-    // W RecipeViewModel.kt
+        // 1. Sprawdź rozmiar
+        val inputStream = contentResolver.openInputStream(uri) ?: return null
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeStream(inputStream, null, options)
+        inputStream.close()
+
+        // 2. Oblicz skalę (Max 1920px)
+        val maxDimension = 1920
+        options.inSampleSize = calculateInSampleSize(options, maxDimension, maxDimension)
+        options.inJustDecodeBounds = false
+
+        // 3. Wczytaj Bitmapę
+        val inputStream2 = contentResolver.openInputStream(uri)
+        var bitmap = BitmapFactory.decodeStream(inputStream2, null, options)
+        inputStream2?.close()
+
+        if (bitmap == null) return null
+
+        // 4. Napraw rotację (EXIF)
+        bitmap = rotateBitmapIfRequired(contentResolver, uri, bitmap)
+
+        // 5. Zapisz do pliku tymczasowego
+        val tempFile = File.createTempFile("recipe_compressed_", ".jpg", context.cacheDir)
+        val outputStream = FileOutputStream(tempFile)
+
+        // Kompresja JPG 80%
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        outputStream.flush()
+        outputStream.close()
+
+        bitmap.recycle() // Zwolnij pamięć RAM
+
+        return tempFile
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    private fun rotateBitmapIfRequired(contentResolver: android.content.ContentResolver, uri: Uri, bitmap: Bitmap): Bitmap {
+        var rotatedBitmap = bitmap
+        try {
+            val inputStream = contentResolver.openInputStream(uri) ?: return bitmap
+            val exif = ExifInterface(inputStream)
+            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            inputStream.close()
+
+            val matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                else -> return bitmap
+            }
+
+            rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            if (rotatedBitmap != bitmap) {
+                bitmap.recycle()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return rotatedBitmap
+    }
+
+    // ==========================================
 
     fun openRecipeDetails(
         token: String,
         recipeId: Int,
         onSuccess: (RecipeResponse) -> Unit,
-        onError: (String) -> Unit // <--- NOWY PARAMETR
+        onError: (String) -> Unit
     ) {
         viewModelScope.launch {
             val result = repository.getRecipeDetails(token, recipeId)
@@ -205,7 +294,7 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
                 onSuccess(fullRecipe)
             }.onFailure { e ->
                 _errorMessage.value = "Failed to load details: ${e.message}"
-                onError(e.message ?: "Unknown error") // <--- Wywołujemy błąd
+                onError(e.message ?: "Unknown error")
             }
         }
     }
@@ -225,16 +314,16 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
     fun searchRecipes(token: String, query: String) {
         searchJob?.cancel()
         if (query.isBlank()) {
-            loadAllRecipes(token) // Jeśli puste, ładuj "Discover" (wszystkie)
+            loadAllRecipes(token)
             return
         }
 
         searchJob = viewModelScope.launch {
-            delay(500) // Debounce 500ms
+            delay(500)
             try {
                 val results = repository.searchRecipes(token, query)
                 _recipes.value = results
-                refreshFavouriteIds(token) // Żeby serduszka działały
+                refreshFavouriteIds(token)
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }
@@ -243,10 +332,7 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
 
     fun reportRecipe(token: String, recipeId: Int, reason: String) = viewModelScope.launch {
         val result = repository.reportRecipe(token, recipeId, reason)
-        result.onSuccess {
-            // Możesz tu dodać np. _toastMessage.value = "Reported" jeśli masz taki mechanizm
-            // Lub po prostu nic nie robić, UI obsłuży sukces zamknięciem dialogu
-        }.onFailure {
+        result.onSuccess {}.onFailure {
             _errorMessage.value = "Failed to report recipe: ${it.message}"
         }
     }

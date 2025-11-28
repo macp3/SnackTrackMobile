@@ -101,6 +101,7 @@ dependencies {
 
     implementation(libs.play.services.cast.framework)
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     // Testy
     testImplementation(libs.junit)
