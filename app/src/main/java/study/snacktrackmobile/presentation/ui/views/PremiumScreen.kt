@@ -33,7 +33,7 @@ fun isPremiumActive(premiumExpiration: String?): Boolean {
 fun fakePurchase(months: Int): String {
     val today = LocalDate.now()
     val newDate = today.plusMonths(months.toLong())
-    return newDate.toString() // Format: YYYY-MM-DD
+    return newDate.toString()
 }
 
 @Composable
@@ -99,14 +99,12 @@ fun PremiumScreen(
     }
 
     val hasPremium = isPremiumActive(user.premiumExpiration)
-
-    // 🔹 1. Tworzymy stan przewijania
     val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState) // 🔹 2. Włączamy przewijanie
+            .verticalScroll(scrollState)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -120,9 +118,6 @@ fun PremiumScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (hasPremium) {
-            // -----------------------------------
-            //             PREMIUM ACTIVE
-            // -----------------------------------
             Text(
                 "Premium Active",
                 fontSize = 28.sp,
@@ -182,9 +177,6 @@ fun PremiumScreen(
             )
 
         } else {
-            // -----------------------------------
-            //             NO PREMIUM
-            // -----------------------------------
             Text(
                 "Upgrade to Premium",
                 fontSize = 28.sp,
@@ -235,7 +227,6 @@ fun PremiumScreen(
             )
         }
 
-        // Dodatkowy odstęp na dole, żeby ostatni element nie przylegał do krawędzi
         Spacer(modifier = Modifier.height(24.dp))
     }
 }

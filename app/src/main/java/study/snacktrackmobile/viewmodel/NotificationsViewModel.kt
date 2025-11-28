@@ -11,14 +11,12 @@ class NotificationsViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications: StateFlow<List<Notification>> = _notifications
 
-    // Dodanie nowego powiadomienia
     fun addNotification(notification: Notification) {
         viewModelScope.launch {
             _notifications.value = listOf(notification) + _notifications.value
         }
     }
 
-    // Możesz też dodać funkcję czyszczenia powiadomień
     fun clearNotifications() {
         viewModelScope.launch { _notifications.value = emptyList() }
     }

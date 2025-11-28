@@ -3,9 +3,7 @@ package study.snacktrackmobile.presentation.ui.views
 import android.util.Patterns
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,7 +13,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import kotlinx.coroutines.flow.collectLatest
 import study.snacktrackmobile.presentation.ui.components.DisplayButton
 import study.snacktrackmobile.presentation.ui.components.PasswordInput
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
@@ -46,7 +43,6 @@ fun LoginView(
     val loginState by viewModel.loginState.collectAsState()
     val context = LocalContext.current
 
-    // FRONTEND VALIDATION
     fun validateLoginFrontend(): Boolean {
         emailError = email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()
         passwordError = password.isBlank() || password.length < 6
@@ -62,7 +58,6 @@ fun LoginView(
         return validationMessage == null
     }
 
-    // BACKEND MESSAGE
     val backendMessage = when (loginState) {
         is UiState.Error -> (loginState as UiState.Error).message
         is UiState.Success -> {
@@ -74,7 +69,6 @@ fun LoginView(
 
     val displayedErrorMessage = backendMessage ?: validationMessage
 
-    // SUCCESS LOGIN → NAVIGATE
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
             val response = (loginState as UiState.Success<LoginResponse>).data
@@ -115,7 +109,6 @@ fun LoginView(
     )
 }
 
-
 @Composable
 fun LoginFormContent(
     email: String,
@@ -130,7 +123,7 @@ fun LoginFormContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(WindowInsets.ime.asPaddingValues()), // podnosi przy klawiaturze
+            .padding(WindowInsets.ime.asPaddingValues()),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -157,7 +150,6 @@ fun LoginFormContent(
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        // INPUTY DOSTOSOWANE DO SZEROKOŚCI EKRANU
         TextInput(
             value = email,
             label = "Email",
@@ -198,5 +190,3 @@ fun LoginFormContent(
         Spacer(modifier = Modifier.height(20.dp))
     }
 }
-
-

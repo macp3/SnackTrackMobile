@@ -3,25 +3,19 @@ package study.snacktrackmobile.presentation.ui.components
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -30,12 +24,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.viewmodel.ProfileViewModel
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.R
-import androidx.compose.ui.graphics.graphicsLayer
 
 @Composable
 fun ProfileScreen(
@@ -55,10 +47,6 @@ fun ProfileScreen(
 
     val montserratFont = FontFamily(Font(R.font.montserrat))
     val scrollState = rememberScrollState()
-
-    // --------------------------
-    // LAUNCH FILE PICKER
-    // --------------------------
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -72,7 +60,6 @@ fun ProfileScreen(
         }
     }
 
-    // Load profile on start
     LaunchedEffect(Unit) {
         val token = TokenStorage.getToken(context)
         if (token != null) {
@@ -80,9 +67,6 @@ fun ProfileScreen(
         }
     }
 
-    // --------------------------
-    // LOADING
-    // --------------------------
     if (loading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Color(0xFF2E7D32))
@@ -90,9 +74,6 @@ fun ProfileScreen(
         return
     }
 
-    // --------------------------
-    // ERROR
-    // --------------------------
     if (error != null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(error ?: "", color = Color.Red, fontFamily = montserratFont)
@@ -100,35 +81,30 @@ fun ProfileScreen(
         return
     }
 
-    // --------------------------
-    // MAIN UI
-    // --------------------------
     user?.let { profile ->
-        // Główny kontener ekranu (białe tło)
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .verticalScroll(scrollState) // Umożliwia scrollowanie na mniejszych ekranach
+                .verticalScroll(scrollState)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top // Karta zaczyna się od góry
+            verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🔹 ZMIANA: Szara zaokrąglona karta
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp), // Mocno zaokrąglone rogi
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFF5F5F5) // Szare tło karty
+                    containerColor = Color(0xFFF5F5F5)
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp), // Wewnętrzny odstęp w karcie
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -155,7 +131,6 @@ fun ProfileScreen(
 
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
 
-                    // Sekcja informacji
                     Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                         InfoRow(label = "Status", value = profile.status, fontFamily = montserratFont, valueColor = Color.Black)
                         InfoRow(label = "Streak", value = "${profile.streak} 🔥", fontFamily = montserratFont, valueColor = Color.Black)
@@ -169,7 +144,6 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Przyciski
                     Button(
                         onClick = { showPasswordDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
@@ -189,13 +163,9 @@ fun ProfileScreen(
                     }
                 }
             }
-            // Koniec Karty
         }
     }
 
-    // --------------------------
-    // PASSWORD DIALOG
-    // --------------------------
     if (showPasswordDialog) {
         ChangePasswordDialog(
             onDismiss = { showPasswordDialog = false },
@@ -215,20 +185,12 @@ fun ProfileScreen(
             }
         )
     }
-
-    // --------------------------
-    // SUCCESS DIALOG
-    // --------------------------
     if (showSuccessDialog) {
         SuccessDialog(
             message = "Password changed successfully!",
             onDismiss = { showSuccessDialog = false }
         )
     }
-
-    // --------------------------
-    // ERROR DIALOG
-    // --------------------------
     if (localError != null) {
         AlertDialog(
             onDismissRequest = { localError = null },
@@ -248,7 +210,7 @@ fun InfoRow(label: String, value: String, fontFamily: FontFamily, valueColor: Co
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp), // Zwiększyłem lekko padding dla czytelności
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, fontWeight = FontWeight.Medium, fontFamily = fontFamily, color = Color.Gray, fontSize = 14.sp)
@@ -270,7 +232,7 @@ fun ChangePasswordDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White, // Wymuszenie białego tła
+        containerColor = Color.White,
         title = { Text("Change Password", color = Color.Black) },
         text = {
             Column {

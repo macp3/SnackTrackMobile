@@ -4,7 +4,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import study.snacktrackmobile.data.model.Meal
-import study.snacktrackmobile.data.model.dto.BodyParametersResponse
 
 object SummaryBarState {
 
@@ -13,7 +12,6 @@ object SummaryBarState {
     var totalFat by mutableStateOf(0f)
     var totalCarbs by mutableStateOf(0f)
 
-    // Nowe pola na limity z BodyParametersResponse
     var limitKcal by mutableStateOf(1f)
     var limitProtein by mutableStateOf(1f)
     var limitFat by mutableStateOf(1f)
@@ -27,13 +25,10 @@ object SummaryBarState {
 
         meals.forEach { meal ->
             meal.alimentations.forEach { alimentation ->
-
-                // 1. OBSŁUGA PRZEPISU (RECIPE / MEAL)
                 if (alimentation.meal != null) {
                     val recipe = alimentation.meal
                     val servings = alimentation.pieces ?: 1f
 
-                    // Obliczanie sumy makro dla JEDNEJ porcji przepisu (sumowanie składników)
                     recipe.ingredients.forEach { ing ->
                         val ef = ing.essentialFood
                         val api = ing.essentialApi
@@ -47,23 +42,18 @@ object SummaryBarState {
                         val iAmount = ing.amount ?: 0f
                         val iPieces = ing.pieces ?: 0f
 
-                        // Ratio - przelicznik ilości składnika na 100g
                         val ratio = when {
                             iPieces > 0 -> (iPieces * baseWeight) / 100.0
                             iAmount > 0 -> iAmount.toDouble() / 100.0
                             else -> 0.0
                         }
 
-                        // Dodajemy makro składnika do sumy JEDNEJ porcji
                         kcalSum += baseKcal * ratio * servings
                         proteinSum += baseP * ratio * servings
                         fatSum += baseF * ratio * servings
                         carbsSum += baseC * ratio * servings
                     }
-
-                }
-                // 2. OBSŁUGA POJEDYNCZEGO PRODUKTU (EssentialFood lub MealApi)
-                else {
+                } else {
                     val ef = alimentation.essentialFood
                     val api = alimentation.mealApi
 
@@ -76,14 +66,12 @@ object SummaryBarState {
                     val userAmount = alimentation.amount ?: 0f
                     val userPieces = alimentation.pieces ?: 0f
 
-                    // Ratio - przelicznik ilości produktu
                     val ratio = when {
                         userPieces > 0 -> (userPieces * baseWeight) / 100.0
                         userAmount > 0 -> userAmount.toDouble() / 100.0
                         else -> 0.0
                     }
 
-                    // Dodajemy makro produktu
                     kcalSum += baseKcal * ratio
                     proteinSum += baseP * ratio
                     fatSum += baseF * ratio
@@ -99,11 +87,9 @@ object SummaryBarState {
     }
 
     fun setLimits(kcal: Float?, protein: Float?, fat: Float?, carbs: Float?) {
-        // Ustawiamy limit, jeśli jest null lub 0 to dajemy 1f żeby uniknąć dzielenia przez zero
         limitKcal = if (kcal != null && kcal > 0) kcal else 1f
         limitProtein = if (protein != null && protein > 0) protein else 1f
         limitFat = if (fat != null && fat > 0) fat else 1f
         limitCarbs = if (carbs != null && carbs > 0) carbs else 1f
     }
 }
-

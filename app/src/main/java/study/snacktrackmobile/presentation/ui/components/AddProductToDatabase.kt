@@ -2,25 +2,17 @@ package study.snacktrackmobile.presentation.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import kotlinx.coroutines.launch
-import study.snacktrackmobile.data.api.ApiService
-import study.snacktrackmobile.data.api.Request
-import study.snacktrackmobile.data.api.Request.api
 import study.snacktrackmobile.data.model.dto.EssentialFoodRequest
-import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.viewmodel.FoodViewModel
 
 @Composable
@@ -44,22 +36,17 @@ fun AddProductToDatabaseScreen(
     val errorMessage by foodViewModel.errorMessage
     val success by foodViewModel.success
 
-    // ✅ KLUCZOWA ZMIANA: Stan przewijania
     val scrollState = rememberScrollState()
 
-    // Funkcja pomocnicza do określania błędu wyświetlania
     val shouldShowError: (String) -> Boolean = { value ->
         wasSubmitted && value.isBlank()
     }
 
-    // GŁÓWNA KOLUMNA: Zawiera przewijany formularz i stałe przyciski
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // SEKCJA PRZEWIJANA (FORMULARZ)
         Column(
             modifier = Modifier
                 .verticalScroll(scrollState)
@@ -70,7 +57,6 @@ fun AddProductToDatabaseScreen(
             Spacer(modifier.height(16.dp))
 
             Text("Add new product", fontSize = 24.sp, fontFamily = montserratFont, color = Color.Black, fontWeight = FontWeight.Bold)
-            // Pola formularza
             TextInput(
                 value = name,
                 label = "Name",
@@ -126,17 +112,15 @@ fun AddProductToDatabaseScreen(
                 onValueChange = { brandName = it })
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Obsługa błędów
             errorMessage?.let {
                 Text(text = it, color = Color.Red, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // SEKCJA STAŁA (PRZYCISKI) - zostaje na dole
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp), // Dodatkowy padding na górze przycisków
+                    .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 DisplayButton(
@@ -181,7 +165,7 @@ fun AddProductToDatabaseScreen(
                     modifier = Modifier.size(width = 120.dp, height = 50.dp),
                     fontSize = 14
                 )
-            } // Koniec przewijanej kolumny
+            }
             Spacer(modifier.height(16.dp))
         }
     }
@@ -193,8 +177,6 @@ fun AddProductToDatabaseScreen(
     }
 }
 
-
-// Funkcja walidacji zgodna z backendem + limity długości pól
 fun validateForm(
     name: String,
     description: String,
@@ -236,4 +218,3 @@ fun validateForm(
 
     return null
 }
-

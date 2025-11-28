@@ -48,7 +48,6 @@ fun EditBodyParametersScreen(
     var weeklyWeightChangeTempo by remember { mutableStateOf("") }
     var goalWeight by remember { mutableStateOf("") }
 
-    // populate from saved body parameters
     LaunchedEffect(bodyParameters) {
         bodyParameters?.let {
             sex = it.sex
@@ -87,7 +86,6 @@ fun EditBodyParametersScreen(
                 )
             }
 
-            // 🔹 DropdownField zamiast DropdownSelector
             item {
                 DropdownField(
                     label = "Sex",
@@ -97,7 +95,6 @@ fun EditBodyParametersScreen(
                 )
             }
 
-            // 🔹 TextInput zamiast NumberTextField
             item {
                 TextInput(
                     value = height,
@@ -158,7 +155,6 @@ fun EditBodyParametersScreen(
                 )
             }
 
-            // 🔹 DisplayButton zamiast zwykłego Button
             item {
                 DisplayButton(
                     text = "Save changes",
@@ -206,7 +202,6 @@ fun EditBodyParametersScreen(
         }
     }
 
-    // 🔹 AlertDialog bez zmian
     validationError?.let { msg ->
         AlertDialog(
             onDismissRequest = { validationError = null },

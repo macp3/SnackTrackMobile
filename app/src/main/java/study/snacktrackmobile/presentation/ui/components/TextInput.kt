@@ -50,7 +50,7 @@ fun TextInput(
             value = value,
             onValueChange = onValueChange,
             label = { Text(label, fontFamily = montserratFont, color = if (isError) Color.Red else Color.Black) },
-            singleLine = singleLine, // 🔹 Użycie parametru
+            singleLine = singleLine,
             modifier = Modifier.fillMaxWidth(),
             textStyle = TextStyle(
                 fontFamily = montserratFont,
@@ -61,28 +61,22 @@ fun TextInput(
                 focusedBorderColor = if (isError) Color.Red else Color.Black,
                 unfocusedBorderColor = if (isError) Color.Red else Color.Black,
                 errorBorderColor = Color.Red,
-
                 focusedLabelColor = if (isError) Color.Red else Color.Black,
                 unfocusedLabelColor = if (isError) Color.Red else Color.Black,
                 errorLabelColor = Color.Red,
-
                 cursorColor = Color.Black,
                 focusedTextColor = Color.Black,
                 unfocusedTextColor = Color.Black,
                 errorTextColor = Color.Red,
-
-                // --- KLUCZOWA ZMIANA: JAWNE USTAWIENIE BIAŁEGO TŁA KONTENERA ---
                 focusedContainerColor = Color.White,
                 unfocusedContainerColor = Color.White,
                 errorContainerColor = Color.White,
-                // -----------------------------------------------------------------
             ),
             keyboardOptions = keyboardOptions,
             shape = RoundedCornerShape(12.dp),
             isError = isError
         )
 
-        // 🔹 Wyświetlanie komunikatu błędu pod polem
         if (isError && !errorMessage.isNullOrBlank()) {
             Text(
                 text = errorMessage,
@@ -101,7 +95,6 @@ fun ImagePicker(
     existingImageUrl: String?,
     onImageSelected: (Uri?) -> Unit
 ) {
-    // Launcher do systemowego wybierania zdjęć
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> onImageSelected(uri) }
@@ -114,14 +107,12 @@ fun ImagePicker(
             .clip(RoundedCornerShape(12.dp))
             .background(Color.LightGray)
             .clickable {
-                // Uruchomienie pickera
                 singlePhotoPickerLauncher.launch(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
             },
         contentAlignment = Alignment.Center
     ) {
-        // 1. Priorytet: Nowe zdjęcie wybrane z galerii
         if (selectedImageUri != null) {
             AsyncImage(
                 model = selectedImageUri,
@@ -129,18 +120,14 @@ fun ImagePicker(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-        }
-        // 2. Priorytet: Istniejące zdjęcie z backendu (podczas edycji)
-        else if (!existingImageUrl.isNullOrBlank()) {
+        } else if (!existingImageUrl.isNullOrBlank()) {
             AsyncImage(
                 model = existingImageUrl,
                 contentDescription = "Recipe Image",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-        }
-        // 3. Placeholder (gdy brak zdjęcia)
-        else {
+        } else {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     imageVector = Icons.Default.Image,

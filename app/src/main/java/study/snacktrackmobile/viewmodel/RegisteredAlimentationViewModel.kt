@@ -26,7 +26,6 @@ import study.snacktrackmobile.data.services.AiApiService
 import study.snacktrackmobile.data.services.AiShoppingRequest
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.state.SummaryBarState
-import java.time.LocalDate
 
 class RegisteredAlimentationViewModel(
     private val repository: RegisteredAlimentationRepository,
@@ -51,7 +50,6 @@ class RegisteredAlimentationViewModel(
 
     private var loadMealsJob: Job? = null
 
-    // 🔹 POMOCNICZA FUNKCJA: Wyciąganie wagi ze stringa (np. "330ml" -> 330.0)
     private fun extractWeight(quantityStr: String?): Float? {
         if (quantityStr == null) return null
         val regex = Regex("(\\d+(?:\\.\\d+)?)\\s*(g|ml|l|kg)", RegexOption.IGNORE_CASE)
@@ -164,7 +162,6 @@ class RegisteredAlimentationViewModel(
         }
     }
 
-    // 🔹 FIX: Logika mapowania z użyciem Double dla makroskładników
     private fun mapToUi(input: List<RegisteredAlimentationResponse>): List<Meal> {
         return input
             .groupBy { normalizeMealName(it.mealName ?: "Other") }
@@ -173,16 +170,13 @@ class RegisteredAlimentationViewModel(
 
                 val recalculatedEntries = entries.map { entry ->
                     if (entry.meal != null) {
-                        // --- PRZEPIS (RECIPE) ---
                         val recipeData = entry.meal
                         val totalRecipeKcal = recipeData.ingredients.sumOf { ing ->
                             val ef = ing.essentialFood
                             val api = ing.essentialApi
 
-                            // Użycie Double dla makroskładników
                             val baseCal = (ef?.calories ?: api?.calorie?.toDouble() ?: 0.0)
 
-                            // Parsowanie wagi składnika przepisu
                             val determinedWeight = ef?.defaultWeight
                                 ?: api?.defaultWeight
                                 ?: extractWeight(api?.quantity)
@@ -205,14 +199,11 @@ class RegisteredAlimentationViewModel(
                         kcalSum += (totalRecipeKcal * servings)
                         entry
                     } else {
-                        // --- POJEDYNCZY PRODUKT ---
                         val ef = entry.essentialFood
                         val api = entry.mealApi
 
-                        // Użycie Double dla makroskładników
                         val baseCal = (ef?.calories ?: api?.calorie?.toDouble() ?: 0.0)
 
-                        // Parsowanie wagi dla pojedynczego produktu
                         val determinedWeight = ef?.defaultWeight
                             ?: api?.defaultWeight
                             ?: extractWeight(api?.quantity)

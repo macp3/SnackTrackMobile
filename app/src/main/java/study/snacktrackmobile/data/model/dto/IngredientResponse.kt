@@ -9,12 +9,8 @@ data class IngredientResponse(
     @SerialName("id") val id: Int,
     @SerialName("amount") val amount: Float? = null,
     @SerialName("pieces") val pieces: Float? = null,
-
-    // To musi pasować do JSON: "essentialApi"
     @SerialName("essentialApi")
     val essentialApi: ApiFoodResponseDetailed? = null,
-
-    // To musi pasować do JSON: "essentialFood"
     @SerialName("essentialFood")
     val essentialFood: EssentialFoodResponse? = null
 )

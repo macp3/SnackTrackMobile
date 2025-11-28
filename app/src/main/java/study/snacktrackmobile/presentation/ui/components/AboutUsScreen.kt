@@ -13,16 +13,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
-// ----------------------------------------------------------------------
-// WIDOK GŁÓWNY (Wrapper dla nawigacji)
-// ----------------------------------------------------------------------
-
-/**
- * Pełny ekran 'O nas', używany do nawigacji (np. z szuflady DrawerContent).
- * Zawiera własny Scaffold i TopBar z przyciskiem powrotu.
- */
-
 @Composable
 fun AboutUsScreen(modifier: Modifier = Modifier) {
     Column(
@@ -31,7 +21,6 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Duży nagłówek
         Text(
             text = "Track your snacks, achieve your goals.",
             style = MaterialTheme.typography.headlineMedium,
@@ -43,7 +32,6 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
             color = Color.Black
         )
 
-        // Karta z misją
         MissionCard(
             title = "Our Mission",
             content = "We believe that informed choices lead to sustainable health changes. SnackTrack is designed to provide you with the most accurate and easily accessible nutritional data, empowering you to take full control of your diet and fitness journey."
@@ -51,7 +39,6 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Karta z technologią
         MissionCard(
             title = "Powered by Science",
             content = "Our system utilizes advanced algorithms to calculate your personalized caloric and macronutrient needs, ensuring you receive recommendations tailored specifically to your body parameters, activity level, and weight goals."
@@ -59,7 +46,6 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Karta z danymi
         MissionCard(
             title = "Data Sources",
             content = "SnackTrack uses a comprehensive database of food products, combining public, proprietary, and user-generated data (essential foods) to provide a wide range of tracking options."
@@ -67,7 +53,6 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        // Stopka
         Text(
             text = "Version 1.0. Developed by\nBartosz Piłka & Maciej Pietras",
             style = MaterialTheme.typography.bodySmall,
@@ -77,10 +62,6 @@ fun AboutUsScreen(modifier: Modifier = Modifier) {
         )
     }
 }
-
-// ----------------------------------------------------------------------
-// WSPÓLNA KARTA MISJI
-// ----------------------------------------------------------------------
 
 @Composable
 fun MissionCard(title: String, content: String) {

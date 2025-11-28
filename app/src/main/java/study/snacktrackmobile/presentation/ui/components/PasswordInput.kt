@@ -1,7 +1,5 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -45,7 +43,7 @@ fun PasswordInput(
         onValueChange = onValueChange,
         label = { Text(label, fontFamily = montserratFont, color = Color.Black) },
         singleLine = true,
-        modifier = modifier, // przekazanie modifiera
+        modifier = modifier,
         trailingIcon = {
             IconButton(onClick = { visibility = !visibility }) {
                 Icon(

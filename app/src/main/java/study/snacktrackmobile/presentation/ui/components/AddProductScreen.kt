@@ -1,6 +1,5 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,7 +18,6 @@ import androidx.navigation.NavController
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.views.montserratFont
-import study.snacktrackmobile.viewmodel.FoodUiItem
 import study.snacktrackmobile.viewmodel.FoodViewModel
 
 @Composable
@@ -99,13 +97,12 @@ fun AddProductScreen(
                             kcal = item.kcal,
                             quantityLabel = item.quantityLabel,
                         ) {
-                            // 🔹 ZMIANA: Zamiast tworzyć obiekt tutaj, zlecamy pobranie szczegółów ViewModelowi
                             foodViewModel.fetchProductDetailsAndNavigate(
                                 item = item,
                                 selectedDate = selectedDate,
                                 selectedMeal = selectedMeal,
                                 onSuccess = { fullProduct ->
-                                    onProductClick(fullProduct) // Dopiero jak mamy full dane, nawigujemy
+                                    onProductClick(fullProduct)
                                 }
                             )
                         }

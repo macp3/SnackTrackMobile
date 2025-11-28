@@ -48,7 +48,6 @@ fun SnackTrackApp() {
         }
     )
 
-    // --- LOGIKA SPRAWDZANIA TOKENA ---
     LaunchedEffect(Unit) {
         val existingToken = TokenStorage.getToken(context)
         if (existingToken.isNullOrEmpty()) {
@@ -59,7 +58,6 @@ fun SnackTrackApp() {
         val bearer = if (existingToken.startsWith("Bearer ")) existingToken else "Bearer $existingToken"
         val userApi = Request.userApi
 
-        // 1) Weryfikacja profilu
         val profileRes = try {
             userApi.getProfile(bearer)
         } catch (e: Exception) {
@@ -73,7 +71,6 @@ fun SnackTrackApp() {
             return@LaunchedEffect
         }
 
-        // 2) refreshSurvey → decyduje o InitialSurveyView vs MainView
         val refreshRes = try {
             userApi.refreshSurvey(bearer)
         } catch (e: Exception) {
@@ -87,7 +84,6 @@ fun SnackTrackApp() {
         }
     }
 
-    // --- WYŚWIETLANIE ---
     if (startDestination == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -151,11 +147,9 @@ fun SnackTrackApp() {
                 InitialSurveyView(navController)
             }
 
-            // Trasa dla widoku dziennego (jeśli używana niezależnie)
             composable("MealsDaily/{date}") { backStackEntry ->
                 val selectedDate = backStackEntry.arguments?.getString("date") ?: ""
 
-                // 🔹 Tworzymy zależności lokalnie dla tej trasy
                 val jsonConfig = Json {
                     ignoreUnknownKeys = true
                     encodeDefaults = true
@@ -192,18 +186,14 @@ fun SnackTrackApp() {
                     selectedDate = selectedDate,
                     viewModel = localViewModel,
                     navController = navController,
-
                     isUserPremium = false,
                     onNavigateToPremium = {
                         navController.navigate("MainView?tab=Premium")
                     },
-
                     onEditProduct = { _ ->
                         navController.navigate("MainView?tab=AddProduct")
                     },
-                    // 🔹 DODANO BRAKUJĄCY PARAMETR
                     onAddProductClick = { mealName ->
-                        // W tym widoku (standalone) nawigujemy URL-em
                         navController.navigate("MainView?tab=AddProduct&meal=$mealName&date=$selectedDate")
                     }
                 )

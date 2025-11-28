@@ -27,21 +27,17 @@ import kotlin.math.min
 fun SummaryBar(
     modifier: Modifier = Modifier
 ) {
-    // 🔹 BEZPIECZNE TŁO ("Flat Style")
-    // Zamiast cienia (shadow), używamy tła o wysokiej nieprzezroczystości i ramki.
-    // To zapewnia czytelność nad przewijaną listą, ale nie psuje renderowania na telefonach.
-
-    val shape = RoundedCornerShape(24.dp) // Mocno zaokrąglone rogi (pigułka)
-    val backgroundColor = Color(0xB3FFFFFF).copy(alpha = 0.95f) // Lekko przeźroczysta zieleń
-    val borderColor = Color(0xFFC5E1A5) // Ciemniejsza obwódka dla kontrastu
+    val shape = RoundedCornerShape(24.dp)
+    val backgroundColor = Color(0xB3FFFFFF).copy(alpha = 0.95f)
+    val borderColor = Color(0xFFC5E1A5)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp) // Margines od krawędzi ekranu
-            .background(color = backgroundColor, shape = shape) // Tło
-            .border(width = 1.dp, color = borderColor, shape = shape) // Ramka zamiast cienia
-            .padding(vertical = 10.dp) // Wewnętrzny odstęp
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .background(color = backgroundColor, shape = shape)
+            .border(width = 1.dp, color = borderColor, shape = shape)
+            .padding(vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -92,7 +88,7 @@ fun NutrientIndicator(
     limit: Float,
     unit: String,
     modifier: Modifier = Modifier,
-    size: Dp = 55.dp, // Lekko mniejsze, żeby pasowało do paska
+    size: Dp = 55.dp,
     strokeWidth: Dp = 5.dp
 ) {
     val progress = if (limit > 0) current / limit else 0f
@@ -108,7 +104,6 @@ fun NutrientIndicator(
     ) {
         Box(contentAlignment = Alignment.Center) {
             Canvas(modifier = Modifier.size(size)) {
-                // Tło paska (szare kółko)
                 drawArc(
                     color = trackColor,
                     startAngle = 0f,
@@ -117,7 +112,6 @@ fun NutrientIndicator(
                     style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
                 )
 
-                // Progres
                 val sweepAngle = if (isOverLimit) 360f else (progress * 360f)
                 drawArc(
                     color = baseColor,
@@ -127,7 +121,6 @@ fun NutrientIndicator(
                     style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
                 )
 
-                // Nadwyżka
                 if (isOverLimit) {
                     val excessProgress = progress - 1f
                     val excessSweep = min(excessProgress * 360f, 360f)
@@ -141,7 +134,6 @@ fun NutrientIndicator(
                 }
             }
 
-            // Tekst w środku
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = String.format("%.0f", current),
@@ -167,12 +159,11 @@ fun NutrientIndicator(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Etykieta pod kółkiem
         Text(
             text = "$label${if(unit.isNotEmpty()) " ($unit)" else ""}",
             style = MaterialTheme.typography.labelMedium,
             fontFamily = montserratFont,
-            color = Color.Black, // Czarny tekst na jasnym tle paska
+            color = Color.Black,
             fontWeight = FontWeight.Medium,
             fontSize = 11.sp,
             maxLines = 1,

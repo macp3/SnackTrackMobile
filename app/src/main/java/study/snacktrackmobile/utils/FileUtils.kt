@@ -9,7 +9,6 @@ object FileUtils {
     fun getFileFromUri(context: Context, uri: Uri): File? {
         return try {
             val contentResolver = context.contentResolver
-            // Tworzymy plik tymczasowy w cache aplikacji
             val tempFile = File(context.cacheDir, "upload_temp.jpg")
 
             contentResolver.openInputStream(uri)?.use { inputStream ->

@@ -35,13 +35,10 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
     private val _unauthorized = MutableStateFlow(false)
     val unauthorized: StateFlow<Boolean> = _unauthorized.asStateFlow()
 
-    // ---------------------------
-    // LOAD PROFILE
-    // ---------------------------
     fun loadProfile(token: String) {
         viewModelScope.launch {
             _loading.value = true
-            _unauthorized.value = false // Resetujemy stan
+            _unauthorized.value = false
             try {
                 val response = api.getProfile("Bearer $token")
 
@@ -49,7 +46,6 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
                     response.code() == 401 || response.code() == 403 -> {
                         _error.value = "unauthorized"
                         _user.value = null
-                        // 🚨 KLUCZOWA ZMIANA: Ustawiamy flagę braku autoryzacji
                         _unauthorized.value = true
                     }
 
@@ -74,8 +70,6 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         }
     }
 
-
-    // Convert backend path → full URL
     private fun buildImageUrl(path: String?): String? {
         if (path.isNullOrEmpty()) {
             return ApiConfig.BASE_URL + "/images/profiles/default_profile_picture.png"
@@ -83,9 +77,6 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         return if (path.startsWith("http")) path else ApiConfig.BASE_URL + path
     }
 
-    // ---------------------------
-    // UPLOAD PROFILE IMAGE
-    // ---------------------------
     fun uploadImage(token: String, uri: Uri, contentResolver: ContentResolver) {
         viewModelScope.launch {
             try {
@@ -114,32 +105,19 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
         return MultipartBody.Part.createFormData("image", tempFile.name, requestBody)
     }
 
-    // ---------------------------
-    // CHANGE PASSWORD
-    // ---------------------------
     suspend fun changePassword(token: String, newPassword: String) =
         api.changePassword("Bearer $token", newPassword)
 
-    // ---------------------------
-    // ERROR MANAGEMENT
-    // ---------------------------
     fun setError(msg: String) {
         _error.value = msg
     }
 
-    // ---------------------------
-    // BODY PARAMETERS
-    // ---------------------------
     fun changeBodyParameters(token: String, request: BodyParametersRequest) {
         viewModelScope.launch {
             try {
                 api.changeParameters("Bearer $token", request)
                 val updated = api.getBodyParameters("Bearer $token")
-
-                // 🔥 2. Zaktualizuj lokalny Flow
                 _bodyParameters.value = updated
-
-                // 🔥 3. Zaktualizuj SummaryBarState (główny UI)
                 SummaryBarState.limitKcal = updated.calorieLimit
                 SummaryBarState.limitProtein = updated.proteinLimit
                 SummaryBarState.limitFat = updated.fatLimit
@@ -154,7 +132,6 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
             try {
                 val bodyParamsResponse = api.getBodyParameters("Bearer $token")
                 _bodyParameters.value = bodyParamsResponse
-
                 SummaryBarState.setLimits(
                     kcal = bodyParamsResponse.calorieLimit,
                     protein = bodyParamsResponse.proteinLimit,
@@ -184,5 +161,4 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
             }
         }
     }
-
 }

@@ -23,20 +23,20 @@ fun SnackTrackTopBar() {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFBFFF99))
-            .padding(horizontal = 12.dp, vertical = 8.dp), // mniejszy padding
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "SnackTrack",
             fontFamily = montserratFont,
-            fontSize = 24.sp, // mniejszy font
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black,
         )
         Text(
             text = "Track your progress",
             fontFamily = montserratFont,
-            fontSize = 14.sp, // mniejszy font
+            fontSize = 14.sp,
             color = Color.Black
         )
     }

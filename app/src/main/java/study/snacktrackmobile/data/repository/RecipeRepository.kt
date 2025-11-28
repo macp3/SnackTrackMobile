@@ -25,13 +25,11 @@ class RecipeRepository(private val api: RecipeApi) {
     suspend fun getMyRecipes(token: String): List<RecipeResponse> =
         api.getMyRecipes("Bearer $token")
 
-    // --- SEKCJA ULUBIONYCH ---
 
-    // Pobiera listę ulubionych (potrzebne też do sprawdzenia ID, żeby zapalić serduszka na innych listach)
+
     suspend fun getMyFavourites(token: String): List<RecipeResponse> =
         api.getMyFavourites("Bearer $token")
 
-    // Dodaje do ulubionych. Zwraca true jeśli sukces.
     suspend fun addFavourite(token: String, recipeId: Int): Boolean {
         return try {
             val res = api.addFavourite("Bearer $token", recipeId)
@@ -42,7 +40,6 @@ class RecipeRepository(private val api: RecipeApi) {
         }
     }
 
-    // Usuwa z ulubionych. Zwraca true jeśli sukces.
     suspend fun removeFavourite(token: String, recipeId: Int): Boolean {
         return try {
             val res = api.removeFavourite("Bearer $token", recipeId)
@@ -58,7 +55,6 @@ class RecipeRepository(private val api: RecipeApi) {
         return try{
             val res = api.addRecipe("Bearer $token", request)
             if (res.isSuccessful && res.body() != null) {
-                // Sukces: zwracamy ID nowego przepisu
                 Result.success(res.body()!!)
             } else {
                 val errorBody = res.errorBody()?.string()
@@ -93,10 +89,8 @@ class RecipeRepository(private val api: RecipeApi) {
             val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
             val body = MultipartBody.Part.createFormData("image", file.name, requestFile)
 
-            // Wywołujemy API
             val response = api.uploadImage("Bearer $token", recipeId, body)
 
-            // Sprawdzamy czy kod to 200-299. Nie parsujemy body, bo nie jest nam potrzebne
             response.isSuccessful
         } catch (e: Exception) {
             e.printStackTrace()

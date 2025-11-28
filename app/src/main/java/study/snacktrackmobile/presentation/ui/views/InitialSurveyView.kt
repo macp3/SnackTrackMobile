@@ -19,17 +19,7 @@ import study.snacktrackmobile.data.model.dto.BodyParametersRequest
 import study.snacktrackmobile.data.model.enums.Sex
 import study.snacktrackmobile.data.storage.TokenStorage
 import study.snacktrackmobile.presentation.ui.components.*
-import io.ktor.client.*
-import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 import study.snacktrackmobile.data.api.Request
-import study.snacktrackmobile.data.model.LoginResponse
-import study.snacktrackmobile.data.network.ApiConfig
 import study.snacktrackmobile.presentation.ui.components.montserratFont
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,8 +29,6 @@ fun InitialSurveyView(navController: NavController) {
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
 
-    // 🔹 Ustawienie jawnych kolorów dla pól tekstowych (TextInput i DropdownField)
-    // To jest kluczowe dla zapewnienia białego tła inputów, niezależnie od motywu
     val textFieldColors = TextFieldDefaults.colors(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
@@ -57,7 +45,6 @@ fun InitialSurveyView(navController: NavController) {
     )
 
 
-    // 🔹 POLA
     var sex by remember { mutableStateOf(Sex.male.name) }
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
@@ -67,7 +54,6 @@ fun InitialSurveyView(navController: NavController) {
     var weeklyWeightChangeTempo by remember { mutableStateOf("") }
     var goalWeight by remember { mutableStateOf("") }
 
-    // 🔹 ERROR FLAGS
     var sexError by remember { mutableStateOf(false) }
     var heightError by remember { mutableStateOf(false) }
     var weightError by remember { mutableStateOf(false) }
@@ -77,7 +63,6 @@ fun InitialSurveyView(navController: NavController) {
     var tempoError by remember { mutableStateOf(false) }
     var goalError by remember { mutableStateOf(false) }
 
-    // 🔹 WIADOMOŚCI O BŁĘDACH
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var backendMessage by remember { mutableStateOf<String?>(null) }
 
@@ -88,16 +73,13 @@ fun InitialSurveyView(navController: NavController) {
         topBar = { SnackTrackTopBar() }
     ) { padding ->
 
-        // KLUCZOWA POPRAWKA TŁA KOMPONENTU:
-        // Wymuszenie jawnego białego koloru na Surface, jeśli motyw jest zbyt ciemny.
         Surface(
-            color = Color.White, // <--- JAWNE WYMUSZENIE BIAŁEGO TŁA WIDOKU
+            color = Color.White,
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
         ) {
 
-            // LazyColumn dla wydajnego przewijania
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -106,7 +88,6 @@ fun InitialSurveyView(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                // TYTUŁ
                 item {
                     Text(
                         "Please fill initial survey for us to calculate your progress",
@@ -114,13 +95,12 @@ fun InitialSurveyView(navController: NavController) {
                         fontFamily = montserratFont,
                         fontSize = 25.sp,
                         textAlign = TextAlign.Center,
-                        color = Color.Black // Upewnienie się, że tekst jest widoczny
+                        color = Color.Black
                     )
                 }
 
                 item { Spacer(modifier = Modifier.height(12.dp)) }
 
-                // SEX
                 item {
                     DropdownField(
                         label = "Sex",
@@ -129,11 +109,9 @@ fun InitialSurveyView(navController: NavController) {
                         isError = sexError,
                         onSelected = { sex = it; sexError = false },
                         modifier = Modifier.fillMaxWidth(0.85f),
-                        // colors = textFieldColors // Dodaj ten parametr do DropdownField jeśli akceptuje
                     )
                 }
 
-                // HEIGHT
                 item {
                     TextInput(
                         value = height,
@@ -145,7 +123,6 @@ fun InitialSurveyView(navController: NavController) {
                     )
                 }
 
-                // WEIGHT
                 item {
                     TextInput(
                         value = weight,
@@ -157,7 +134,6 @@ fun InitialSurveyView(navController: NavController) {
                     )
                 }
 
-                // AGE
                 item {
                     TextInput(
                         value = age,
@@ -168,8 +144,6 @@ fun InitialSurveyView(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(0.85f),
                     )
                 }
-
-                // ACTIVITY LEVEL
                 item {
                     DropdownField(
                         label = "Daily activity level",
@@ -181,7 +155,6 @@ fun InitialSurveyView(navController: NavController) {
                     )
                 }
 
-                // TRAINING INTENSITY
                 item {
                     DropdownField(
                         label = "Training intensity",
@@ -192,8 +165,6 @@ fun InitialSurveyView(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(0.85f)
                     )
                 }
-
-                // WEEKLY WEIGHT CHANGE
                 item {
                     TextInput(
                         value = weeklyWeightChangeTempo,
@@ -205,7 +176,6 @@ fun InitialSurveyView(navController: NavController) {
                     )
                 }
 
-                // GOAL WEIGHT
                 item {
                     TextInput(
                         value = goalWeight,
@@ -217,7 +187,6 @@ fun InitialSurveyView(navController: NavController) {
                     )
                 }
 
-                // ODCZYT BŁĘDÓW I PRZYCISK
                 item {
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -243,8 +212,6 @@ fun InitialSurveyView(navController: NavController) {
                         onClick = {
                             backendMessage = null
                             errorMessage = null
-
-                            // reset error flags
                             sexError = false
                             heightError = false
                             weightError = false

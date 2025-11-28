@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,7 +49,7 @@ fun NotificationItem(title: String, body: String, onDelete: () -> Unit) {
 
             Icon(
                 imageVector = Icons.Default.Delete,
-                contentDescription = "Usuń powiadomienie",
+                contentDescription = "Delete notification",
                 tint = Color.Black,
                 modifier = Modifier
                     .size(22.dp)

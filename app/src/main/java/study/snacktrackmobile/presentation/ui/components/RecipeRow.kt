@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +35,7 @@ fun RecipeRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp) // Ustalamy stałą wysokość dla estetyki listy
+            .height(100.dp)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -46,7 +45,6 @@ fun RecipeRow(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // --- 1. ZDJĘCIE (LEWA STRONA) ---
             Box(
                 modifier = Modifier
                     .width(100.dp)
@@ -55,7 +53,6 @@ fun RecipeRow(
                 contentAlignment = Alignment.Center
             ) {
                 if (!recipe.imageUrl.isNullOrBlank()) {
-                    // Budowanie pełnego URL
                     val fullUrl = if (recipe.imageUrl.startsWith("http")) {
                         recipe.imageUrl
                     } else {
@@ -71,7 +68,6 @@ fun RecipeRow(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // Placeholder
                     Icon(
                         imageVector = Icons.Default.Restaurant,
                         contentDescription = null,
@@ -80,7 +76,6 @@ fun RecipeRow(
                 }
             }
 
-            // --- 2. TREŚĆ (ŚRODEK) ---
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -108,15 +103,13 @@ fun RecipeRow(
                 )
             }
 
-            // --- 3. IKONY (PRAWA STRONA) ---
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
                     .padding(end = 8.dp),
-                verticalArrangement = Arrangement.SpaceEvenly, // Rozłożenie ikon góra/dół
+                verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Serduszko
                 IconButton(
                     onClick = onToggleFavourite,
                     modifier = Modifier.size(32.dp)
@@ -128,7 +121,6 @@ fun RecipeRow(
                     )
                 }
 
-                // Usuwanie (tylko dla autora)
                 if (isAuthor) {
                     IconButton(
                         onClick = onDelete,

@@ -1,6 +1,5 @@
 package study.snacktrackmobile.presentation.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,7 +36,6 @@ fun ProductDetailsScreen(
 ) {
     val context = LocalContext.current
 
-    // 🔹 1. DANE BAZOWE (Na 100g)
     val name = alimentation.essentialFood?.name
         ?: alimentation.mealApi?.name
         ?: "Unknown Product"
@@ -60,25 +57,20 @@ fun ProductDetailsScreen(
 
     val defaultWeight = if (determinedWeight > 0f) determinedWeight else 100f
 
-    // Używamy Double dla precyzji, konwertując z DTO (które teraz ma Double?)
     val rawKcal = (alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toDouble() ?: 0.0)
     val rawP = (alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein?.toDouble() ?: 0.0)
     val rawF = (alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat?.toDouble() ?: 0.0)
     val rawC = (alimentation.essentialFood?.carbohydrates ?: alimentation.mealApi?.carbohydrates?.toDouble() ?: 0.0)
 
-    // Normalizacja do 100g (wszystko na Double)
     val isApi = alimentation.mealApi != null
-    // defaultWeight jest Float, rzutujemy na Double do obliczeń
     val defaultWeightD = defaultWeight.toDouble()
     val needsNormalization = isApi && defaultWeightD != 100.0
 
-    // Obliczenia na Double
     val baseKcal = if (needsNormalization) (rawKcal * 100.0) / defaultWeightD else rawKcal
     val baseP = if (needsNormalization) (rawP * 100.0) / defaultWeightD else rawP
     val baseF = if (needsNormalization) (rawF * 100.0) / defaultWeightD else rawF
     val baseC = if (needsNormalization) (rawC * 100.0) / defaultWeightD else rawC
 
-    // 🔹 2. UI SETUP
     val unitRawString = rawUnit?.lowercase()?.trim()
     val normalizedUnit = when {
         unitRawString == "gram" -> "g"
@@ -99,10 +91,9 @@ fun ProductDetailsScreen(
     }
     var isError by remember { mutableStateOf(false) }
 
-    // 🔹 3. KALKULATOR NA ŻYWO
     val liveSummary = remember(inputValue, selectedOption) {
         val qty = inputValue.toFloatOrNull() ?: 0f
-        val qtyD = qty.toDouble() // Konwersja inputu na Double
+        val qtyD = qty.toDouble()
 
         val totalGramsD = if (selectedOption == "piece") {
             qtyD * defaultWeightD
@@ -111,7 +102,6 @@ fun ProductDetailsScreen(
         }
         val ratio = totalGramsD / 100.0
 
-        // Wynik konwertujemy na Float dopiero dla UI (MacroItem oczekuje Float)
         MacroSummaryUi(
             kcal = (baseKcal * ratio).toFloat(),
             p = (baseP * ratio).toFloat(),
@@ -164,7 +154,6 @@ fun ProductDetailsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 🔹 4. KARTA PODSUMOWANIA (Zabezpieczona przed rozjeżdżaniem)
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
@@ -285,7 +274,6 @@ fun ProductDetailsScreen(
     }
 }
 
-// Pomocnicza klasa do UI
 data class MacroSummaryUi(
     val kcal: Float,
     val p: Float,

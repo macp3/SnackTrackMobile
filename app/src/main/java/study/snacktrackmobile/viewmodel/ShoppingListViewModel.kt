@@ -8,13 +8,12 @@ import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.dao.ShoppingListDao
 import study.snacktrackmobile.data.model.ShoppingList
 import study.snacktrackmobile.data.model.ShoppingListItem
-import study.snacktrackmobile.data.services.AiApiService // Upewnij się, że importujesz z dobrego pakietu
+import study.snacktrackmobile.data.services.AiApiService
 import study.snacktrackmobile.data.services.AiShoppingRequest
 
 class ShoppingListViewModel(
     private val dao: ShoppingListDao,
     private val aiService: AiApiService,
-    // ZMIANA: Wstrzykujemy funkcję pobierającą token, zamiast obiektu Storage
     private val getToken: suspend () -> String?
 ) : ViewModel() {
 
@@ -155,8 +154,6 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 1. Gather Context (History) from local DB
-                // UWAGA: Upewnij się, że dodałeś metodę getLastLists do DAO!
                 val recentLists = dao.getLastLists(email)
                 val productContext = recentLists
                     .flatMap { it.items }
@@ -164,24 +161,20 @@ class ShoppingListViewModel(
                     .distinct()
                     .take(50)
 
-                // 2. Prepare Request
                 val request = AiShoppingRequest(
                     prompt = userPrompt,
                     productContext = productContext
                 )
 
-                // 3. Get Token safely via lambda
-                val rawToken = getToken() // Wywołanie wstrzykniętej funkcji
+                val rawToken = getToken()
                 if (rawToken == null) {
                     onError("User not logged in (Token missing)")
                     return@launch
                 }
                 val token = "Bearer $rawToken"
 
-                // 4. Call Backend
                 val generatedItems = aiService.generateShoppingList(token, request)
 
-                // 5. Convert Response
                 val newShoppingListItems = generatedItems.map {
                     ShoppingListItem(
                         name = it.name,
@@ -191,7 +184,6 @@ class ShoppingListViewModel(
                     )
                 }
 
-                // 6. Save to Database
                 val newList = ShoppingList(
                     name = "AI Plan (${generatedItems.size} items)",
                     date = selectedDate,

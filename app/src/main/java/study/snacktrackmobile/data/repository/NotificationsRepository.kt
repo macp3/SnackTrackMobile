@@ -8,7 +8,7 @@ object NotificationsRepository {
     val notifications: List<Notification> get() = _notifications
 
     fun addNotification(notification: Notification) {
-        _notifications.add(0, notification) // nowe na górze
+        _notifications.add(0, notification)
     }
 
     fun clearNotifications() {

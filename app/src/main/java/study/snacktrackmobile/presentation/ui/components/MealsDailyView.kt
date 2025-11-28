@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -38,7 +37,6 @@ fun MealsDailyView(
     val mealsState by viewModel.meals.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Dialogi
     var showAiDialog by remember { mutableStateOf(false) }
     var showPremiumUpsellDialog by remember { mutableStateOf(false) }
     var aiPrompt by remember { mutableStateOf("") }
@@ -72,7 +70,6 @@ fun MealsDailyView(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp)
             ) {
-                // 🔹 NAGŁÓWEK
                 item {
                     Row(
                         modifier = Modifier

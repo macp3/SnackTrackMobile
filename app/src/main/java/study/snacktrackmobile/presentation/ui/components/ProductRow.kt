@@ -33,7 +33,6 @@ fun ProductRow(
     onDelete: (Int) -> Unit,
     onEdit: (RegisteredAlimentationResponse) -> Unit
 ) {
-    // Zmienne wyświetlane w UI
     var name = "Unknown"
     var amountText = "-"
     var kcal = 0.0
@@ -41,25 +40,18 @@ fun ProductRow(
     var fat = 0.0
     var carbs = 0.0
 
-    // 1. PRZYPADEK: TO JEST PRZEPIS (Backend: Meal)
     if (alimentation.meal != null) {
-        val recipe = alimentation.meal // To jest obiekt MealResponse
-        name = recipe.name ?: "Unknown Meal" // Nazwa przepisu, np. "Pancakes"
+        val recipe = alimentation.meal
+        name = recipe.name ?: "Unknown Meal"
 
-        // Ilość porcji (zapisana w registered alimentation jako pieces)
-        // Rzutujemy na Double, bo pieces w DTO jest Float?
         val servings = (alimentation.pieces ?: 1f).toDouble()
         amountText = if (servings == 1.0) "1 serving" else "$servings servings"
 
-        // Iterujemy po składnikach przepisu, aby obliczyć makro
         recipe.ingredients.forEach { ing ->
             val ef = ing.essentialFood
             val api = ing.essentialApi
 
-            // defaultWeight w EssentialFoodResponse jest Float?, rzutujemy na Double
             val baseWeight = (ef?.defaultWeight ?: api?.defaultWeight ?: 100f).toDouble()
-
-            // Ile tego składnika jest w przepisie (Float -> Double)
             val iAmount = (ing.amount ?: 0f).toDouble()
             val iPieces = (ing.pieces ?: 0f).toDouble()
 
@@ -69,7 +61,6 @@ fun ProductRow(
                 else -> 0.0
             }
 
-            // Pobieramy wartości (z EF lub API) - TERAZ SĄ TO DOUBLE? (zgodnie z poprawką DTO)
             val itemCal = (ef?.calories ?: api?.calorie?.toDouble() ?: 0.0)
             val itemP = (ef?.protein ?: api?.protein?.toDouble() ?: 0.0)
             val itemF = (ef?.fat ?: api?.fat?.toDouble() ?: 0.0)
@@ -81,15 +72,11 @@ fun ProductRow(
             carbs += itemC * ratio
         }
 
-        // Mnożymy sumę składników przez liczbę zjedzonych porcji
         kcal *= servings
         protein *= servings
         fat *= servings
         carbs *= servings
-
-    }
-    // 2. PRZYPADEK: TO JEST POJEDYNCZY PRODUKT
-    else {
+    } else {
         val foodName = alimentation.getDisplayName()
         name = foodName
 
@@ -98,14 +85,12 @@ fun ProductRow(
 
         amountText = when {
             userPieces > 0.0 ->
-                "${userPieces.toFloat()} piece${if (userPieces > 1.0) "s" else ""}" // Wyświetlamy jako Float, żeby nie było 1.0 piece
+                "${userPieces.toFloat()} piece${if (userPieces > 1.0) "s" else ""}"
             userAmount > 0.0 ->
                 "${String.format("%.1f", userAmount)} g"
             else -> "-"
         }
 
-        // Helper do obliczania
-        // defaultWeight w DTO jest Float?, konwertujemy na Double
         val baseWeight = (alimentation.essentialFood?.defaultWeight ?: alimentation.mealApi?.defaultWeight ?: 100f).toDouble()
 
         val ratio = when {
@@ -114,7 +99,6 @@ fun ProductRow(
             else -> 0.0
         }
 
-        // Pobieramy wartości (są Double? lub konwertujemy z API)
         val baseKcal = (alimentation.essentialFood?.calories ?: alimentation.mealApi?.calorie?.toDouble() ?: 0.0)
         val baseP = (alimentation.essentialFood?.protein ?: alimentation.mealApi?.protein?.toDouble() ?: 0.0)
         val baseF = (alimentation.essentialFood?.fat ?: alimentation.mealApi?.fat?.toDouble() ?: 0.0)
@@ -126,7 +110,6 @@ fun ProductRow(
         carbs = baseC * ratio
     }
 
-    // WIDOK KARTY
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -142,7 +125,6 @@ fun ProductRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Lewa strona (Nazwa + Ilość)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = name,
@@ -159,7 +141,6 @@ fun ProductRow(
                 )
             }
 
-            // Prawa strona (Makro)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(

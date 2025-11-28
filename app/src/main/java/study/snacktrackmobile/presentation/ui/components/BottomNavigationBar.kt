@@ -47,7 +47,7 @@ fun BottomNavigationBar(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
-                            .weight(1f) // każdy item zajmuje równą szerokość
+                            .weight(1f)
                             .background(
                                 color = if (isSelected) selectedGreen else Color.Transparent,
                                 shape = RoundedCornerShape(4.dp)
@@ -58,7 +58,7 @@ fun BottomNavigationBar(
                             imageVector = item.icon,
                             contentDescription = item.label,
                             tint = if (isSelected) Color.White else Color.Black,
-                            modifier = Modifier.size(20.dp) // ikony trochę mniejsze
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(

@@ -108,6 +108,14 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("io.mockk:mockk-android:1.13.9")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.7.7")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation(kotlin("test"))
+}
+//na testa
+configurations.getByName("androidTestImplementation") {
+    exclude(group = "org.junit.jupiter")
+    exclude(group = "org.junit.platform")
 }

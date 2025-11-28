@@ -47,7 +47,6 @@ fun DrawerContent(
             .background(Color.White)
             .padding(vertical = 32.dp, horizontal = 16.dp)
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -80,7 +79,6 @@ fun DrawerContent(
                     fontFamily = montserratFont,
                     color = Color(0xFF2E7D32)
                 )
-
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -130,7 +128,6 @@ fun DrawerContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         DrawerItem(Icons.Default.Info, "About Us") { onNavigate("AboutUs") }
-
         DrawerItem(Icons.AutoMirrored.Filled.ExitToApp, "Log Out") { showLogoutDialog = true }
     }
 

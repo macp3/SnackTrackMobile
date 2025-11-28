@@ -8,16 +8,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
-
 
 val montserratFont = FontFamily(
     Font(R.font.montserrat, weight = FontWeight.Normal)
@@ -61,12 +57,10 @@ fun StartView(navController: NavController) {
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             SnackTrackTopBar()
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // GÓRNA CZĘŚĆ
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -92,7 +86,6 @@ fun StartView(navController: NavController) {
                 )
             }
 
-            // DOLNE PRZYCISKI — ZAWSZE NA EKRANIE
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -116,7 +109,7 @@ fun StartView(navController: NavController) {
                 Spacer(modifier = Modifier.height(25.dp))
 
                 OutlinedButton(
-                    onClick = { /* Google */ },
+                    onClick = { },
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     modifier = Modifier.size(50.dp),

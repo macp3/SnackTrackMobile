@@ -71,7 +71,6 @@ fun SnackTrackTopBarCalendar(
             .background(Color(0xFFBFFF99))
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        // Top bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -114,7 +113,6 @@ fun SnackTrackTopBarCalendar(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Widoczny miesiąc i rok
         Text(
             text = "${visibleMonth.replaceFirstChar { it.uppercase() }} $visibleYear",
             fontFamily = montserratFont,
@@ -162,7 +160,5 @@ fun SnackTrackTopBarCalendar(
 
             }
         }
-
-
     }
 }

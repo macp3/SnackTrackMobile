@@ -14,9 +14,9 @@ import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 @Composable
 fun RecipeListDisplay(
     items: List<RecipeResponse>,
-    favouriteIds: Set<Int>,       // Potrzebne do określenia koloru serca
-    currentUserId: Int?,          // Potrzebne do weryfikacji autora (ikona X)
-    onClick: (RecipeResponse) -> Unit, // Przekazujemy cały obiekt do ekranu szczegółów
+    favouriteIds: Set<Int>,
+    currentUserId: Int?,
+    onClick: (RecipeResponse) -> Unit,
     onToggleFavourite: (RecipeResponse) -> Unit,
     onDelete: (Int) -> Unit
 ) {

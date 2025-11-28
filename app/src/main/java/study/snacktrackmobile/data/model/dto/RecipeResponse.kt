@@ -9,10 +9,7 @@ data class RecipeResponse(
     val name: String,
     val description: String?,
     val authorId: Int,
-
-    // Upewnij się, że nazwa pola to "ingredients"
     @SerialName("ingredients")
     val ingredients: List<IngredientResponse> = emptyList(),
-
     val imageUrl: String?
 )

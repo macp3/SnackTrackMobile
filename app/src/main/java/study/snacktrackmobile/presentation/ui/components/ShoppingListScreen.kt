@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp // 🔹 Dodano import dla fontSize
+import androidx.compose.ui.unit.sp
 import study.snacktrackmobile.data.model.ShoppingList
 import study.snacktrackmobile.data.model.ShoppingListItem
 import study.snacktrackmobile.viewmodel.ShoppingListViewModel
@@ -40,7 +40,6 @@ fun ShoppingListScreen(
     var newlyAddedListId by remember { mutableStateOf<Long?>(null) }
     var showDeleteListDialog by remember { mutableStateOf<ShoppingList?>(null) }
 
-    // AI & Premium States
     var showAiDialog by remember { mutableStateOf(false) }
     var showPremiumUpsellDialog by remember { mutableStateOf(false) }
     var aiPrompt by remember { mutableStateOf("") }
@@ -87,11 +86,9 @@ fun ShoppingListScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // 1. ADD BUTTON
                     Button(
                         onClick = { showDialog = true },
                         modifier = Modifier.weight(1f),
-                        // 🔹 ZMNIEJSZENIE PADDINGU WEWNĘTRZNEGO
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFE0E0E0),
@@ -102,7 +99,7 @@ fun ShoppingListScreen(
                             Icons.Default.Add,
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
@@ -110,15 +107,13 @@ fun ShoppingListScreen(
                             fontFamily = montserratFont,
                             color = Color.Black,
                             maxLines = 1,
-                            fontSize = 12.sp // 🔹 MNIEJSZA CZCIONKA
+                            fontSize = 12.sp
                         )
                     }
 
-                    // 2. COPY BUTTON
                     Button(
                         onClick = { showCopyDialog = true },
                         modifier = Modifier.weight(1f),
-                        // 🔹 ZMNIEJSZENIE PADDINGU WEWNĘTRZNEGO
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFE0E0E0),
@@ -129,7 +124,7 @@ fun ShoppingListScreen(
                             Icons.Default.ContentCopy,
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
@@ -137,11 +132,10 @@ fun ShoppingListScreen(
                             fontFamily = montserratFont,
                             color = Color.Black,
                             maxLines = 1,
-                            fontSize = 12.sp // 🔹 MNIEJSZA CZCIONKA
+                            fontSize = 12.sp
                         )
                     }
 
-                    // 3. AI BUTTON
                     Button(
                         onClick = {
                             if (isUserPremium) {
@@ -151,7 +145,6 @@ fun ShoppingListScreen(
                             }
                         },
                         modifier = Modifier.weight(1f),
-                        // 🔹 ZMNIEJSZENIE PADDINGU WEWNĘTRZNEGO
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isUserPremium) Color(0xFFD1C4E9) else Color(0xFFE0E0E0),
@@ -163,14 +156,14 @@ fun ShoppingListScreen(
                                 Icons.Default.AutoAwesome,
                                 contentDescription = "AI",
                                 tint = Color.Black,
-                                modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                                modifier = Modifier.size(18.dp)
                             )
                         } else {
                             Icon(
                                 Icons.Default.Lock,
                                 contentDescription = "Locked",
                                 tint = Color.Gray,
-                                modifier = Modifier.size(18.dp) // 🔹 MNIEJSZA IKONA
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                         Spacer(Modifier.width(4.dp))
@@ -178,14 +171,13 @@ fun ShoppingListScreen(
                             "AI",
                             fontFamily = montserratFont,
                             color = Color.Black,
-                            fontSize = 12.sp // 🔹 MNIEJSZA CZCIONKA
+                            fontSize = 12.sp
                         )
                     }
                 }
             }
         }
 
-        // Loading Overlay
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -199,9 +191,6 @@ fun ShoppingListScreen(
         }
     }
 
-    // --- DIALOGS ---
-
-    // 1. PREMIUM UPSELL DIALOG
     if (showPremiumUpsellDialog) {
         AlertDialog(
             onDismissRequest = { showPremiumUpsellDialog = false },
@@ -233,8 +222,6 @@ fun ShoppingListScreen(
             }
         )
     }
-
-    // 2. AI Dialog
     if (showAiDialog) {
         AlertDialog(
             onDismissRequest = { showAiDialog = false },
@@ -284,7 +271,6 @@ fun ShoppingListScreen(
         )
     }
 
-    // 3. Create New List Dialog
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -312,7 +298,6 @@ fun ShoppingListScreen(
         )
     }
 
-    // 4. Copy List Dialog
     if (showCopyDialog) {
         DatePickerDialog(
             onDismissRequest = { showCopyDialog = false },
@@ -337,7 +322,6 @@ fun ShoppingListScreen(
         }
     }
 
-    // 5. Delete Confirmation Dialog
     if (showDeleteListDialog != null) {
         AlertDialog(
             onDismissRequest = { showDeleteListDialog = null },
@@ -356,7 +340,6 @@ fun ShoppingListScreen(
     }
 }
 
-// Element listy zakupów (Card)
 @Composable
 fun ShoppingListItemCard(
     list: ShoppingList,
@@ -375,7 +358,6 @@ fun ShoppingListItemCard(
     var editedItemDescription by remember { mutableStateOf("") }
     var showEditListDialog by remember { mutableStateOf(false) }
     var editedListName by remember { mutableStateOf(list.name) }
-
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -500,7 +482,6 @@ fun ShoppingListItemCard(
         }
     }
 
-    // --- DIALOGI ITEMÓW ---
     if (showAddItemDialog) {
         AlertDialog(
             onDismissRequest = { showAddItemDialog = false },
@@ -551,13 +532,13 @@ fun ShoppingListItemCard(
                 Column {
                     TextField(
                         value = editedItemName,
-                        onValueChange = { if (it.length <= 35) editedItemName = it },
+                        onValueChange = { if (editedItemName.length <= 35) editedItemName = it },
                         label = { Text("Item name") },
                         singleLine = true
                     )
                     TextField(
                         value = editedItemQuantity,
-                        onValueChange = { if (it.length <= 9) editedItemQuantity = it },
+                        onValueChange = { if (editedItemQuantity.length <= 9) editedItemQuantity = it },
                         label = { Text("Quantity") },
                         singleLine = true
                     )

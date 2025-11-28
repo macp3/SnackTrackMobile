@@ -45,8 +45,6 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
         return api.updateEntry("Bearer $token", id, dto)
     }
 
-    // 🔹 CAŁKOWICIE PRZEPISANA METODA KOPIOWANIA
-    // Teraz używa dedykowanego endpointu backendu, który robi to poprawnie (kopiuje wszystko)
     suspend fun copyMeal(
         token: String,
         fromDate: String,
@@ -64,7 +62,6 @@ class RegisteredAlimentationRepository(private val api: ApiService) {
             toMealName = toMealName
         )
 
-        // Nie parsujemy body, tylko sprawdzamy kod sukcesu (200 OK)
         if (!response.isSuccessful) {
             throw Exception("Copy failed: ${response.code()} ${response.message()}")
         }

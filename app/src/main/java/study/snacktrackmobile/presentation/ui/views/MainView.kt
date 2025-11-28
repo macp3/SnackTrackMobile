@@ -66,7 +66,6 @@ fun MainView(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // 🔹 NOWY STAN: Czy RecipesScreen wyświetla detale?
     var isRecipeDetailsVisible by remember { mutableStateOf(false) }
 
     var authToken by remember { mutableStateOf<String?>(null) }
@@ -125,7 +124,6 @@ fun MainView(
         return
     }
 
-    // --- KONFIGURACJA API ---
     val aiApiService = remember {
         Retrofit.Builder()
             .baseUrl(ApiConfig.BASE_URL)
@@ -190,12 +188,11 @@ fun MainView(
 
     val userTraining by remember { derivedStateOf { trainingViewModel.userTraining } }
 
-    // 🔹 ZMIANA: showCalendar zależy teraz od flagi isRecipeDetailsVisible dla Recipes
     val showCalendar = when (selectedTab) {
         "Meals" -> true
         "Shopping" -> true
         "Training" -> userTraining != null
-        "Recipes" -> isRecipeDetailsVisible // Pokaż kalendarz tylko gdy wyświetlamy detale
+        "Recipes" -> isRecipeDetailsVisible
         else -> false
     }
 
@@ -219,22 +216,17 @@ fun MainView(
         }
     }
 
-    // Obsługa przycisku Wstecz
     BackHandler(enabled = true) {
         when {
             rightDrawerOpen -> rightDrawerOpen = false
             leftDrawerState.isOpen -> scope.launch { leftDrawerState.close() }
 
-            // Jeśli otwarty jest szczegół przepisu -> zamknij go
             selectedTab == "Recipes" && recipeToOpen != null -> recipeToOpen = null
 
-            // Jeśli jesteśmy w trybie dodawania/edycji przepisu -> wracamy do listy
             selectedTab == "Recipes" && (currentRecipeScreen == "Add recipe_INTERNAL") -> {
                 recipesViewModel.setScreen("My recipes")
             }
 
-            // Jeśli jesteśmy w detalach (ale nie z recipeToOpen), musimy obsłużyć to w RecipesScreen
-            // (Tam jest własny BackHandler, ten tutaj jest globalny)
 
             selectedTab == "AddProduct" && selectedProduct != null -> {
                 selectedProduct = null
@@ -289,14 +281,12 @@ fun MainView(
             modifier = Modifier.fillMaxSize().background(Color.White)
         ) { paddingValues ->
 
-            // Główny Box kontenera
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .background(Color.White)
             ) {
-                // WARSTWA 1: TREŚĆ (Listy itp.)
                 Box(modifier = Modifier.fillMaxSize()) {
                     when (selectedTab) {
                         "Meals" -> MealsDailyView(
@@ -335,7 +325,6 @@ fun MainView(
                             selectedDate = selectedDate,
                             recipeToOpen = recipeToOpen,
                             onRecipeOpened = { recipeToOpen = null },
-                            // 🔹 NOWY CALLBACK: Informujemy MainView czy wyświetlamy detale
                             onDetailsVisibilityChange = { isVisible ->
                                 isRecipeDetailsVisible = isVisible
                             }
@@ -382,7 +371,7 @@ fun MainView(
                                         selectedTab = "Meals"
                                     },
                                     registeredAlimentationViewModel = registeredAlimentationViewModel,
-                                    isEditMode = isEditMode // Przekazujemy czy to tryb edycji
+                                    isEditMode = isEditMode
                                 )
                             }
                         }
@@ -406,7 +395,6 @@ fun MainView(
                     }
                 }
 
-                // WARSTWA 2: PŁYWAJĄCY PASEK SUMMARY BAR
                 if (selectedTab != "AddProduct" &&
                     selectedTab != "AddProductToDatabase" &&
                     selectedTab != "AboutUs" &&
@@ -424,7 +412,6 @@ fun MainView(
             }
         }
 
-        // Right drawer: Notifications
         if (rightDrawerOpen) {
             Box(
                 modifier = Modifier

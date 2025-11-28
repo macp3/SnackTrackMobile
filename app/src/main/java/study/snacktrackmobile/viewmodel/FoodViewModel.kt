@@ -123,7 +123,6 @@ class FoodViewModel(
         }
     }
 
-    // 🔹 NOWE: Funkcja pobierająca szczegóły przed nawigacją
     fun fetchProductDetailsAndNavigate(
         item: FoodUiItem,
         selectedDate: String,
@@ -132,16 +131,12 @@ class FoodViewModel(
     ) {
         viewModelScope.launch {
             val token = TokenStorage.getToken(context) ?: return@launch
-
-            // Sprawdzamy czy lista uznała to za "custom piece" (np. z nazwy)
-            // To zachowujemy, żeby przekazać pieces=1
             val isCustomPiece = (item.defaultWeight != null && item.defaultWeight!! > 0f && item.defaultWeight != 100f)
             val amountVal = if (isCustomPiece) 0f else 100f
             val piecesVal = if (isCustomPiece) 1f else 0f
 
             when (item) {
                 is FoodUiItem.Local -> {
-                    // Dla lokalnych nie musimy nic dociągać
                     val response = RegisteredAlimentationResponse(
                         id = -1,
                         userId = 0,
@@ -158,18 +153,16 @@ class FoodViewModel(
                 is FoodUiItem.Api -> {
                     _isLoading.value = true
                     try {
-                        // 🔹 POBIERANIE PEŁNYCH DANYCH Z BACKENDU
                         val apiResponse = api.getFoodFromApiById("Bearer $token", item.data.id)
 
                         if (apiResponse.isSuccessful && apiResponse.body() != null) {
                             val fullDetails = apiResponse.body()!!
 
-                            // Tworzymy obiekt z PEŁNYMI danymi, ale zachowujemy logikę sztuk z listy
                             val response = RegisteredAlimentationResponse(
                                 id = -1,
                                 userId = 0,
                                 essentialFood = null,
-                                mealApi = fullDetails, // Tu wkładamy pełne dane!
+                                mealApi = fullDetails,
                                 meal = null,
                                 timestamp = selectedDate,
                                 amount = amountVal,
@@ -178,7 +171,6 @@ class FoodViewModel(
                             )
                             onSuccess(response)
                         } else {
-                            // Fallback w razie błędu API: użyj danych z listy
                             val response = RegisteredAlimentationResponse(
                                 id = -1,
                                 userId = 0,
@@ -193,7 +185,6 @@ class FoodViewModel(
                             onSuccess(response)
                         }
                     } catch (e: Exception) {
-                        // Fallback w razie błędu sieci
                         e.printStackTrace()
                         val response = RegisteredAlimentationResponse(
                             id = -1,
@@ -216,10 +207,9 @@ class FoodViewModel(
     }
 }
 
-// 🔹 Klasy pomocnicze do wyświetlania na liście wyszukiwania
 sealed class FoodUiItem {
     abstract val name: String
-    abstract val kcal: Float // UI oczekuje Float, więc musimy rzutować
+    abstract val kcal: Float
     abstract val description: String
     abstract val quantityLabel: String
     abstract val defaultWeight: Float?
@@ -240,16 +230,13 @@ sealed class FoodUiItem {
         override val name: String = data.name ?: "Unknown"
         override val description: String = data.description ?: "User Database"
 
-        // defaultWeight w EssentialFoodResponse jest Float?, więc tu bez zmian
         override val defaultWeight: Float? = data.defaultWeight
             ?: extractWeight(data.servingSizeUnit)
             ?: extractWeight(data.name)
 
         private val isPiece = (defaultWeight != null && defaultWeight > 0)
 
-        // 🔹 FIX: Poprawne rzutowanie z Double (DTO) na Float (UI)
         override val kcal: Float = if (isPiece) {
-            // data.calories to teraz Double?, defaultWeight to Float
             val cal = data.calories ?: 0.0
             val weight = defaultWeight!!.toDouble()
             val result = (cal / 100.0) * weight

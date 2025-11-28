@@ -42,24 +42,17 @@ fun DropdownField(
             shape = RoundedCornerShape(12.dp),
             textStyle = TextStyle(
                 fontFamily = montserratFont,
-                color = Color.Black // ✅ Wymuszony czarny kolor tekstu
+                color = Color.Black
             ),
             colors = OutlinedTextFieldDefaults.colors(
-                // ✅ Kolory tekstu
                 focusedTextColor = Color.Black,
                 unfocusedTextColor = Color.Black,
-
-                // Obramowania
-                focusedBorderColor = if (isError) Color.Red else Color(0xFF2E7D32), // Zielony jak w reszcie apki
+                focusedBorderColor = if (isError) Color.Red else Color(0xFF2E7D32),
                 unfocusedBorderColor = if (isError) Color.Red else Color.Black,
                 errorBorderColor = Color.Red,
-
-                // Etykiety
                 focusedLabelColor = if (isError) Color.Red else Color(0xFF2E7D32),
                 unfocusedLabelColor = if (isError) Color.Red else Color.Black,
                 errorLabelColor = Color.Red,
-
-                // Tło
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent,
@@ -67,11 +60,10 @@ fun DropdownField(
             isError = isError
         )
 
-        // ✅ Zmiana na ExposedDropdownMenu (lepiej działa z Boxem)
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color.White) // ✅ Białe tło usuwa czarne rogi
+            modifier = Modifier.background(Color.White)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -79,7 +71,7 @@ fun DropdownField(
                         Text(
                             text = option,
                             fontFamily = montserratFont,
-                            color = Color.Black // ✅ Tekst w opcjach też czarny
+                            color = Color.Black
                         )
                     },
                     onClick = {

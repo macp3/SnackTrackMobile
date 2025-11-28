@@ -40,7 +40,6 @@ fun CommentSection(
 
     var newCommentText by remember { mutableStateOf("") }
 
-    // Dialogs
     var showReportDialog by remember { mutableStateOf<CommentResponse?>(null) }
     var showEditDialog by remember { mutableStateOf<CommentResponse?>(null) }
 
@@ -55,16 +54,15 @@ fun CommentSection(
             fontWeight = FontWeight.Bold,
             fontFamily = montserratFont,
             modifier = Modifier.padding(vertical = 8.dp),
-            color = Color.Black // 🔹 FIX: Wymuszony czarny kolor nagłówka
+            color = Color.Black
         )
 
-        // Comment List
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             comments.forEach { comment ->
                 CommentItem(
                     comment = comment,
                     isAuthor = (currentUserId != null && currentUserId == comment.authorId),
-                    onDelete = { viewModel.deleteComment(context, comment.mealId) }, // Uwaga: Sprawdź czy deleteComment na pewno przyjmuje mealId czy comment.id
+                    onDelete = { viewModel.deleteComment(context, comment.mealId) },
                     onEdit = { showEditDialog = comment },
                     onReport = { showReportDialog = comment },
                     onLike = { viewModel.toggleLike(context, comment.id) }
@@ -91,7 +89,6 @@ fun CommentSection(
                 placeholder = { Text("Add a comment...", color = Color.Gray) },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(24.dp),
-                // 🔹 FIX: Wymuszenie czarnego tekstu i białego tła
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.Black,
                     unfocusedTextColor = Color.Black,
@@ -121,7 +118,7 @@ fun CommentSection(
         var reason by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showReportDialog = null },
-            containerColor = Color.White, // Białe tło dialogu
+            containerColor = Color.White,
             title = { Text("Report Comment", color = Color.Black) },
             text = {
                 Column {
@@ -132,7 +129,6 @@ fun CommentSection(
                         onValueChange = { reason = it },
                         label = { Text("Reason", color = Color.Gray) },
                         modifier = Modifier.fillMaxWidth(),
-                        // 🔹 FIX kolorów
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.Black,
                             unfocusedTextColor = Color.Black,
@@ -162,7 +158,7 @@ fun CommentSection(
         var editText by remember { mutableStateOf(showEditDialog!!.content ?: "") }
         AlertDialog(
             onDismissRequest = { showEditDialog = null },
-            containerColor = Color.White, // Białe tło dialogu
+            containerColor = Color.White,
             title = { Text("Edit Comment", color = Color.Black) },
             text = {
                 OutlinedTextField(
@@ -170,7 +166,6 @@ fun CommentSection(
                     onValueChange = { editText = it },
                     label = { Text("Content", color = Color.Gray) },
                     modifier = Modifier.fillMaxWidth(),
-                    // 🔹 FIX kolorów
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
@@ -185,7 +180,6 @@ fun CommentSection(
             confirmButton = {
                 TextButton(onClick = {
                     if (editText.isNotBlank()) {
-                        // Uwaga: Upewnij się czy editComment przyjmuje id komentarza
                         viewModel.editComment(context, showEditDialog!!.id, editText)
                         showEditDialog = null
                     }
@@ -216,13 +210,11 @@ fun CommentItem(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
 
-            // --- HEADER (Avatar + Imię + Menu) ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // LEWA STRONA: Avatar + Imię
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val imageUrl = comment.authorImageUrl
                     val fullUrl = if (!imageUrl.isNullOrBlank()) {
@@ -252,7 +244,6 @@ fun CommentItem(
                     )
                 }
 
-                // PRAWA STRONA: Menu
                 Box {
                     IconButton(
                         onClick = { showMenu = true },
@@ -264,7 +255,7 @@ fun CommentItem(
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
-                        modifier = Modifier.background(Color.White) // 🔹 FIX: Białe tło menu
+                        modifier = Modifier.background(Color.White)
                     ) {
                         if (isAuthor) {
                             DropdownMenuItem(
@@ -287,12 +278,11 @@ fun CommentItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- CONTENT (Treść komentarza) ---
             comment.content?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black, // 🔹 FIX: Czarny tekst komentarza
+                    color = Color.Black,
                     maxLines = 5,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -300,7 +290,6 @@ fun CommentItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- LIKE SECTION ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier

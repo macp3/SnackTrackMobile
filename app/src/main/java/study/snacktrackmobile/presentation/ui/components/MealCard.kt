@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import study.snacktrackmobile.data.model.Meal
 import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
@@ -152,11 +150,11 @@ fun MealCard(
         }
     }
 }
+
 fun calcNutrient(
     entry: RegisteredAlimentationResponse,
-    baseValue: Float? // Ten parametr jest używany tylko dla essentialFood, dla meal jest ignorowany
+    baseValue: Float?
 ): Double {
-    // PRZYPADEK B: To jest PRODUKT (EssentialFood / MealApi)
     val per100 = (baseValue ?: 0f).toDouble()
     val defaultWeight = (entry.essentialFood?.defaultWeight ?: 100f).toDouble()
     val pieces = (entry.pieces ?: 0).toDouble()
@@ -179,7 +177,6 @@ fun Meal.calculateTotalMacros(): MacroSummary {
     var carbsSum = 0.0
 
     this.alimentations.forEach { alimentation ->
-        // 1. OBSŁUGA PRZEPISU (Recipe)
         if (alimentation.meal != null) {
             val recipe = alimentation.meal
             val servings = alimentation.pieces ?: 1f
@@ -208,9 +205,7 @@ fun Meal.calculateTotalMacros(): MacroSummary {
                 fatSum += baseF * ratio * servings
                 carbsSum += baseC * ratio * servings
             }
-        }
-        // 2. OBSŁUGA POJEDYNCZEGO PRODUKTU (EssentialFood lub MealApi)
-        else {
+        } else {
             val ef = alimentation.essentialFood
             val api = alimentation.mealApi
 

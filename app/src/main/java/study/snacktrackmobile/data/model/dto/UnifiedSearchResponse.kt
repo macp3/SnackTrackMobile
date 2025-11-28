@@ -1,6 +1,5 @@
 package study.snacktrackmobile.data.model.dto
 
-import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

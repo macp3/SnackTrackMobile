@@ -28,7 +28,6 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
     private val _authorNames = MutableStateFlow<Map<Int, String>>(emptyMap())
     val authorNames: StateFlow<Map<Int, String>> = _authorNames
 
-
     fun setCurrentUserId(id: Int) {
         _currentUserId.value = id
     }
@@ -37,13 +36,11 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
         val token = TokenStorage.getToken(context) ?: return@launch
 
         _isLoading.value = true
-        // Przekazujemy token do repozytorium
         val result = repository.getCommentsForMeal(token, mealId)
 
         result.onSuccess {
             _comments.value = it
         }.onFailure {
-            // Obsługa błędu
             _comments.value = emptyList()
         }
         _isLoading.value = false
@@ -55,7 +52,7 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
 
         result.onSuccess {
             Toast.makeText(context, "Comment added!", Toast.LENGTH_SHORT).show()
-            loadComments(context, mealId) // 🔹 Przekazujemy context
+            loadComments(context, mealId)
         }.onFailure { e ->
             val errorMsg = if (e is HttpException) {
                 try {
@@ -72,13 +69,12 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
         }
     }
 
-    // 🔹 ZMIANA: content: String (nie null)
     fun editComment(context: Context, mealId: Int, content: String) = viewModelScope.launch {
         val token = TokenStorage.getToken(context) ?: return@launch
         val result = repository.editComment(token, mealId, content)
         result.onSuccess {
             Toast.makeText(context, "Comment updated", Toast.LENGTH_SHORT).show()
-            loadComments(context, mealId) // 🔹 Przekazujemy context
+            loadComments(context, mealId)
         }.onFailure {
             Toast.makeText(context, "Update failed", Toast.LENGTH_SHORT).show()
         }
@@ -89,7 +85,7 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
         val result = repository.deleteComment(token, mealId)
         result.onSuccess {
             Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
-            loadComments(context, mealId) // 🔹 Przekazujemy context
+            loadComments(context, mealId)
         }.onFailure {
             Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
         }
@@ -117,13 +113,11 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
     fun toggleLike(context: Context, commentId: Int) = viewModelScope.launch {
         val token = TokenStorage.getToken(context) ?: return@launch
 
-        // 1. Optymistyczna aktualizacja lokalnej listy
         val currentList = _comments.value.toMutableList()
         val index = currentList.indexOfFirst { it.id == commentId }
 
         if (index != -1) {
             val oldItem = currentList[index]
-            // Odwracamy stan
             val newIsLiked = !oldItem.isLiked
             val newCount = if (newIsLiked) oldItem.likesCount + 1 else oldItem.likesCount - 1
 
@@ -131,13 +125,10 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
             _comments.value = currentList
         }
 
-        // 2. Wysłanie requestu do serwera
         val result = repository.toggleLike(token, commentId)
 
-        // 3. Jeśli się nie uda, cofamy zmianę (rollback)
         result.onFailure {
             Toast.makeText(context, "Failed to like", Toast.LENGTH_SHORT).show()
-            // Przeładuj prawdziwe dane z serwera, żeby naprawić stan
             val oldItem = _comments.value.find { it.id == commentId }
             if (oldItem != null) loadComments(context, oldItem.mealId)
         }

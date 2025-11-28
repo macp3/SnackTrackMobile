@@ -1,6 +1,5 @@
 package study.snacktrackmobile.data.model.dto
 
-// TrainingInfoDTO.kt
 data class TrainingInfoDTO(
     val id: Int,
     val name: String,
@@ -8,7 +7,6 @@ data class TrainingInfoDTO(
     val durationTime: Int
 )
 
-// ExerciseDTO.kt
 data class ExerciseDTO(
     val id: Int,
     val name: String,
@@ -25,7 +23,6 @@ data class TrainingDetailsResponseDTO(
     val exercises: List<ExerciseDayDTO>
 ) {
     fun exercisesForDay(dayIndex: Int): List<ExerciseDTO> {
-        // Grupowanie listy po dniu ćwiczeń
         val grouped = exercises.groupBy { it.dayOfExercise }
         return grouped[dayIndex]?.map { it.exercise } ?: emptyList()
     }

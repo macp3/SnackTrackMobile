@@ -7,8 +7,8 @@ data class RegisteredAlimentationRequest(
     val essentialId: Int?,
     val mealApiId: Int? = null,
     val mealId: Int? = null,
-    val timestamp: String,        // wysyłamy jako ISO string "yyyy-MM-dd"
-    val mealName: String,         // enum name np. "BREAKFAST"
+    val timestamp: String,
+    val mealName: String,
     val amount: Float? = null,
     val pieces: Float? = null
 )

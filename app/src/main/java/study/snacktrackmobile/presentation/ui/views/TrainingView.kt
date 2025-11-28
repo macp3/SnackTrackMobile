@@ -2,7 +2,6 @@ package study.snacktrackmobile.presentation.ui.views
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -194,7 +193,6 @@ fun TrainingView(
             }
         }
     } ?: run {
-        // 🔹 Lista dostępnych treningów
         LazyColumn(
             contentPadding = PaddingValues(
                 top = 16.dp,
@@ -257,9 +255,6 @@ fun TrainingView(
     }
 }
 
-/**
- * Oblicza numer dnia treningowego bez znajomości długości planu.
- */
 fun computeTrainingDayIndex(
     selectedDateStr: String,
     assignedDate: LocalDate?,

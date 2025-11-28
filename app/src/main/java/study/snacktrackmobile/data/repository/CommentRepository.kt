@@ -8,9 +8,9 @@ import study.snacktrackmobile.data.model.dto.ReportedCommentRequest
 class CommentRepository {
     private val api = Request.commentApi
 
-    suspend fun getCommentsForMeal(token: String, mealId: Int): Result<List<CommentResponse>> { // <--- Dodaj token
+    suspend fun getCommentsForMeal(token: String, mealId: Int): Result<List<CommentResponse>> {
         return try {
-            val comments = api.getCommentsForMeal("Bearer $token", mealId) // <--- Przekaż token
+            val comments = api.getCommentsForMeal("Bearer $token", mealId)
             Result.success(comments)
         } catch (e: Exception) {
             Result.failure(e)

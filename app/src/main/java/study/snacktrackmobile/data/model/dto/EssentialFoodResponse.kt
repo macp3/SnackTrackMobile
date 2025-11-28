@@ -12,6 +12,6 @@ data class EssentialFoodResponse(
     val fat: Double? = null,
     val carbohydrates: Double? = null,
     val brandName: String? = null,
-    val defaultWeight: Float? = null, // To pole może zostać Float, bo jest używane do wagi.
+    val defaultWeight: Float? = null,
     val servingSizeUnit: String? = null
 )

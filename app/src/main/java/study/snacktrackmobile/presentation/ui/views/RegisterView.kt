@@ -1,23 +1,17 @@
 package study.snacktrackmobile.presentation.ui.views
 
 import android.util.Patterns
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.draw.clip
 import study.snacktrackmobile.presentation.ui.components.DisplayButton
 import study.snacktrackmobile.presentation.ui.components.PasswordInput
 import study.snacktrackmobile.presentation.ui.components.SnackTrackTopBar
@@ -47,7 +41,6 @@ fun RegisterView(
 
     val registerState by viewModel.registerState.collectAsState()
 
-    /** ✅ FRONTEND VALIDATION */
     fun validateRegisterFrontend(): Boolean {
         nameError = name.isBlank()
         surnameError = surname.isBlank()
@@ -70,16 +63,13 @@ fun RegisterView(
         return validationMessage == null
     }
 
-    /** ✅ BACKEND MESSAGE */
     val backendMessage = when (registerState) {
-        is UiState.Error -> (registerState as UiState.Error).message   // np. "Email already taken"
+        is UiState.Error -> (registerState as UiState.Error).message
         else -> null
     }
 
-    /** ✅ PRIORYTET: backend > frontend */
     val displayedErrorMessage = backendMessage ?: validationMessage
 
-    /** ✅ Nawigacja po success */
     LaunchedEffect(registerState) {
         if (registerState is UiState.Success) {
             viewModel.clearRegisterState()
@@ -121,14 +111,12 @@ fun RegisterView(
             surnameError = false
             validationMessage = null
         },
-
         emailError = emailError,
         passwordError = passwordError,
         confirmPasswordError = confirmPasswordError,
         nameError = nameError,
         surnameError = surnameError,
         errorMessage = displayedErrorMessage,
-
         onRegisterClick = {
             if (validateRegisterFrontend()) {
                 viewModel.register(
@@ -141,9 +129,6 @@ fun RegisterView(
         }
     )
 }
-
-
-
 
 @Composable
 fun RegisterFormContent(
@@ -173,7 +158,7 @@ fun RegisterFormContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         SnackTrackTopBar()
-        Spacer(modifier = Modifier.height(10.dp)) // mniejszy odstęp do nagłówka
+        Spacer(modifier = Modifier.height(10.dp))
 
         Column(
             verticalArrangement = Arrangement.Top,

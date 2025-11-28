@@ -4,24 +4,19 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,7 +36,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import coil.compose.AsyncImage
 import study.snacktrackmobile.data.model.dto.ApiFoodResponseDetailed
 import study.snacktrackmobile.data.model.dto.EssentialFoodResponse
-import study.snacktrackmobile.data.model.dto.RegisteredAlimentationResponse
 import study.snacktrackmobile.presentation.ui.views.montserratFont
 
 @Composable
@@ -80,7 +74,6 @@ fun AddRecipeForm(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
-        // ZDJĘCIE
         item {
             Box(
                 modifier = Modifier
@@ -137,18 +130,12 @@ fun AddRecipeForm(
             }
         }
 
-        // NAZWA
         item {
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                // Zakładam, że TextInput to własny komponent.
-                // Jeśli jest to OutlinedTextField, trzeba mu nadać kolory.
-                // Jeśli to wrapper, upewnij się, że przekazuje kolor tekstu lub ma domyślnie czarny.
-                // Tutaj używam Twojego komponentu, ale jeśli to możliwe, dodaj tam colors = ...
                 TextInput(value = name, onValueChange = { if (it.length <= maxNameLength) onNameChange(it) }, label = "Recipe Name", isError = isNameError, errorMessage = nameErrorMessage, singleLine = true)
             }
         }
 
-        // OPIS
         item {
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 OutlinedTextField(
@@ -164,7 +151,6 @@ fun AddRecipeForm(
                         unfocusedBorderColor = Color.Black,
                         cursorColor = Color(0xFF2E7D32),
                         focusedLabelColor = Color(0xFF2E7D32),
-                        // 🔹 FIX: Wymuszony czarny kolor tekstu
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black
                     )
@@ -176,7 +162,6 @@ fun AddRecipeForm(
             }
         }
 
-        // SKŁADNIKI - NAGŁÓWEK
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, fontFamily = montserratFont, color = Color.Black)
@@ -184,7 +169,6 @@ fun AddRecipeForm(
             }
         }
 
-        // LISTA SKŁADNIKÓW
         if (ingredients.isEmpty()) {
             item { Text("No ingredients added.", color = Color.Gray, fontFamily = montserratFont, modifier = Modifier.padding(horizontal = 16.dp)) }
         } else {
@@ -204,7 +188,6 @@ fun AddRecipeForm(
             }
         }
 
-        // PRZYCISKI DOLNE
         item {
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 if (serverErrorMessage != null) Text(serverErrorMessage, color = Color.Red, fontFamily = montserratFont)

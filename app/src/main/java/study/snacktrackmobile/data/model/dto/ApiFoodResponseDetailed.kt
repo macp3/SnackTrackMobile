@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 data class ApiFoodResponseDetailed(
     @SerialName("id") val id: Int,
     @SerialName("name") val name: String? = null,
-    @SerialName("calorie") val calorie: Int? = null, // Backend wysyła "calorie" (int)
+    @SerialName("calorie") val calorie: Int? = null,
     @SerialName("protein") val protein: Float? = null,
     @SerialName("carbohydrates") val carbohydrates: Float? = null,
     @SerialName("fat") val fat: Float? = null,

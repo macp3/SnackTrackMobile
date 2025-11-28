@@ -10,7 +10,7 @@ data class EssentialFoodRequest(
     val protein: Float,
     val fat: Float,
     val carbohydrates: Float,
-    val brandName: String? = null,     // opcjonalne, bo w Javie nie było @NotNull
+    val brandName: String? = null,
     val defaultWeight: Float,
     val servingSizeUnit: String
 )

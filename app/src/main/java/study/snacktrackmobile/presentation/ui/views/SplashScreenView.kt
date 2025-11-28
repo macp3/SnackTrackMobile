@@ -21,7 +21,6 @@ fun SplashScreenView(navController: NavController) {
     var visible by remember { mutableStateOf(false) }
     var fadeOut by remember { mutableStateOf(false) }
 
-    // Animacja przezroczystości loga
     val alphaAnim by animateFloatAsState(
         targetValue = when {
             fadeOut -> 0f
@@ -32,7 +31,6 @@ fun SplashScreenView(navController: NavController) {
         label = "alphaAnim"
     )
 
-    // Animacja skali loga (delikatny efekt powiększenia)
     val scaleAnim by animateFloatAsState(
         targetValue = when {
             fadeOut -> 0.85f
@@ -43,7 +41,6 @@ fun SplashScreenView(navController: NavController) {
         label = "scaleAnim"
     )
 
-    // Animacja przezroczystości tła (fade-out)
     val backgroundAlpha by animateFloatAsState(
         targetValue = if (fadeOut) 0f else 1f,
         animationSpec = tween(durationMillis = 700, easing = LinearOutSlowInEasing),
@@ -52,9 +49,9 @@ fun SplashScreenView(navController: NavController) {
 
     LaunchedEffect(Unit) {
         visible = true
-        delay(2200) // ile czasu logo ma pozostać widoczne
+        delay(2200)
         fadeOut = true
-        delay(1000) // czas animacji znikania
+        delay(1000)
         navController.navigate("StartView") {
             popUpTo("SplashScreen") { inclusive = true }
         }

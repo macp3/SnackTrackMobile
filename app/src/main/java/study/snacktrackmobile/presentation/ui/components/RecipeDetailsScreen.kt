@@ -54,7 +54,6 @@ fun RecipeDetailsScreen(
     val context = LocalContext.current
     var showMealDialog by remember { mutableStateOf(false) }
 
-    // Stany dla menu opcji i zgłaszania
     var showOptionsMenu by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
     var reportReason by remember { mutableStateOf("") }
@@ -65,9 +64,8 @@ fun RecipeDetailsScreen(
                 .fillMaxSize()
                 .background(Color.White)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp) // Padding na dole, żeby FloatingButton nie zasłaniał treści
+                .padding(bottom = 80.dp)
         ) {
-            // --- IMAGE HEADER ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -75,7 +73,6 @@ fun RecipeDetailsScreen(
                     .background(Color(0xFFEEEEEE)),
                 contentAlignment = Alignment.Center
             ) {
-                // Wyświetlanie obrazka
                 if (!recipe.imageUrl.isNullOrBlank()) {
                     val fullUrl = if (recipe.imageUrl.startsWith("http")) {
                         recipe.imageUrl
@@ -92,14 +89,12 @@ fun RecipeDetailsScreen(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // Placeholder gdy brak zdjęcia
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.Restaurant, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(64.dp))
                         Text("No image", color = Color.Gray, fontSize = 12.sp)
                     }
                 }
 
-                // Back Button (Lewy górny róg)
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
@@ -110,7 +105,6 @@ fun RecipeDetailsScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                 }
 
-                // 🔹 Przycisk Opcji (Prawy górny róg) - Zgłaszanie
                 Box(modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
@@ -125,7 +119,7 @@ fun RecipeDetailsScreen(
                     DropdownMenu(
                         expanded = showOptionsMenu,
                         onDismissRequest = { showOptionsMenu = false },
-                        modifier = Modifier.background(Color.White) // Wymuszenie białego tła menu
+                        modifier = Modifier.background(Color.White)
                     ) {
                         DropdownMenuItem(
                             text = { Text("Report Recipe", color = Color.Black) },
@@ -139,7 +133,6 @@ fun RecipeDetailsScreen(
             }
 
             Column(modifier = Modifier.padding(16.dp)) {
-                // --- PRZYCISKI AKCJI (Ulubione, Edycja, Usuwanie) ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -175,7 +168,6 @@ fun RecipeDetailsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Nazwa i Opis
                 Text(
                     text = recipe.name,
                     style = MaterialTheme.typography.headlineMedium,
@@ -196,7 +188,6 @@ fun RecipeDetailsScreen(
                 Text("Ingredients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.Black)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Lista składników
                 if (recipe.ingredients.isEmpty()) {
                     Text("No ingredients listed.", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
                 } else {
@@ -222,7 +213,6 @@ fun RecipeDetailsScreen(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 🔹 SEKCJA KOMENTARZY
                 CommentSection(
                     mealId = recipe.id,
                     viewModel = commentViewModel,
@@ -231,7 +221,6 @@ fun RecipeDetailsScreen(
             }
         }
 
-        // FAB (Add to Diary)
         FloatingActionButton(
             onClick = { showMealDialog = true },
             modifier = Modifier
@@ -257,19 +246,17 @@ fun RecipeDetailsScreen(
         }
     }
 
-    // --- DIALOG DODAWANIA DO DZIENNIKA ---
     if (showMealDialog) {
         var servingsInput by remember { mutableStateOf("1") }
 
         AlertDialog(
             onDismissRequest = { showMealDialog = false },
-            containerColor = Color.White, // Wymuszenie białego tła dialogu
+            containerColor = Color.White,
             title = { Text("Add to Diary", fontFamily = montserratFont, fontWeight = FontWeight.Bold, color = Color.Black) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text("How many servings did you eat?", fontSize = 14.sp, color = Color.Black)
 
-                    // 🔹 ZMIANA: Zamiast TextInput używamy OutlinedTextField z wymuszonymi kolorami
                     OutlinedTextField(
                         value = servingsInput,
                         onValueChange = { newValue ->
@@ -281,7 +268,6 @@ fun RecipeDetailsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        // 🔹 FIX KOLORÓW: Wymuszamy czarny tekst i białe tło niezależnie od trybu telefonu
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.Black,
                             unfocusedTextColor = Color.Black,
@@ -344,7 +330,6 @@ fun RecipeDetailsScreen(
         )
     }
 
-    // 🔹 DIALOG ZGŁASZANIA PRZEPISU
     if (showReportDialog) {
         AlertDialog(
             onDismissRequest = { showReportDialog = false },
@@ -355,7 +340,6 @@ fun RecipeDetailsScreen(
                     Text("Why are you reporting this recipe?", color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Tu też wymuszamy kolory dla spójności
                     OutlinedTextField(
                         value = reportReason,
                         onValueChange = { reportReason = it },
@@ -413,12 +397,11 @@ fun RecipeDetailIngredientRow(
         else -> "-"
     }
 
-    // Funkcja obliczająca sumę dla składnika (teraz działa na Float, bo tak zwracają gettery)
     fun calculateTotal(baseVal: Float): Float {
         val pieces = alimentation.pieces ?: 0f
         val grams = alimentation.amount ?: 0f
         val totalGrams = if (pieces > 0) pieces * defaultWeight else grams
-        return baseVal * (totalGrams / 100f) // 100f, bo defaultWeight to waga w gramach, a baseVal to na 100g
+        return baseVal * (totalGrams / 100f)
     }
 
     val kcal = calculateTotal(baseKcal)

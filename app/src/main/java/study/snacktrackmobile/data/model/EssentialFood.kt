@@ -2,9 +2,9 @@ package study.snacktrackmobile.data.model
 
 
 data class EssentialFood(
-    val id: Int? = null,              // w backendzie generowane automatycznie
+    val id: Int? = null,
     val name: String,
-    val authorId: Int? = null,        // ustawiane po stronie backendu
+    val authorId: Int? = null,
     val description: String,
     val calories: Float,
     val protein: Float,
@@ -12,5 +12,5 @@ data class EssentialFood(
     val carbohydrates: Float,
     val servingSizeUnit: String,
     val defaultWeight: Float,
-    val brandName: String? = null     // opcjonalne pole
+    val brandName: String? = null
 )

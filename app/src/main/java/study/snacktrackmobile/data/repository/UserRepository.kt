@@ -101,7 +101,6 @@ class UserRepository {
         }
     }
 
-    // Pobiera ID zalogowanego użytkownika
     suspend fun getUserId(token: String): Result<Int> {
         return try {
             val res = Request.api.getUserID("Bearer $token")

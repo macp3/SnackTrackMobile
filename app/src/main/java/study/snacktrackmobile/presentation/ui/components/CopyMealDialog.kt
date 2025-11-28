@@ -31,11 +31,9 @@ fun CopyMealDialog(
     var fromMealName by remember { mutableStateOf(initialMeal) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Ustawienie początkowej daty na dzisiaj
     val initialDateMillis = remember { Calendar.getInstance().timeInMillis }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDateMillis)
 
-    // Wartość do wyświetlenia w polu tekstowym (format YYYY-MM-DD)
     val formattedDate by remember(datePickerState.selectedDateMillis) {
         derivedStateOf {
             val millis = datePickerState.selectedDateMillis ?: initialDateMillis
@@ -63,11 +61,8 @@ fun CopyMealDialog(
         onDismiss()
     }
 
-    // InteractionSource jest potrzebny, aby wyłączyć efekt "ripple" przy kliknięciu,
-    // jeśli przeszkadza, ale przede wszystkim pomaga obsłużyć kliknięcie na readOnly TextField
     val interactionSource = remember { MutableInteractionSource() }
 
-    // 1. GŁÓWNE OKNO DIALOGOWE
     Dialog(onDismissRequest = { onDismiss() }) {
         Card(
             modifier = Modifier.wrapContentSize(),
@@ -79,7 +74,6 @@ fun CopyMealDialog(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 🔹 Tytuł
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
@@ -88,29 +82,26 @@ fun CopyMealDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // 🔹 POLE TEKSTOWE DATY
-                // Box pozwala na przechwycenie kliknięcia nad polem tekstowym
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = formattedDate,
                         onValueChange = {},
-                        readOnly = true, // Ważne: użytkownik nie może wpisywać z klawiatury
+                        readOnly = true,
                         label = { Text("Select Date") },
                         trailingIcon = {
                             IconButton(onClick = { showDatePicker = true }) {
                                 Icon(
                                     imageVector = Icons.Default.CalendarToday,
                                     contentDescription = "Select date",
-                                    tint = Color(0xFF2E7D32) // Zielona ikonka pasująca do stylu
+                                    tint = Color(0xFF2E7D32)
                                 )
                             }
                         },
-                        // 🔹 ZMIANA KOLORÓW TUTAJ:
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,   // Czarny tekst gdy aktywne
-                            unfocusedTextColor = Color.Black, // Czarny tekst gdy nieaktywne (to naprawia Twój problem)
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
                             disabledTextColor = Color.Black,
-                            focusedBorderColor = Color(0xFF2E7D32), // Zielona ramka gdy aktywne
+                            focusedBorderColor = Color(0xFF2E7D32),
                             unfocusedBorderColor = Color.Gray,
                             focusedLabelColor = Color(0xFF2E7D32),
                             unfocusedLabelColor = Color.Gray,
@@ -118,19 +109,16 @@ fun CopyMealDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Przezroczysta warstwa clickable na wierzchu pola tekstowego.
-                    // To gwarantuje, że kliknięcie w dowolnym miejscu pola otworzy kalendarz.
                     Box(
                         modifier = Modifier
                             .matchParentSize()
                             .clickable(
                                 interactionSource = interactionSource,
-                                indication = null // Brak efektu kliknięcia wizualnego na polu
+                                indication = null
                             ) { showDatePicker = true }
                     )
                 }
 
-                // 🔹 DropdownField
                 DropdownField(
                     label = "Source meal",
                     selected = fromMealName,
@@ -139,7 +127,6 @@ fun CopyMealDialog(
                     modifier = Modifier.width(300.dp)
                 )
 
-                // 🔹 Przyciski
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -163,7 +150,6 @@ fun CopyMealDialog(
         }
     }
 
-    // 2. OKNO DIALOGOWE KALENDARZA
     if (showDatePicker) {
         DatePickerDialog(
             modifier = Modifier.fillMaxSize(),
@@ -185,14 +171,14 @@ fun CopyMealDialog(
                 )
             },
             colors = DatePickerDefaults.colors(
-                containerColor = Color.White // Białe tło kalendarza
+                containerColor = Color.White
             )
         ) {
             DatePicker(
                 state = datePickerState,
                 modifier = Modifier.fillMaxWidth(),
                 colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor = Color(0xFF2E7D32), // Zielony wybór
+                    selectedDayContainerColor = Color(0xFF2E7D32),
                     todayDateBorderColor = Color(0xFF2E7D32),
                     todayContentColor = Color(0xFF2E7D32)
                 )
