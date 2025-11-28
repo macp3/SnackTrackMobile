@@ -4,10 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.repository.RecipeRepository
+import study.snacktrackmobile.utils.FileUtils
 import java.io.File
 import java.io.FileOutputStream
 
