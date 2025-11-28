@@ -1,21 +1,28 @@
 package study.snacktrackmobile.viewmodel
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import study.snacktrackmobile.data.model.dto.RecipeRequest
 import study.snacktrackmobile.data.model.dto.RecipeResponse
 import study.snacktrackmobile.data.repository.RecipeRepository
-import study.snacktrackmobile.utils.FileUtils
+import java.io.File
+import java.io.FileOutputStream
 
 class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
 
@@ -137,7 +144,7 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
                     loadMyRecipes(token)
                     onSuccess()
                 } else {
-                    onError("Failed to update recipe (Server returned false)")
+                    onError("Failed to update recipe")
                 }
             } catch (e: Exception) {
                 onError(e.message ?: "Unknown error during update")
@@ -157,19 +164,99 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
             val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 FileUtils.getFileFromUri(context, imageUri)
             }
-
-            if (file != null) {
-                val success = repository.uploadImage(token, recipeId, file)
-                if (success) {
-                    loadMyRecipes(token)
-                    onSuccess()
-                } else {
-                    onError("Failed to upload image")
+            try {
+                val compressedFile = withContext(Dispatchers.IO) {
+                    createCompressedFile(context, imageUri)
                 }
-            } else {
-                onError("Could not process image file")
+
+                if (compressedFile != null) {
+                    val success = repository.uploadImage(token, recipeId, compressedFile)
+                    if (success) {
+                        loadMyRecipes(token)
+                        onSuccess()
+                    } else {
+                        onError("Failed to upload image")
+                    }
+                } else {
+                    onError("Could not process image file")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onError("Error processing image: ${e.message}")
             }
         }
+    }
+
+    private fun createCompressedFile(context: Context, uri: Uri): File? {
+        val contentResolver = context.contentResolver
+
+        val inputStream = contentResolver.openInputStream(uri) ?: return null
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeStream(inputStream, null, options)
+        inputStream.close()
+
+        val maxDimension = 1920
+        options.inSampleSize = calculateInSampleSize(options, maxDimension, maxDimension)
+        options.inJustDecodeBounds = false
+
+        val inputStream2 = contentResolver.openInputStream(uri)
+        var bitmap = BitmapFactory.decodeStream(inputStream2, null, options)
+        inputStream2?.close()
+
+        if (bitmap == null) return null
+
+        bitmap = rotateBitmapIfRequired(contentResolver, uri, bitmap)
+
+        val tempFile = File.createTempFile("recipe_compressed_", ".jpg", context.cacheDir)
+        val outputStream = FileOutputStream(tempFile)
+
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        outputStream.flush()
+        outputStream.close()
+
+        bitmap.recycle()
+
+        return tempFile
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    private fun rotateBitmapIfRequired(contentResolver: android.content.ContentResolver, uri: Uri, bitmap: Bitmap): Bitmap {
+        var rotatedBitmap = bitmap
+        try {
+            val inputStream = contentResolver.openInputStream(uri) ?: return bitmap
+            val exif = ExifInterface(inputStream)
+            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            inputStream.close()
+
+            val matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                else -> return bitmap
+            }
+
+            rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            if (rotatedBitmap != bitmap) {
+                bitmap.recycle()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return rotatedBitmap
     }
 
     fun openRecipeDetails(

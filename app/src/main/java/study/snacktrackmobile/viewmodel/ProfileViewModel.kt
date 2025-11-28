@@ -1,11 +1,17 @@
 package study.snacktrackmobile.viewmodel
 
 import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -79,30 +85,102 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
 
     fun uploadImage(token: String, uri: Uri, contentResolver: ContentResolver) {
         viewModelScope.launch {
+            _loading.value = true
             try {
-                val imagePart = createMultipart(uri, contentResolver)
+                val imagePart = withContext(Dispatchers.IO) {
+                    createCompressedMultipart(uri, contentResolver)
+                }
+
                 val response = api.uploadImage("Bearer $token", imagePart)
                 if (response.isSuccessful) {
                     val relativePath = response.body()?.string()
                     val fullUrl = buildImageUrl(relativePath)
                     _user.value = _user.value?.copy(imageUrl = fullUrl)
+                    _error.value = null
                 } else {
-                    _error.value = "Image upload failed"
+                    _error.value = "Image upload failed: ${response.code()}"
                 }
             } catch (e: Exception) {
-                _error.value = e.message
+                e.printStackTrace()
+                _error.value = "Upload error: ${e.message}"
+            } finally {
+                _loading.value = false
             }
         }
     }
 
-    private fun createMultipart(uri: Uri, contentResolver: ContentResolver): MultipartBody.Part {
+    private fun createCompressedMultipart(uri: Uri, contentResolver: ContentResolver): MultipartBody.Part {
         val inputStream = contentResolver.openInputStream(uri)
             ?: throw IllegalArgumentException("Could not open input stream")
-        val tempFile = File.createTempFile("upload_", ".jpg")
+
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeStream(inputStream, null, options)
+        inputStream.close()
+
+        val maxDimension = 1920
+        options.inSampleSize = calculateInSampleSize(options, maxDimension, maxDimension)
+        options.inJustDecodeBounds = false
+
+        val inputStream2 = contentResolver.openInputStream(uri)
+        var bitmap = BitmapFactory.decodeStream(inputStream2, null, options)
+        inputStream2?.close()
+
+        if (bitmap == null) throw IllegalArgumentException("Could not decode bitmap")
+
+        bitmap = rotateBitmapIfRequired(contentResolver, uri, bitmap)
+
+        val tempFile = File.createTempFile("upload_compressed_", ".jpg")
         val outputStream = FileOutputStream(tempFile)
-        inputStream.use { input -> outputStream.use { output -> input.copyTo(output) } }
-        val requestBody = tempFile.asRequestBody("image/*".toMediaTypeOrNull())
+
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        outputStream.flush()
+        outputStream.close()
+
+        bitmap.recycle()
+
+        val requestBody = tempFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
         return MultipartBody.Part.createFormData("image", tempFile.name, requestBody)
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    private fun rotateBitmapIfRequired(contentResolver: ContentResolver, uri: Uri, bitmap: Bitmap): Bitmap {
+        var rotatedBitmap = bitmap
+        try {
+            val inputStream = contentResolver.openInputStream(uri) ?: return bitmap
+            val exif = ExifInterface(inputStream)
+            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            inputStream.close()
+
+            val matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                else -> return bitmap
+            }
+
+            rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            if (rotatedBitmap != bitmap) {
+                bitmap.recycle()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return rotatedBitmap
     }
 
     suspend fun changePassword(token: String, newPassword: String) =
@@ -161,4 +239,5 @@ class ProfileViewModel(private val api: UserApi) : ViewModel() {
             }
         }
     }
+
 }
